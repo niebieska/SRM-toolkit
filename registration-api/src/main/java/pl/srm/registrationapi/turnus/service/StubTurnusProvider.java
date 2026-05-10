@@ -6,6 +6,7 @@ import jakarta.annotation.PostConstruct;
 import lombok.RequiredArgsConstructor;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.stereotype.Component;
+import pl.srm.registrationapi.common.exception.TurnusNotFoundException;
 import pl.srm.registrationapi.turnus.domain.Turnus;
 
 import java.io.InputStream;
@@ -49,6 +50,6 @@ public class StubTurnusProvider implements TurnusProvider {
         return cache.stream()
                 .filter(t -> t.turnusCode().equals(code))
                 .findFirst()
-                .orElseThrow(() -> new RuntimeException("TURNUS_NOT_FOUND"));
+                .orElseThrow(() -> new TurnusNotFoundException("TURNUS_NOT_FOUND"));
     }
 }

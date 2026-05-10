@@ -12,7 +12,7 @@ public record Turnus(
         String turnusName,
         String turnusDescription,
 
-        String seasonType,
+        SeasonType seasonType,
         Integer seasonYear,
 
         LocalDate startDate,
