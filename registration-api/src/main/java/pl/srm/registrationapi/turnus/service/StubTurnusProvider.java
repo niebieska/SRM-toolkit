@@ -26,8 +26,6 @@ public class StubTurnusProvider implements TurnusProvider {
     @PostConstruct
     public void load() throws Exception {
 
-        objectMapper.findAndRegisterModules();
-
         InputStream is =
                 new ClassPathResource("data/turnuses.json").getInputStream();
 
@@ -38,19 +36,19 @@ public class StubTurnusProvider implements TurnusProvider {
     }
 
 
-        @Override
-        public List<Turnus> getAvailableTurnuses() {
-            return cache.stream()
-                    .filter(Turnus::active)
-                    .filter(Turnus::registrationOpen)
-                    .toList();
-        }
-
-        @Override
-        public Turnus getByCode(String code) {
-            return cache.stream()
-                    .filter(t -> t.turnusCode().equals(code))
-                    .findFirst()
-                    .orElseThrow(() -> new RuntimeException("TURNUS_NOT_FOUND"));
-        }
+    @Override
+    public List<Turnus> getAvailableTurnuses() {
+        return cache.stream()
+                .filter(Turnus::active)
+                .filter(Turnus::registrationOpen)
+                .toList();
     }
+
+    @Override
+    public Turnus getByCode(String code) {
+        return cache.stream()
+                .filter(t -> t.turnusCode().equals(code))
+                .findFirst()
+                .orElseThrow(() -> new RuntimeException("TURNUS_NOT_FOUND"));
+    }
+}
