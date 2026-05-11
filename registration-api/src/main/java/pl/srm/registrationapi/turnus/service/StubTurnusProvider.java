@@ -3,7 +3,6 @@ package pl.srm.registrationapi.turnus.service;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.annotation.PostConstruct;
-import lombok.RequiredArgsConstructor;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.stereotype.Component;
 import pl.srm.registrationapi.common.exception.TurnusNotFoundException;
