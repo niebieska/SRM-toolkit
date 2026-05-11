@@ -1,10 +1,12 @@
 package pl.srm.registrationapi.registration.service;
 
 import org.springframework.stereotype.Service;
+import pl.srm.registrationapi.registration.common.RegistrationCodeGenerator;
 import pl.srm.registrationapi.registration.common.RegistrationContext;
 import pl.srm.registrationapi.registration.common.RegistrationParser;
 import pl.srm.registrationapi.registration.common.TurnusValidator;
 import pl.srm.registrationapi.registration.domain.Registration;
+import pl.srm.registrationapi.registration.repository.StaffRegistrationRepository;
 import pl.srm.registrationapi.turnus.domain.Turnus;
 import pl.srm.registrationapi.turnus.service.TurnusProvider;
 
@@ -18,16 +20,18 @@ public class StaffRegistrationService implements RegistrationService {
     private final RegistrationParser parser;
     private final TurnusProvider turnusProvider;
     private final TurnusValidator turnusValidator;
-
-    private final List<Registration> storage = new ArrayList<>();
+    private final StaffRegistrationRepository repository;
+    private final RegistrationCodeGenerator codeGenerator;
 
     public StaffRegistrationService(RegistrationParser parser,
                                     TurnusProvider turnusProvider,
-                                    TurnusValidator turnusValidator) {
+                                    TurnusValidator turnusValidator, StaffRegistrationRepository repository, RegistrationCodeGenerator codeGenerator) {
 
         this.parser = parser;
         this.turnusProvider = turnusProvider;
         this.turnusValidator = turnusValidator;
+        this.repository = repository;
+        this.codeGenerator = codeGenerator;
     }
 
     @Override
@@ -54,22 +58,23 @@ public class StaffRegistrationService implements RegistrationService {
 
     private void validateDuplicate(RegistrationContext data) {
 
-        boolean exists = storage.stream()
-                .anyMatch(r ->
-                        r.turnusCode().equals(data.turnusCode())
-                                && r.personKey().equals(data.key())
-                );
-
-        if (exists) {
+        if (repository.exists(data.turnusCode(), data.key())) {
             throw new RuntimeException("ALREADY_REGISTERED");
         }
+
     }
 
     private void save(RegistrationContext data, String payload) {
 
-        String code = "REG-S-" + (storage.size() + 1);
 
-        storage.add(new Registration(
+        int count = repository.countByTurnus(data.turnusCode());
+        String code = codeGenerator.generateParticipantCode(
+                data.turnusCode(),
+                count + 1
+        );
+
+
+        repository.save(new Registration(
                 code,
                 data.turnusCode(),
                 data.key(),
@@ -79,8 +84,12 @@ public class StaffRegistrationService implements RegistrationService {
         ));
     }
 
+
     public List<Registration> getAll() {
-        return storage;
+        return repository.findAll();
     }
+
+
+
 
 }

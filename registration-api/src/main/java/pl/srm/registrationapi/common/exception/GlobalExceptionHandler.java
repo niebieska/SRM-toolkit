@@ -12,17 +12,15 @@ import pl.srm.registrationapi.registration.exception.TurnusUnavailableException;
 public class GlobalExceptionHandler {
 
     @ExceptionHandler(TurnusNotFoundException.class)
-    public ResponseEntity<ApiError> handleTurnusNotFound() {
+    public ResponseEntity<ApiError> handleTurnusNotFound(TurnusNotFoundException ex) {
         return ResponseEntity
                 .status(404)
                 .body(new ApiError(
-                        "TURNUS_NOT_FOUND",
-                        "Turnus not found"
-                ));
+                        "TURNUS_NOT_FOUND", ex.getMessage()));
     }
 
     @ExceptionHandler(AlreadyRegisteredException.class)
-    public ResponseEntity<ApiError> handleAlreadyRegistered() {
+    public ResponseEntity<ApiError> handleAlreadyRegistered(AlreadyRegisteredException ex) {
         return ResponseEntity
                 .status(409)
                 .body(new ApiError(
@@ -46,7 +44,7 @@ public class GlobalExceptionHandler {
         return ResponseEntity
                 .badRequest()
                 .body(new ApiError(
-                        ex.getCode(),   // ✅ use stable code
+                        ex.getCode(),
                         "Turnus is not available"
                 ));
     }
