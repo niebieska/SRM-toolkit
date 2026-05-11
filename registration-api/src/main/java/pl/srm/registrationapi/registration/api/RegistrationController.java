@@ -1,9 +1,9 @@
 package pl.srm.registrationapi.registration.api;
 
-import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import pl.srm.registrationapi.registration.domain.Registration;
-import pl.srm.registrationapi.registration.service.RegistrationService;
+import pl.srm.registrationapi.registration.service.ParticipantRegistrationService;
+import pl.srm.registrationapi.registration.service.StaffRegistrationService;
 
 import java.util.List;
 
@@ -11,24 +11,35 @@ import java.util.List;
 @RequestMapping("/api/registrations")
 public class RegistrationController {
 
-    private final RegistrationService service;
+    private final ParticipantRegistrationService participantService;
+    private final StaffRegistrationService staffService;
 
-    public RegistrationController(RegistrationService service) {
-        this.service = service;
+    public RegistrationController(ParticipantRegistrationService participantService,
+                                  StaffRegistrationService staffService) {
+
+        this.participantService = participantService;
+        this.staffService = staffService;
     }
 
-    @PostMapping
-    public ResponseEntity<Void> register(@RequestBody String payload) {
+    @PostMapping("/participant")
+    public void registerParticipant(@RequestBody String payload) {
+        participantService.register(payload);
+    }
 
-        service.register(payload);
-
-        return ResponseEntity.status(201).build();
+    @PostMapping("/staff")
+    public void registerStaff(@RequestBody String payload) {
+        staffService.register(payload);
     }
 
 
-    @GetMapping("/internal")
-    public List<Registration> getAll() {
-        return service.getAll();
+    @GetMapping("/participant")
+    public List<Registration> getParticipants() {
+        return participantService.getAll();
+    }
+
+    @GetMapping("/staff")
+    public List<Registration> getStaff() {
+        return staffService.getAll();
     }
 
 }
