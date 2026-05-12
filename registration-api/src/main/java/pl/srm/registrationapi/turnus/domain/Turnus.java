@@ -12,6 +12,8 @@ public record Turnus(
         String turnusName,
         String turnusDescription,
 
+        String turnusLocation,
+
         SeasonType seasonType,
         Integer seasonYear,
 
