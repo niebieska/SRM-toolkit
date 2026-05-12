@@ -24,7 +24,8 @@
       <div v-if="selectedTurnus" class="mt-3 border border-gray-200 rounded-lg p-3 bg-gray-50 text-sm space-y-1">
         <div><span class="font-medium">Nazwa:</span> {{ selectedTurnus.turnusName }}</div>
         <div><span class="font-medium">Termin:</span> {{ selectedTurnus.startDate }} – {{ selectedTurnus.endDate }}</div>
-        <div><span class="font-medium">Lokalizacja:</span> {{ selectedTurnus.location }}</div>
+        <div><span class="font-medium">Opis:</span> {{ selectedTurnus.turnusDescription }}</div>
+        <div><span class="font-medium">Lokalizacja:</span> {{ selectedTurnus.turnusLocation }}</div>
         <div v-if="selectedTurnus.description"><span class="font-medium">Opis:</span> {{ selectedTurnus.description }}</div>
       </div>
     </div>
