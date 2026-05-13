@@ -119,6 +119,7 @@
           type="text"
           placeholder="np. Jan Kowalski, Anna Kowalska"
           :class="fieldClass('parentNames')"
+          @input="onParentNamesInput"
         />
         <p class="text-xs text-gray-400 mt-1">Wypełnione automatycznie na podstawie danych opiekuna — możesz edytować.</p>
         <p v-if="errors.parentNames" class="text-red-500 text-xs mt-1">{{ errors.parentNames }}</p>
@@ -190,12 +191,23 @@ function onPeselInput() {
   local.value.gender = gender.value
 }
 
-// Auto-fill parentNames from guardian when field is empty
+// Track last auto-generated value so we only overwrite parentNames
+// when the user hasn't manually edited it.
+let lastAutoParentNames = local.value.parentNames || ''
+let parentNamesManuallyEdited = false
+
+function onParentNamesInput() {
+  // Mark as manually edited if it diverges from the last auto value
+  parentNamesManuallyEdited = local.value.parentNames !== lastAutoParentNames
+}
+
 watch(
   [() => local.value.guardianFirstName, () => local.value.guardianLastName],
   ([fn, ln]) => {
-    if (!local.value.parentNames) {
-      local.value.parentNames = [fn, ln].filter(Boolean).join(' ')
+    const auto = [fn, ln].filter(Boolean).join(' ')
+    if (!parentNamesManuallyEdited) {
+      local.value.parentNames = auto
+      lastAutoParentNames = auto
     }
   }
 )
