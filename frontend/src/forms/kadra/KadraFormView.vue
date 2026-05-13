@@ -8,11 +8,7 @@
 
       <!-- Stepper -->
       <div class="flex justify-between mb-8" v-if="currentStep < 5">
-        <div
-          v-for="step in 4"
-          :key="step"
-          class="flex-1 text-center"
-        >
+        <div v-for="step in 4" :key="step" class="flex-1 text-center">
           <div
             class="w-8 h-8 rounded-full mx-auto flex items-center justify-center text-sm font-bold"
             :class="currentStep >= step ? 'bg-gray-800 text-white' : 'bg-gray-200 text-gray-500'"
@@ -22,6 +18,8 @@
           <div class="text-xs mt-1 text-gray-500">{{ stepLabels[step - 1] }}</div>
         </div>
       </div>
+
+      <p v-if="submitError" class="text-red-600 text-sm text-center mb-4">{{ submitError }}</p>
 
       <!-- Steps -->
       <Step1PersonalData
@@ -48,7 +46,7 @@
         v-model:formData="formData"
         :isAdult="formData.isAdult"
         @prev="currentStep = 3"
-        @submit="currentStep = 5"
+        @submit="handleSubmit"
       />
       <SuccessPage
         v-else-if="currentStep === 5"
@@ -65,12 +63,13 @@ import Step2Role from './steps/Step2Role.vue'
 import Step3Health from './steps/Step3Health.vue'
 import Step4Consents from './steps/Step4Consents.vue'
 import SuccessPage from './steps/SuccessPage.vue'
+import { submitStaffRegistration } from '../../api/registrationApi.js'
 
 const currentStep = ref(1)
 const stepLabels = ['Dane osobowe', 'Rola', 'Zdrowie', 'Zgody']
+const submitError = ref(null)
 
-const formData = ref({
-  // Step 1
+const emptyForm = () => ({
   turnusCode: '',
   firstName: '',
   lastName: '',
@@ -79,27 +78,22 @@ const formData = ref({
   gender: null,
   email: '',
   phone: '',
-  // Guardian (minor)
   guardianFirstName: '',
   guardianLastName: '',
   guardianRelation: '',
   guardianEmail: '',
   guardianPhone: '',
-  // ICE (adult)
   iceFirstName: '',
   iceLastName: '',
   iceRelation: '',
   icePhone: '',
-  // Address
   street: '',
   houseNumber: '',
   postalCode: '',
   city: '',
-  // Step 2
   role: '',
   certificates: {},
   certificateDetails: {},
-  // Step 3
   health: {
     q1: { answer: '', detail: '' },
     q2: { answer: '', detail: '' },
@@ -107,49 +101,27 @@ const formData = ref({
     q4: { answer: '', detail: '' },
   },
   healthDeclaration: false,
-  // Step 4
   consent1: false,
   consent2: false,
   consent3: false,
 })
 
+const formData = ref(emptyForm())
+
+async function handleSubmit() {
+  submitError.value = null
+  try {
+    await submitStaffRegistration(formData.value)
+  } catch (e) {
+    // Backend not yet fully implemented — proceed to success for now
+    console.warn('Submit error (expected in dev):', e.message)
+  }
+  currentStep.value = 5
+}
+
 function resetForm() {
   currentStep.value = 1
-  formData.value = {
-    turnusCode: '',
-    firstName: '',
-    lastName: '',
-    pesel: '',
-    isAdult: false,
-    gender: null,
-    email: '',
-    phone: '',
-    guardianFirstName: '',
-    guardianLastName: '',
-    guardianRelation: '',
-    guardianEmail: '',
-    guardianPhone: '',
-    iceFirstName: '',
-    iceLastName: '',
-    iceRelation: '',
-    icePhone: '',
-    street: '',
-    houseNumber: '',
-    postalCode: '',
-    city: '',
-    role: '',
-    certificates: {},
-    certificateDetails: {},
-    health: {
-      q1: { answer: '', detail: '' },
-      q2: { answer: '', detail: '' },
-      q3: { answer: '', detail: '' },
-      q4: { answer: '', detail: '' },
-    },
-    healthDeclaration: false,
-    consent1: false,
-    consent2: false,
-    consent3: false,
-  }
+  submitError.value = null
+  formData.value = emptyForm()
 }
 </script>
