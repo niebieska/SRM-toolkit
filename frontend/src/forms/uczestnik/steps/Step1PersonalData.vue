@@ -10,11 +10,7 @@
         Ładowanie…
       </div>
       <div v-else-if="turnusError" class="text-red-600 text-sm">{{ turnusError }}</div>
-      <select
-        v-else
-        v-model="local.turnusCode"
-        :class="fieldClass('turnusCode')"
-      >
+      <select v-else v-model="local.turnusCode" :class="fieldClass('turnusCode')">
         <option value="">-- Wybierz turnus --</option>
         <option v-for="t in turnusy" :key="t.turnusCode" :value="t.turnusCode">
           {{ t.turnusName }} ({{ t.startDate }} – {{ t.endDate }})
@@ -112,6 +108,21 @@
           <p v-if="errors.guardianPhone" class="text-red-500 text-xs mt-1">{{ errors.guardianPhone }}</p>
         </div>
       </div>
+
+      <!-- Parent names (combined, pre-filled from guardian) -->
+      <div>
+        <label class="block text-sm font-medium text-gray-700 mb-1">
+          Imiona i nazwiska rodziców (opiekunów prawnych) *
+        </label>
+        <input
+          v-model="local.parentNames"
+          type="text"
+          placeholder="np. Jan Kowalski, Anna Kowalska"
+          :class="fieldClass('parentNames')"
+        />
+        <p class="text-xs text-gray-400 mt-1">Wypełnione automatycznie na podstawie danych opiekuna — możesz edytować.</p>
+        <p v-if="errors.parentNames" class="text-red-500 text-xs mt-1">{{ errors.parentNames }}</p>
+      </div>
     </div>
 
     <!-- ICE (adult) -->
@@ -179,6 +190,17 @@ function onPeselInput() {
   local.value.gender = gender.value
 }
 
+// Auto-fill parentNames from guardian when field is empty
+watch(
+  [() => local.value.guardianFirstName, () => local.value.guardianLastName],
+  ([fn, ln]) => {
+    if (!local.value.parentNames) {
+      local.value.parentNames = [fn, ln].filter(Boolean).join(' ')
+    }
+  }
+)
+
+// Turnus
 const turnusy = ref([])
 const loadingTurnusy = ref(true)
 const turnusError = ref(null)
@@ -223,6 +245,7 @@ function validate() {
     if (!local.value.guardianRelation)          errors.guardianRelation  = 'Wybierz relację.'
     if (!local.value.guardianEmail?.trim())     errors.guardianEmail     = 'Podaj e-mail opiekuna.'
     if (!local.value.guardianPhone?.trim())     errors.guardianPhone     = 'Podaj telefon opiekuna.'
+    if (!local.value.parentNames?.trim())       errors.parentNames       = 'Podaj imiona i nazwiska rodziców.'
   }
 
   if (isAdult.value && pesel.value.length === 11) {

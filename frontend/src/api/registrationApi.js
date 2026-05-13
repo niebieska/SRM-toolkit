@@ -19,6 +19,7 @@ function buildGuardianBlock(f) {
     firstName: f.guardianFirstName,
     lastName: f.guardianLastName,
     relation: f.guardianRelation,
+    names: f.parentNames,
     contact: {
       email: f.guardianEmail,
       phone: f.guardianPhone,
@@ -41,6 +42,8 @@ function buildHealthBlock(f) {
     q2: f.health.q2,
     q3: f.health.q3,
     q4: f.health.q4,
+    q5: f.health.q5 ?? { answer: '', detail: '' },
+    q6: f.health.q6 ?? { answer: '', detail: '' },
     declaration: f.healthDeclaration,
   }
 }

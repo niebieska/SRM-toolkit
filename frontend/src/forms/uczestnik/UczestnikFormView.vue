@@ -87,6 +87,7 @@ const emptyForm = () => ({
   guardianRelation: '',
   guardianEmail: '',
   guardianPhone: '',
+  parentNames: '',
   iceFirstName: '',
   iceLastName: '',
   iceRelation: '',
@@ -105,6 +106,8 @@ const emptyForm = () => ({
     q2: { answer: '', detail: '' },
     q3: { answer: '', detail: '' },
     q4: { answer: '', detail: '' },
+    q5: { answer: '', detail: '' },
+    q6: { answer: '', detail: '' },
   },
   healthDeclaration: false,
   consent1: false,
@@ -127,10 +130,10 @@ async function handleSubmit() {
 
 function friendlyError(msg) {
   if (msg.includes('409') || msg.includes('ALREADY_REGISTERED')) return 'Ta osoba jest już zarejestrowana na ten turnus.'
-  if (msg.includes('AGE_TOO_LOW'))    return 'Uczestnik nie spełnia wymogu minimalnego wieku dla tego turnusu.'
-  if (msg.includes('TURNUS_INACTIVE'))   return 'Wybrany turnus nie jest aktywny.'
+  if (msg.includes('AGE_TOO_LOW'))         return 'Uczestnik nie spełnia wymogu minimalnego wieku dla tego turnusu.'
+  if (msg.includes('TURNUS_INACTIVE'))     return 'Wybrany turnus nie jest aktywny.'
   if (msg.includes('REGISTRATION_CLOSED')) return 'Rejestracja na ten turnus jest zamknięta.'
-  if (msg.includes('404')) return 'Wybrany turnus nie istnieje.'
+  if (msg.includes('404'))                 return 'Wybrany turnus nie istnieje.'
   return 'Nie udało się wysłać zgłoszenia. Spróbuj ponownie lub skontaktuj się z organizatorem.'
 }
 
