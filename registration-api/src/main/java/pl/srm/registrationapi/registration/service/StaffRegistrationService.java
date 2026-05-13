@@ -11,7 +11,6 @@ import pl.srm.registrationapi.turnus.domain.Turnus;
 import pl.srm.registrationapi.turnus.service.TurnusProvider;
 
 import java.time.LocalDateTime;
-import java.util.ArrayList;
 import java.util.List;
 
 @Service
@@ -25,8 +24,9 @@ public class StaffRegistrationService implements RegistrationService {
 
     public StaffRegistrationService(RegistrationParser parser,
                                     TurnusProvider turnusProvider,
-                                    TurnusValidator turnusValidator, StaffRegistrationRepository repository, RegistrationCodeGenerator codeGenerator) {
-
+                                    TurnusValidator turnusValidator,
+                                    StaffRegistrationRepository repository,
+                                    RegistrationCodeGenerator codeGenerator) {
         this.parser = parser;
         this.turnusProvider = turnusProvider;
         this.turnusValidator = turnusValidator;
@@ -35,20 +35,13 @@ public class StaffRegistrationService implements RegistrationService {
     }
 
     @Override
-    public void register(String payload) {
-
+    public String register(String payload) {
         try {
-
             RegistrationContext data = parser.parse(payload);
-
             Turnus turnus = turnusProvider.getByCode(data.turnusCode());
-
             turnusValidator.validate(turnus);
-
             validateDuplicate(data);
-
-            save(data, payload);
-
+            return save(data, payload);
         } catch (RuntimeException e) {
             throw e;
         } catch (Exception e) {
@@ -57,23 +50,14 @@ public class StaffRegistrationService implements RegistrationService {
     }
 
     private void validateDuplicate(RegistrationContext data) {
-
         if (repository.exists(data.turnusCode(), data.key())) {
             throw new RuntimeException("ALREADY_REGISTERED");
         }
-
     }
 
-    private void save(RegistrationContext data, String payload) {
-
-
+    private String save(RegistrationContext data, String payload) {
         int count = repository.countByTurnus(data.turnusCode());
-        String code = codeGenerator.generateParticipantCode(
-                data.turnusCode(),
-                count + 1
-        );
-
-
+        String code = codeGenerator.generateParticipantCode(data.turnusCode(), count + 1);
         repository.save(new Registration(
                 code,
                 data.turnusCode(),
@@ -82,14 +66,10 @@ public class StaffRegistrationService implements RegistrationService {
                 LocalDateTime.now(),
                 payload
         ));
+        return code;
     }
-
 
     public List<Registration> getAll() {
         return repository.findAll();
     }
-
-
-
-
 }

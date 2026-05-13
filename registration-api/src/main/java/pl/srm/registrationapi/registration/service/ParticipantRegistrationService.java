@@ -21,16 +21,14 @@ public class ParticipantRegistrationService implements RegistrationService {
     private final TurnusValidator turnusValidator;
     private final PeselUtils peselUtils;
     private final RegistrationCodeGenerator codeGenerator;
-
     private final ParticipantRegistrationRepository repository;
 
     public ParticipantRegistrationService(RegistrationParser parser,
                                           TurnusProvider turnusProvider,
                                           TurnusValidator turnusValidator,
-                                          PeselUtils peselUtils, RegistrationCodeGenerator codeGenerator,
+                                          PeselUtils peselUtils,
+                                          RegistrationCodeGenerator codeGenerator,
                                           ParticipantRegistrationRepository repository) {
-
-
         this.parser = parser;
         this.turnusProvider = turnusProvider;
         this.turnusValidator = turnusValidator;
@@ -40,22 +38,14 @@ public class ParticipantRegistrationService implements RegistrationService {
     }
 
     @Override
-    public void register(String payload) {
-
+    public String register(String payload) {
         try {
-
             RegistrationContext data = parser.parse(payload);
-
             Turnus turnus = turnusProvider.getByCode(data.turnusCode());
-
             turnusValidator.validate(turnus);
-
             validateAge(data, turnus);
-
             validateDuplicate(data);
-
-            save(data, payload);
-
+            return save(data, payload);
         } catch (RuntimeException e) {
             throw e;
         } catch (Exception e) {
@@ -64,32 +54,21 @@ public class ParticipantRegistrationService implements RegistrationService {
     }
 
     private void validateAge(RegistrationContext data, Turnus turnus) {
-
         int age = peselUtils.calculateAge(data.pesel());
-
         if (age < turnus.minAge()) {
             throw new RuntimeException("AGE_TOO_LOW");
         }
     }
 
     private void validateDuplicate(RegistrationContext data) {
-
-
         if (repository.exists(data.turnusCode(), data.key())) {
             throw new RuntimeException("ALREADY_REGISTERED");
         }
     }
 
-
-    private void save(RegistrationContext data, String payload) {
-
+    private String save(RegistrationContext data, String payload) {
         int count = repository.countByTurnus(data.turnusCode());
-        String code = codeGenerator.generateParticipantCode(
-                data.turnusCode(),
-                count + 1
-        );
-
-
+        String code = codeGenerator.generateParticipantCode(data.turnusCode(), count + 1);
         Registration registration = new Registration(
                 code,
                 data.turnusCode(),
@@ -99,11 +78,10 @@ public class ParticipantRegistrationService implements RegistrationService {
                 payload
         );
         repository.save(registration);
+        return code;
     }
-
 
     public List<Registration> getAll() {
         return repository.findAll();
     }
-
 }

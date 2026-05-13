@@ -1,13 +1,12 @@
 <template>
   <div class="min-h-screen bg-gray-100 py-8 px-4">
     <div class="max-w-2xl mx-auto">
-      <!-- Header -->
       <div class="text-center mb-6">
         <h1 class="text-2xl font-bold text-gray-800">Formularz zgłoszeniowy – Kadra</h1>
       </div>
 
       <!-- Stepper -->
-      <div class="flex justify-between mb-8" v-if="currentStep < 5">
+      <div class="flex justify-between mb-8" v-if="currentStep <= 4">
         <div v-for="step in 4" :key="step" class="flex-1 text-center">
           <div
             class="w-8 h-8 rounded-full mx-auto flex items-center justify-center text-sm font-bold"
@@ -19,9 +18,6 @@
         </div>
       </div>
 
-      <p v-if="submitError" class="text-red-600 text-sm text-center mb-4">{{ submitError }}</p>
-
-      <!-- Steps -->
       <Step1PersonalData
         v-if="currentStep === 1"
         v-model:formData="formData"
@@ -50,7 +46,13 @@
       />
       <SuccessPage
         v-else-if="currentStep === 5"
+        :registrationCode="registrationCode"
         @reset="resetForm"
+      />
+      <ErrorPage
+        v-else-if="currentStep === 6"
+        :message="errorMessage"
+        @back="currentStep = 4"
       />
     </div>
   </div>
@@ -63,11 +65,13 @@ import Step2Role from './steps/Step2Role.vue'
 import Step3Health from './steps/Step3Health.vue'
 import Step4Consents from './steps/Step4Consents.vue'
 import SuccessPage from './steps/SuccessPage.vue'
+import ErrorPage from '../../components/ErrorPage.vue'
 import { submitStaffRegistration } from '../../api/registrationApi.js'
 
 const currentStep = ref(1)
 const stepLabels = ['Dane osobowe', 'Rola', 'Zdrowie', 'Zgody']
-const submitError = ref(null)
+const registrationCode = ref('')
+const errorMessage = ref('')
 
 const emptyForm = () => ({
   turnusCode: '',
@@ -109,19 +113,29 @@ const emptyForm = () => ({
 const formData = ref(emptyForm())
 
 async function handleSubmit() {
-  submitError.value = null
   try {
-    await submitStaffRegistration(formData.value)
+    const result = await submitStaffRegistration(formData.value)
+    registrationCode.value = result.registrationCode
+    currentStep.value = 5
   } catch (e) {
-    // Backend not yet fully implemented — proceed to success for now
-    console.warn('Submit error (expected in dev):', e.message)
+    errorMessage.value = friendlyError(e.message)
+    currentStep.value = 6
   }
-  currentStep.value = 5
+}
+
+function friendlyError(msg) {
+  if (msg.includes('409') || msg.includes('ALREADY_REGISTERED')) return 'Ta osoba jest już zarejestrowana na ten turnus.'
+  if (msg.includes('AGE_TOO_LOW'))    return 'Uczestnik nie spełnia wymogu minimalnego wieku dla tego turnusu.'
+  if (msg.includes('TURNUS_INACTIVE'))   return 'Wybrany turnus nie jest aktywny.'
+  if (msg.includes('REGISTRATION_CLOSED')) return 'Rejestracja na ten turnus jest zamknięta.'
+  if (msg.includes('404')) return 'Wybrany turnus nie istnieje.'
+  return 'Nie udało się wysłać zgłoszenia. Spróbuj ponownie lub skontaktuj się z organizatorem.'
 }
 
 function resetForm() {
   currentStep.value = 1
-  submitError.value = null
+  registrationCode.value = ''
+  errorMessage.value = ''
   formData.value = emptyForm()
 }
 </script>
