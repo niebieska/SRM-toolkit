@@ -99,7 +99,7 @@ function fieldClass(field) {
 }
 
 function formatPostalCode(val) {
-  // Keep only digits, insert dash after 2 digits
+  // Keep only digits (max 5), insert dash after first 2 digits
   const digits = val.replace(/\D/g, '').slice(0, 5)
   if (digits.length > 2) return digits.slice(0, 2) + '-' + digits.slice(2)
   return digits

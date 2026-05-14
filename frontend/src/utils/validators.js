@@ -26,9 +26,7 @@ export function validatePhone(value) {
   if (v.startsWith('+')) v = v.slice(1)
   v = v.replace(/[\s\-]/g, '')
   if (!/^\d+$/.test(v)) return false
-  if (v.length < 9) return false
-  const digits = v.slice(-9)
-  return /^\d{9}$/.test(digits)
+  return v.length >= 9
 }
 
 /**

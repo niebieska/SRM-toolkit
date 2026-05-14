@@ -47,6 +47,8 @@ const digits = ref('')
 function parseValue(val) {
   if (!val) return
   let v = val.startsWith('+') ? val.slice(1) : val
+  // Strip spaces and dashes before splitting
+  v = v.replace(/[\s\-]/g, '')
   if (v.length > 9) {
     digits.value = v.slice(-9)
     prefix.value = v.slice(0, v.length - 9) || '48'
