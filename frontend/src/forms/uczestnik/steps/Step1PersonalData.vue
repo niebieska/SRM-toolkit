@@ -66,8 +66,7 @@
       </div>
       <div>
         <label class="block text-sm font-medium text-gray-700 mb-1">Telefon *</label>
-        <input v-model="local.phone" type="tel" :class="fieldClass('phone')" />
-        <p v-if="errors.phone" class="text-red-500 text-xs mt-1">{{ errors.phone }}</p>
+        <PhoneInput v-model="local.phone" :error="errors.phone" />
       </div>
     </div>
 
@@ -104,8 +103,7 @@
         </div>
         <div>
           <label class="block text-sm font-medium text-gray-700 mb-1">Telefon *</label>
-          <input v-model="local.guardianPhone" type="tel" :class="fieldClass('guardianPhone')" />
-          <p v-if="errors.guardianPhone" class="text-red-500 text-xs mt-1">{{ errors.guardianPhone }}</p>
+          <PhoneInput v-model="local.guardianPhone" :error="errors.guardianPhone" />
         </div>
       </div>
 
@@ -154,8 +152,7 @@
       </div>
       <div>
         <label class="block text-sm font-medium text-gray-700 mb-1">Telefon *</label>
-        <input v-model="local.icePhone" type="tel" :class="fieldClass('icePhone')" />
-        <p v-if="errors.icePhone" class="text-red-500 text-xs mt-1">{{ errors.icePhone }}</p>
+        <PhoneInput v-model="local.icePhone" :error="errors.icePhone" />
       </div>
     </div>
 
@@ -171,6 +168,8 @@
 import { ref, computed, onMounted, watch, reactive } from 'vue'
 import { usePesel } from '../../../composables/usePesel.js'
 import { fetchTurnusy } from '../../../api/turnusApi.js'
+import { validatePesel, validateEmail, validatePhone } from '../../../utils/validators.js'
+import PhoneInput from '../../../components/PhoneInput.vue'
 
 const props = defineProps({
   formData: { type: Object, required: true },
@@ -247,16 +246,35 @@ function validate() {
   if (!local.value.turnusCode)          errors.turnusCode  = 'Wybierz turnus.'
   if (!local.value.firstName?.trim())   errors.firstName   = 'Podaj imię.'
   if (!local.value.lastName?.trim())    errors.lastName    = 'Podaj nazwisko.'
-  if (pesel.value.length !== 11)        errors.pesel       = 'PESEL musi mieć 11 cyfr.'
-  if (!local.value.email?.trim())       errors.email       = 'Podaj adres e-mail.'
-  if (!local.value.phone?.trim())       errors.phone       = 'Podaj numer telefonu.'
+
+  if (pesel.value.length !== 11) {
+    errors.pesel = 'PESEL musi mieć 11 cyfr.'
+  } else if (!validatePesel(pesel.value)) {
+    errors.pesel = 'PESEL ma nieprawidłową sumę kontrolną.'
+  }
+
+  if (!local.value.email?.trim()) {
+    errors.email = 'Podaj adres e-mail.'
+  } else if (!validateEmail(local.value.email)) {
+    errors.email = 'Podaj prawidłowy adres e-mail.'
+  }
+
+  if (!validatePhone(local.value.phone)) {
+    errors.phone = 'Podaj prawidłowy numer telefonu (9 cyfr).'
+  }
 
   if (!isAdult.value && pesel.value.length === 11) {
     if (!local.value.guardianFirstName?.trim()) errors.guardianFirstName = 'Podaj imię opiekuna.'
     if (!local.value.guardianLastName?.trim())  errors.guardianLastName  = 'Podaj nazwisko opiekuna.'
     if (!local.value.guardianRelation)          errors.guardianRelation  = 'Wybierz relację.'
-    if (!local.value.guardianEmail?.trim())     errors.guardianEmail     = 'Podaj e-mail opiekuna.'
-    if (!local.value.guardianPhone?.trim())     errors.guardianPhone     = 'Podaj telefon opiekuna.'
+    if (!local.value.guardianEmail?.trim()) {
+      errors.guardianEmail = 'Podaj e-mail opiekuna.'
+    } else if (!validateEmail(local.value.guardianEmail)) {
+      errors.guardianEmail = 'Podaj prawidłowy adres e-mail opiekuna.'
+    }
+    if (!validatePhone(local.value.guardianPhone)) {
+      errors.guardianPhone = 'Podaj prawidłowy numer telefonu opiekuna (9 cyfr).'
+    }
     if (!local.value.parentNames?.trim())       errors.parentNames       = 'Podaj imiona i nazwiska rodziców.'
   }
 
@@ -264,7 +282,9 @@ function validate() {
     if (!local.value.iceFirstName?.trim()) errors.iceFirstName = 'Podaj imię osoby ICE.'
     if (!local.value.iceLastName?.trim())  errors.iceLastName  = 'Podaj nazwisko osoby ICE.'
     if (!local.value.iceRelation)          errors.iceRelation  = 'Wybierz relację.'
-    if (!local.value.icePhone?.trim())     errors.icePhone     = 'Podaj telefon osoby ICE.'
+    if (!validatePhone(local.value.icePhone)) {
+      errors.icePhone = 'Podaj prawidłowy numer telefonu osoby ICE (9 cyfr).'
+    }
   }
 
   return Object.keys(errors).length === 0
