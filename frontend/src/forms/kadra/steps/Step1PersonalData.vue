@@ -71,8 +71,7 @@
       </div>
       <div>
         <label class="block text-sm font-medium text-gray-700 mb-1">Telefon *</label>
-        <input v-model="local.phone" type="tel" :class="fieldClass('phone')" />
-        <p v-if="errors.phone" class="text-red-500 text-xs mt-1">{{ errors.phone }}</p>
+        <PhoneInput v-model="local.phone" :error="errors.phone" />
       </div>
     </div>
 
@@ -109,8 +108,7 @@
         </div>
         <div>
           <label class="block text-sm font-medium text-gray-700 mb-1">Telefon *</label>
-          <input v-model="local.guardianPhone" type="tel" :class="fieldClass('guardianPhone')" />
-          <p v-if="errors.guardianPhone" class="text-red-500 text-xs mt-1">{{ errors.guardianPhone }}</p>
+          <PhoneInput v-model="local.guardianPhone" :error="errors.guardianPhone" />
         </div>
       </div>
     </div>
@@ -143,8 +141,7 @@
       </div>
       <div>
         <label class="block text-sm font-medium text-gray-700 mb-1">Telefon *</label>
-        <input v-model="local.icePhone" type="tel" :class="fieldClass('icePhone')" />
-        <p v-if="errors.icePhone" class="text-red-500 text-xs mt-1">{{ errors.icePhone }}</p>
+        <PhoneInput v-model="local.icePhone" :error="errors.icePhone" />
       </div>
     </div>
 
@@ -166,7 +163,13 @@
       <div class="grid grid-cols-2 gap-4">
         <div>
           <label class="block text-sm font-medium text-gray-700 mb-1">Kod pocztowy *</label>
-          <input v-model="local.postalCode" type="text" placeholder="00-000" :class="fieldClass('postalCode')" />
+          <input
+            v-model="local.postalCode"
+            type="text"
+            placeholder="00-000"
+            :class="fieldClass('postalCode')"
+            @input="onPostalCodeInput"
+          />
           <p v-if="errors.postalCode" class="text-red-500 text-xs mt-1">{{ errors.postalCode }}</p>
         </div>
         <div>
@@ -189,6 +192,8 @@
 import { ref, computed, onMounted, watch, reactive } from 'vue'
 import { usePesel } from '../../../composables/usePesel.js'
 import { fetchTurnusy } from '../../../api/turnusApi.js'
+import { validatePesel, validateEmail, validatePhone, validatePostalCode } from '../../../utils/validators.js'
+import PhoneInput from '../../../components/PhoneInput.vue'
 
 const props = defineProps({
   formData: { type: Object, required: true },
@@ -238,34 +243,61 @@ function fieldClass(field) {
     : `${base} border-gray-300 focus:ring-gray-400`
 }
 
+function onPostalCodeInput() {
+  const digits = (local.value.postalCode || '').replace(/\D/g, '').slice(0, 5)
+  local.value.postalCode = digits.length > 2 ? `${digits.slice(0, 2)}-${digits.slice(2)}` : digits
+}
+
 function validate() {
   Object.keys(errors).forEach(k => delete errors[k])
 
   if (!local.value.turnusCode)          errors.turnusCode  = 'Wybierz turnus.'
   if (!local.value.firstName?.trim())   errors.firstName   = 'Podaj imię.'
   if (!local.value.lastName?.trim())    errors.lastName    = 'Podaj nazwisko.'
-  if (pesel.value.length !== 11)        errors.pesel       = 'PESEL musi mieć 11 cyfr.'
-  if (!local.value.email?.trim())       errors.email       = 'Podaj adres e-mail.'
-  if (!local.value.phone?.trim())       errors.phone       = 'Podaj numer telefonu.'
+  if (pesel.value.length !== 11) {
+    errors.pesel = 'PESEL musi mieć 11 cyfr.'
+  } else if (!validatePesel(pesel.value)) {
+    errors.pesel = 'PESEL ma nieprawidłową sumę kontrolną.'
+  }
+  if (!local.value.email?.trim()) {
+    errors.email = 'Podaj adres e-mail.'
+  } else if (!validateEmail(local.value.email)) {
+    errors.email = 'Podaj prawidłowy adres e-mail.'
+  }
+  if (!validatePhone(local.value.phone)) {
+    errors.phone = 'Podaj prawidłowy numer telefonu (9 cyfr).'
+  }
 
   if (!isAdult.value && pesel.value.length === 11) {
     if (!local.value.guardianFirstName?.trim()) errors.guardianFirstName = 'Podaj imię opiekuna.'
     if (!local.value.guardianLastName?.trim())  errors.guardianLastName  = 'Podaj nazwisko opiekuna.'
     if (!local.value.guardianRelation)          errors.guardianRelation  = 'Wybierz relację.'
-    if (!local.value.guardianEmail?.trim())     errors.guardianEmail     = 'Podaj e-mail opiekuna.'
-    if (!local.value.guardianPhone?.trim())     errors.guardianPhone     = 'Podaj telefon opiekuna.'
+    if (!local.value.guardianEmail?.trim()) {
+      errors.guardianEmail = 'Podaj e-mail opiekuna.'
+    } else if (!validateEmail(local.value.guardianEmail)) {
+      errors.guardianEmail = 'Podaj prawidłowy adres e-mail opiekuna.'
+    }
+    if (!validatePhone(local.value.guardianPhone)) {
+      errors.guardianPhone = 'Podaj prawidłowy numer telefonu opiekuna (9 cyfr).'
+    }
   }
 
   if (isAdult.value && pesel.value.length === 11) {
     if (!local.value.iceFirstName?.trim()) errors.iceFirstName = 'Podaj imię osoby ICE.'
     if (!local.value.iceLastName?.trim())  errors.iceLastName  = 'Podaj nazwisko osoby ICE.'
     if (!local.value.iceRelation)          errors.iceRelation  = 'Wybierz relację.'
-    if (!local.value.icePhone?.trim())     errors.icePhone     = 'Podaj telefon osoby ICE.'
+    if (!validatePhone(local.value.icePhone)) {
+      errors.icePhone = 'Podaj prawidłowy numer telefonu osoby ICE (9 cyfr).'
+    }
   }
 
   if (!local.value.street?.trim())      errors.street      = 'Podaj ulicę.'
   if (!local.value.houseNumber?.trim()) errors.houseNumber = 'Podaj numer domu.'
-  if (!local.value.postalCode?.trim())  errors.postalCode  = 'Podaj kod pocztowy.'
+  if (!local.value.postalCode?.trim()) {
+    errors.postalCode = 'Podaj kod pocztowy.'
+  } else if (!validatePostalCode(local.value.postalCode)) {
+    errors.postalCode = 'Podaj prawidłowy kod pocztowy (format: XX-XXX).'
+  }
   if (!local.value.city?.trim())        errors.city        = 'Podaj miejscowość.'
 
   return Object.keys(errors).length === 0
