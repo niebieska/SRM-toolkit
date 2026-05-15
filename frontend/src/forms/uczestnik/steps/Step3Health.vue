@@ -8,6 +8,8 @@
         :question="q1Text"
         detailLabel="Nazwy leków i dawki:"
         :multiline="true"
+        :answerError="errors.q1Answer"
+        :detailError="errors.q1Detail"
         @update:answer="local.health.q1.answer = $event"
         @update:detail="local.health.q1.detail = $event"
       />
@@ -16,6 +18,8 @@
         :question="q2Text"
         detailLabel="Jaką chorobą?"
         :multiline="false"
+        :answerError="errors.q2Answer"
+        :detailError="errors.q2Detail"
         @update:answer="local.health.q2.answer = $event"
         @update:detail="local.health.q2.detail = $event"
       />
@@ -24,6 +28,8 @@
         :question="q3Text"
         detailLabel="Szczegóły:"
         :multiline="true"
+        :answerError="errors.q3Answer"
+        :detailError="errors.q3Detail"
         @update:answer="local.health.q3.answer = $event"
         @update:detail="local.health.q3.detail = $event"
       />
@@ -32,6 +38,8 @@
         :question="q4Text"
         detailLabel="Leki, pokarmy lub inne alergeny:"
         :multiline="true"
+        :answerError="errors.q4Answer"
+        :detailError="errors.q4Detail"
         @update:answer="local.health.q4.answer = $event"
         @update:detail="local.health.q4.detail = $event"
       />
@@ -40,6 +48,8 @@
         :question="q5Text"
         detailLabel="Proszę wpisać szczepienia (nazwa, rok):"
         :multiline="true"
+        :answerError="errors.q5Answer"
+        :detailError="errors.q5Detail"
         @update:answer="local.health.q5.answer = $event"
         @update:detail="local.health.q5.detail = $event"
       />
@@ -48,6 +58,8 @@
         :question="q6Text"
         detailLabel="Proszę opisać:"
         :multiline="true"
+        :answerError="errors.q6Answer"
+        :detailError="errors.q6Detail"
         @update:answer="local.health.q6.answer = $event"
         @update:detail="local.health.q6.detail = $event"
       />
@@ -74,7 +86,7 @@
 </template>
 
 <script setup>
-import { ref, computed } from 'vue'
+import { ref, computed, reactive } from 'vue'
 import HealthQuestion from '../../../components/HealthQuestion.vue'
 
 const props = defineProps({
@@ -107,12 +119,31 @@ const q4Text = computed(() => `Czy ${he.value} jest ${uczulony.value}?`)
 const q5Text = computed(() => `Czy ${he.value} jest ${zaszczepiony.value} (tężec, błonica lub inne)?`)
 const q6Text = computed(() => `Czy ${he.value} ma specjalne potrzeby edukacyjne lub inne ważne informacje, o których organizator powinien wiedzieć?`)
 
+const errors = reactive({})
+
+function validate() {
+  Object.keys(errors).forEach(k => delete errors[k])
+
+  const questions = ['q1', 'q2', 'q3', 'q4', 'q5', 'q6']
+  questions.forEach((q) => {
+    const item = local.value.health[q]
+    if (!item?.answer) {
+      errors[`${q}Answer`] = 'To pole jest wymagane.'
+    } else if (item.answer === 'tak' && !item.detail?.trim()) {
+      errors[`${q}Detail`] = 'Proszę podać szczegóły.'
+    }
+  })
+
+  return Object.keys(errors).length === 0
+}
+
 function goPrev() {
   emit('update:formData', { ...local.value })
   emit('prev')
 }
 
 function goNext() {
+  if (!validate()) return
   emit('update:formData', { ...local.value })
   emit('next')
 }

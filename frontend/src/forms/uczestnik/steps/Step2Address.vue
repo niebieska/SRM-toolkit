@@ -20,7 +20,7 @@
       <div class="grid grid-cols-2 gap-4">
         <div>
           <label class="block text-sm font-medium text-gray-700 mb-1">Kod pocztowy *</label>
-          <input v-model="local.postalCode" type="text" placeholder="00-000" :class="fieldClass('postalCode')" />
+          <input v-model="local.postalCode" type="text" placeholder="00-000" :class="fieldClass('postalCode')" @input="onPostalCodeInput('postalCode')" />
           <p v-if="errors.postalCode" class="text-red-500 text-xs mt-1">{{ errors.postalCode }}</p>
         </div>
         <div>
@@ -55,7 +55,7 @@
         <div class="grid grid-cols-2 gap-4">
           <div>
             <label class="block text-sm font-medium text-gray-700 mb-1">Kod pocztowy *</label>
-            <input v-model="local.parentPostalCode" type="text" placeholder="00-000" :class="fieldClass('parentPostalCode')" />
+            <input v-model="local.parentPostalCode" type="text" placeholder="00-000" :class="fieldClass('parentPostalCode')" @input="onPostalCodeInput('parentPostalCode')" />
             <p v-if="errors.parentPostalCode" class="text-red-500 text-xs mt-1">{{ errors.parentPostalCode }}</p>
           </div>
           <div>
@@ -80,6 +80,7 @@
 
 <script setup>
 import { ref, reactive } from 'vue'
+import { validatePostalCode } from '../../../utils/validators.js'
 
 const props = defineProps({
   formData: { type: Object, required: true },
@@ -97,18 +98,37 @@ function fieldClass(field) {
     : `${base} border-gray-300 focus:ring-gray-400`
 }
 
+function formatPostalCode(val) {
+  // Keep only digits (max 5), insert dash after first 2 digits
+  const digits = val.replace(/\D/g, '').slice(0, 5)
+  if (digits.length > 2) return digits.slice(0, 2) + '-' + digits.slice(2)
+  return digits
+}
+
+function onPostalCodeInput(field) {
+  local.value[field] = formatPostalCode(local.value[field] || '')
+}
+
 function validate() {
   Object.keys(errors).forEach(k => delete errors[k])
 
   if (!local.value.street?.trim())      errors.street      = 'Podaj ulicę.'
   if (!local.value.houseNumber?.trim()) errors.houseNumber = 'Podaj numer domu.'
-  if (!local.value.postalCode?.trim())  errors.postalCode  = 'Podaj kod pocztowy.'
+  if (!local.value.postalCode?.trim()) {
+    errors.postalCode = 'Podaj kod pocztowy.'
+  } else if (!validatePostalCode(local.value.postalCode)) {
+    errors.postalCode = 'Podaj prawidłowy kod pocztowy (format: XX-XXX).'
+  }
   if (!local.value.city?.trim())        errors.city        = 'Podaj miejscowość.'
 
   if (!props.isAdult && !local.value.sameAddress) {
     if (!local.value.parentStreet?.trim())      errors.parentStreet      = 'Podaj ulicę rodziców.'
     if (!local.value.parentHouseNumber?.trim()) errors.parentHouseNumber = 'Podaj numer domu rodziców.'
-    if (!local.value.parentPostalCode?.trim())  errors.parentPostalCode  = 'Podaj kod pocztowy rodziców.'
+    if (!local.value.parentPostalCode?.trim()) {
+      errors.parentPostalCode = 'Podaj kod pocztowy rodziców.'
+    } else if (!validatePostalCode(local.value.parentPostalCode)) {
+      errors.parentPostalCode = 'Podaj prawidłowy kod pocztowy (format: XX-XXX).'
+    }
     if (!local.value.parentCity?.trim())        errors.parentCity        = 'Podaj miejscowość rodziców.'
   }
 

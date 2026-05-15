@@ -25,20 +25,22 @@
         <span>Nie</span>
       </label>
     </div>
+    <p v-if="answerError" class="text-red-500 text-xs mt-1 mb-2">{{ answerError }}</p>
     <div v-if="answer === 'tak'" class="mt-2">
       <label class="block text-sm font-medium text-gray-700 mb-1">{{ detailLabel }}</label>
       <textarea
         v-if="multiline"
         v-model="detail"
         rows="3"
-        class="w-full border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-gray-400"
+        :class="['w-full border rounded px-3 py-2 text-sm focus:outline-none focus:ring-2', detailError ? 'border-red-500 focus:ring-red-400' : 'border-gray-300 focus:ring-gray-400']"
       ></textarea>
       <input
         v-else
         type="text"
         v-model="detail"
-        class="w-full border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-gray-400"
+        :class="['w-full border rounded px-3 py-2 text-sm focus:outline-none focus:ring-2', detailError ? 'border-red-500 focus:ring-red-400' : 'border-gray-300 focus:ring-gray-400']"
       />
+      <p v-if="detailError" class="text-red-500 text-xs mt-1">{{ detailError }}</p>
     </div>
   </div>
 </template>
@@ -51,6 +53,8 @@ const props = defineProps({
   question: { type: String, required: true },
   detailLabel: { type: String, default: 'Szczegóły' },
   multiline: { type: Boolean, default: true },
+  answerError: { type: String, default: '' },
+  detailError: { type: String, default: '' },
 })
 
 const emit = defineEmits(['update:answer', 'update:detail'])
