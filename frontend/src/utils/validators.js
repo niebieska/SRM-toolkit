@@ -22,11 +22,14 @@ export function validateEmail(value) {
  */
 export function validatePhone(value) {
   if (!value) return false
-  let v = value.trim()
-  if (v.startsWith('+')) v = v.slice(1)
-  v = v.replace(/[\s\-]/g, '')
+  const raw = value.trim()
+  const hadPlus = raw.startsWith('+')
+  let v = hadPlus ? raw.slice(1) : raw
+  v = v.replace(/[\s-]/g, '')
   if (!/^\d+$/.test(v)) return false
-  return v.length >= 9
+  if (!hadPlus) return /^\d{9}$/.test(v)
+  if (v.length <= 9) return false
+  return /^\d{9}$/.test(v.slice(-9))
 }
 
 /**
