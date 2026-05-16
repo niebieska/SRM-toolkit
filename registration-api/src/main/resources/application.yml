@@ -1,0 +1,14 @@
+spring:
+  application:
+    name: registration-api
+  config:
+    import: "classpath:data/turnuses.yml"
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,env
+  endpoint:
+    health:
+      show-details: always

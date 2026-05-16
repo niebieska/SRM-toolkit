@@ -21,6 +21,7 @@ public record Turnus(
         LocalDate endDate,
 
         Integer minAge,
+        Integer maxAge,
         Integer capacity,
 
         boolean active,

@@ -1,0 +1,29 @@
+srm:
+  turnuses:
+    - turnus-code: ZAGLE26T1
+      turnus-name: "Żagle 2026 – Turnus I"
+      turnus-description: "Turnus żeglarski dla młodzieży 14+ nad Jeziorem Rajgrodzkim."
+      turnus-location: "Baza harcerska „Orle Gniazdo\" w Opartowie."
+      season-type: SUMMER
+      season-year: 2026
+      start-date: "2026-08-01"
+      end-date: "2026-08-11"
+      min-age: 14
+      max-age: 18
+      capacity: 60
+      active: true
+      registration-open: true
+
+    - turnus-code: ZAGLE26T2
+      turnus-name: "Żagle 2026 – Turnus II"
+      turnus-description: "Turnus żeglarski dla młodzieży 16+ nad Jeziorem Rajgrodzkim."
+      turnus-location: "Baza harcerska „Orle Gniazdo\" w Opartowie."
+      season-type: SUMMER
+      season-year: 2026
+      start-date: "2026-08-11"
+      end-date: "2026-08-22"
+      min-age: 16
+      max-age: 25
+      capacity: 60
+      active: true
+      registration-open: true
