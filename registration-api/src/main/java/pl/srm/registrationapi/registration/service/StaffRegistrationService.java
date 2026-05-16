@@ -6,7 +6,8 @@ import pl.srm.registrationapi.registration.common.RegistrationContext;
 import pl.srm.registrationapi.registration.common.RegistrationParser;
 import pl.srm.registrationapi.registration.common.TurnusValidator;
 import pl.srm.registrationapi.registration.domain.Registration;
-import pl.srm.registrationapi.registration.repository.StaffRegistrationRepository;
+import pl.srm.registrationapi.registration.exception.RegistrationException;
+import pl.srm.registrationapi.registration.repository.RegistrationRepository;
 import pl.srm.registrationapi.turnus.domain.Turnus;
 import pl.srm.registrationapi.turnus.service.TurnusProvider;
 
@@ -16,60 +17,97 @@ import java.util.List;
 @Service
 public class StaffRegistrationService implements RegistrationService {
 
+    private static final String TYPE = "STAFF";
+
     private final RegistrationParser parser;
     private final TurnusProvider turnusProvider;
     private final TurnusValidator turnusValidator;
-    private final StaffRegistrationRepository repository;
+    private final PeselUtils peselUtils;
+    private final RegistrationRepository repository;
     private final RegistrationCodeGenerator codeGenerator;
 
     public StaffRegistrationService(RegistrationParser parser,
                                     TurnusProvider turnusProvider,
                                     TurnusValidator turnusValidator,
-                                    StaffRegistrationRepository repository,
+                                    PeselUtils peselUtils,
+                                    RegistrationRepository repository,
                                     RegistrationCodeGenerator codeGenerator) {
         this.parser = parser;
         this.turnusProvider = turnusProvider;
         this.turnusValidator = turnusValidator;
+        this.peselUtils = peselUtils;
         this.repository = repository;
         this.codeGenerator = codeGenerator;
     }
 
     @Override
     public String register(String payload) {
-        try {
-            RegistrationContext data = parser.parse(payload);
-            Turnus turnus = turnusProvider.getByCode(data.turnusCode());
-            turnusValidator.validate(turnus);
-            validateDuplicate(data);
-            return save(data, payload);
-        } catch (RuntimeException e) {
-            throw e;
-        } catch (Exception e) {
-            throw new RuntimeException("INVALID_REQUEST", e);
+        RegistrationContext data = parser.parse(payload);
+        Turnus turnus = turnusProvider.getByCode(data.turnusCode());
+        turnusValidator.validate(turnus);
+        validatePayload(data, turnus);
+        validateDuplicate(data);
+        return save(data, payload);
+    }
+
+    private void validatePayload(RegistrationContext data, Turnus turnus) {
+        validatePesel(data);
+        validateGuardian(data);
+        validateConsents(data);
+        validateAge(data, turnus);
+    }
+
+    private void validatePesel(RegistrationContext data) {
+        if (!peselUtils.isValid(data.pesel())) {
+            throw new RegistrationException("INVALID_PESEL", "Podany numer PESEL jest nieprawidłowy.");
+        }
+    }
+
+    private void validateGuardian(RegistrationContext data) {
+        if (data.isMinor() && !data.hasGuardian()) {
+            throw new RegistrationException("MISSING_GUARDIAN", "Dla osoby niepełnoletniej wymagane są dane opiekuna.");
+        }
+    }
+
+    private void validateConsents(RegistrationContext data) {
+        if (!data.hasConsent1()) {
+            throw new RegistrationException("MISSING_CONSENTS", "Wymagana jest zgoda na przetwarzanie danych osobowych.");
+        }
+    }
+
+    private void validateAge(RegistrationContext data, Turnus turnus) {
+        int age = peselUtils.calculateAge(data.pesel(), turnus.startDate());
+        if (age < turnus.minAge()) {
+            throw new RegistrationException("AGE_TOO_LOW", "Osoba zgłaszana nie spełnia minimalnego wieku dla tego turnusu.");
         }
     }
 
     private void validateDuplicate(RegistrationContext data) {
-        if (repository.exists(data.turnusCode(), data.key())) {
-            throw new RuntimeException("ALREADY_REGISTERED");
+        if (repository.existsByTurnusCodeAndPeselHash(data.turnusCode(), data.key())) {
+            throw new RegistrationException("ALREADY_REGISTERED", "Ta osoba jest już zarejestrowana na ten turnus.");
         }
     }
 
     private String save(RegistrationContext data, String payload) {
-        int count = repository.countByTurnus(data.turnusCode());
-        String code = codeGenerator.generateParticipantCode(data.turnusCode(), count + 1);
+        int count = repository.countByTurnusCode(data.turnusCode());
+        String code = codeGenerator.generateStaffCode(data.turnusCode(), count + 1);
         repository.save(new Registration(
                 code,
+                TYPE,
                 data.turnusCode(),
                 data.key(),
+                data.isMinor(),
                 "NEW",
+                null,
+                payload,
                 LocalDateTime.now(),
-                payload
+                null
         ));
         return code;
     }
 
+    @Override
     public List<Registration> getAll() {
-        return repository.findAll();
+        return repository.findByRegistrationType(TYPE);
     }
 }
