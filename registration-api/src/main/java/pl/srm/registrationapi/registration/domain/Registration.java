@@ -1,5 +1,6 @@
 package pl.srm.registrationapi.registration.domain;
 
+import com.fasterxml.jackson.annotation.JsonRawValue;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.GeneratedValue;
@@ -136,6 +137,7 @@ public class Registration {
         this.rejectionReason = rejectionReason;
     }
 
+    @JsonRawValue
     public String getPayload() {
         return payload;
     }
