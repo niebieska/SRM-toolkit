@@ -2,62 +2,82 @@ package pl.srm.registrationapi.registration.service;
 
 import org.springframework.stereotype.Component;
 
-import java.nio.charset.StandardCharsets;
-import java.security.MessageDigest;
-import java.util.Base64;
+import java.time.LocalDate;
+import java.time.Period;
 
 @Component
-    public class PeselUtils {
+public class PeselUtils {
+
+    private static final int[] PESEL_WEIGHTS = {1, 3, 7, 9, 1, 3, 7, 9, 1, 3, 1};
 
     public int calculateAge(String pesel) {
-
-        int birthYear = extractBirthYear(pesel);
-
-        int currentYear = 2026; // later → LocalDate.now()
-
-        return currentYear - birthYear;
+        return calculateAge(pesel, LocalDate.now());
     }
 
+    public int calculateAge(String pesel, LocalDate referenceDate) {
+        return Period.between(extractBirthDate(pesel), referenceDate).getYears();
+    }
 
-    public String determineGender(String pesel) {
+    public boolean isMinor(String pesel, LocalDate referenceDate) {
+        if (!canExtractBirthDate(pesel)) {
+            return false;
+        }
+        return calculateAge(pesel, referenceDate) < 18;
+    }
 
-        int genderDigit = Character.getNumericValue(pesel.charAt(9));
+    public boolean isValid(String pesel) {
+        if (pesel == null || !pesel.matches("\\d{11}")) {
+            return false;
+        }
 
-        if (genderDigit % 2 == 0) {
-            return "FEMALE";
-        } else {
-            return "MALE";
+        if (!canExtractBirthDate(pesel)) {
+            return false;
+        }
+
+        int sum = 0;
+        for (int i = 0; i < PESEL_WEIGHTS.length; i++) {
+            sum += Character.getNumericValue(pesel.charAt(i)) * PESEL_WEIGHTS[i];
+        }
+        return sum % 10 == 0;
+    }
+
+    private boolean canExtractBirthDate(String pesel) {
+        try {
+            extractBirthDate(pesel);
+            return true;
+        } catch (RuntimeException ex) {
+            return false;
         }
     }
 
-    private int extractBirthYear(String pesel) {
+    private LocalDate extractBirthDate(String pesel) {
+        if (pesel == null || pesel.length() < 6) {
+            throw new IllegalArgumentException("PESEL musi mieć 11 cyfr.");
+        }
 
         int year = Integer.parseInt(pesel.substring(0, 2));
         int month = Integer.parseInt(pesel.substring(2, 4));
+        int day = Integer.parseInt(pesel.substring(4, 6));
 
-        if (month > 20) {
-            year += 2000;
+        int century;
+        if (month >= 1 && month <= 12) {
+            century = 1900;
+        } else if (month >= 21 && month <= 32) {
+            century = 2000;
+            month -= 20;
+        } else if (month >= 41 && month <= 52) {
+            century = 2100;
+            month -= 40;
+        } else if (month >= 61 && month <= 72) {
+            century = 2200;
+            month -= 60;
+        } else if (month >= 81 && month <= 92) {
+            century = 1800;
+            month -= 80;
         } else {
-            year += 1900;
+            throw new IllegalArgumentException("Nieprawidłowy miesiąc w numerze PESEL.");
         }
 
-        return year;
-    }
-
-    public String hashPesel(String pesel) {
-
-        try {
-
-            MessageDigest digest = MessageDigest.getInstance("SHA-256");
-
-            byte[] hash = digest.digest(pesel.getBytes(StandardCharsets.UTF_8));
-
-            return Base64.getEncoder().encodeToString(hash);
-
-        } catch (Exception e) {
-            throw new RuntimeException("HASHING_ERROR", e);
-        }
-
+        return LocalDate.of(century + year, month, day);
     }
 }
-

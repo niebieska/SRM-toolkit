@@ -1,9 +1,16 @@
 package pl.srm.registrationapi.registration.api;
 
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PatchMapping;
+import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
+import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RestController;
 import pl.srm.registrationapi.registration.domain.Registration;
 import pl.srm.registrationapi.registration.service.ParticipantRegistrationService;
+import pl.srm.registrationapi.registration.service.RegistrationManagementService;
 import pl.srm.registrationapi.registration.service.StaffRegistrationService;
 
 import java.util.List;
@@ -14,11 +21,14 @@ public class RegistrationController {
 
     private final ParticipantRegistrationService participantService;
     private final StaffRegistrationService staffService;
+    private final RegistrationManagementService managementService;
 
     public RegistrationController(ParticipantRegistrationService participantService,
-                                  StaffRegistrationService staffService) {
+                                  StaffRegistrationService staffService,
+                                  RegistrationManagementService managementService) {
         this.participantService = participantService;
         this.staffService = staffService;
+        this.managementService = managementService;
     }
 
     @PostMapping("/participant")
@@ -31,6 +41,17 @@ public class RegistrationController {
     public ResponseEntity<RegistrationResponse> registerStaff(@RequestBody String payload) {
         String code = staffService.register(payload);
         return ResponseEntity.ok(new RegistrationResponse(code));
+    }
+
+    @GetMapping("/{code}")
+    public RegistrationSummaryResponse getRegistration(@PathVariable String code) {
+        return managementService.getByCode(code);
+    }
+
+    @PatchMapping("/{code}/status")
+    public RegistrationSummaryResponse updateStatus(@PathVariable String code,
+                                                    @RequestBody StatusUpdateRequest request) {
+        return managementService.updateStatus(code, request);
     }
 
     @GetMapping("/participant")

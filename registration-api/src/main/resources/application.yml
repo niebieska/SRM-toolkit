@@ -1,0 +1,24 @@
+spring:
+  application:
+    name: registration-api
+  datasource:
+    url: ${DB_URL:jdbc:mariadb://localhost:3306/srm}
+    username: ${DB_USER:srm}
+    password: ${DB_PASSWORD:srm}
+    driver-class-name: org.mariadb.jdbc.Driver
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    show-sql: false
+  flyway:
+    enabled: true
+    locations: classpath:db/migration
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,env
+  endpoint:
+    health:
+      show-details: always
