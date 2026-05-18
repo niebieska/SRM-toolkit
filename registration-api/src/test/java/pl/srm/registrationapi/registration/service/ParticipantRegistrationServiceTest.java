@@ -44,7 +44,7 @@ class ParticipantRegistrationServiceTest {
     private ParticipantRegistrationService service;
 
     @BeforeEach
-    void setUp() throws Exception {
+    void setUp() {
         service = new ParticipantRegistrationService(
                 parser,
                 turnusProvider,
@@ -55,7 +55,6 @@ class ParticipantRegistrationServiceTest {
                 objectMapper,
                 emailServiceClient
         );
-        lenient().when(objectMapper.readTree(anyString())).thenReturn(new ObjectMapper().createObjectNode());
     }
 
     @Test
