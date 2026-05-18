@@ -126,9 +126,11 @@ public class StaffRegistrationService implements RegistrationService {
             String to = person.path("email").asText("").trim();
             String firstName = person.path("firstName").asText("").trim();
             String lastName = person.path("lastName").asText("").trim();
-            String recipientName = (firstName + " " + lastName).trim();
-            if (recipientName.isBlank()) {
+            String staffName = (firstName + " " + lastName).trim();
+            String recipientName = staffName;
+            if (staffName.isBlank()) {
                 recipientName = "Kadro";
+                staffName = "Nieznana kadra";
             }
 
             emailServiceClient.sendRegistrationConfirmation(to, recipientName, registrationCode, TYPE, turnusCode);
@@ -136,7 +138,7 @@ public class StaffRegistrationService implements RegistrationService {
                     registrationCode,
                     TYPE,
                     turnusCode,
-                    recipientName
+                    staffName
             );
         } catch (Exception exception) {
             LOGGER.error("Failed to prepare registration confirmation email for {}", registrationCode, exception);
