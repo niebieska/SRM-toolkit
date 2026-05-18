@@ -128,7 +128,7 @@ public class StaffRegistrationService implements RegistrationService {
             String lastName = person.path("lastName").asText("").trim();
             String recipientName = (firstName + " " + lastName).trim();
             if (recipientName.isBlank()) {
-                recipientName = "Uczestniku";
+                recipientName = "Kadro";
             }
 
             emailServiceClient.sendRegistrationConfirmation(to, recipientName, registrationCode, TYPE, turnusCode);
