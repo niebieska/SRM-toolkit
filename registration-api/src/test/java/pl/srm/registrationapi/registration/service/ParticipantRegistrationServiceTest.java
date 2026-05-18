@@ -77,7 +77,9 @@ class ParticipantRegistrationServiceTest {
                 new ObjectMapper().readTree("""
                         {
                           "person": {
-                            "email": "jan.kowalski@example.com",
+                            "contact": {
+                              "email": "jan.kowalski@example.com"
+                            },
                             "firstName": "Jan",
                             "lastName": "Kowalski"
                           }
@@ -125,12 +127,16 @@ class ParticipantRegistrationServiceTest {
                 new ObjectMapper().readTree("""
                         {
                           "person": {
-                            "email": "",
+                            "contact": {
+                              "email": ""
+                            },
                             "firstName": "Ania",
                             "lastName": "Nowak"
                           },
                           "guardian": {
-                            "email": "rodzic@example.com",
+                            "contact": {
+                              "email": "rodzic@example.com"
+                            },
                             "firstName": "Adam",
                             "lastName": "Nowak"
                           }

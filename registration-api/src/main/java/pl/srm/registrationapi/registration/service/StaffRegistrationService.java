@@ -123,7 +123,7 @@ public class StaffRegistrationService implements RegistrationService {
     private void sendRegistrationConfirmation(String payload, String turnusCode, String registrationCode) {
         try {
             JsonNode person = objectMapper.readTree(payload).path("person");
-            String to = person.path("email").asText("").trim();
+            String to = person.path("contact").path("email").asText("").trim();
             String firstName = person.path("firstName").asText("").trim();
             String lastName = person.path("lastName").asText("").trim();
             String staffName = (firstName + " " + lastName).trim();
