@@ -66,7 +66,7 @@ export function buildParticipantPayload(f) {
       postalCode: f.postalCode,
       city: f.city,
       sameAddress: f.sameAddress,
-      parentAddress: f.sameAddress ? null : {
+      guardianAddress: f.sameAddress ? null : {
         street: f.parentStreet,
         houseNumber: f.parentHouseNumber,
         postalCode: f.parentPostalCode,
