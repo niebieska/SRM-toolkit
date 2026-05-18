@@ -2,9 +2,9 @@ spring:
   application:
     name: registration-api
   datasource:
-    url: ${DB_URL:jdbc:mariadb://localhost:3306/srm}
-    username: ${DB_USER:srm}
-    password: ${DB_PASSWORD:srm}
+    url: ${DB_URL:jdbc:mariadb://localhost:3306/registration_db}
+    username: ${DB_USER:registration_user}
+    password: ${DB_PASSWORD:strong_password}
     driver-class-name: org.mariadb.jdbc.Driver
   jpa:
     hibernate:
