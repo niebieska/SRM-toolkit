@@ -1,0 +1,30 @@
+<!DOCTYPE html>
+<html lang="pl" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8" />
+    <title>Aktualizacja statusu zgłoszenia</title>
+</head>
+<body style="font-family: Arial, sans-serif; color: #1d1d1d; line-height: 1.5;">
+<div style="max-width: 640px; margin: 0 auto; padding: 24px; border: 1px solid #e5e5e5; border-radius: 8px;">
+    <p>Drogi/Droga <strong th:text="${recipientName}">Uczestniku</strong>,</p>
+    <p>Informujemy o zmianie statusu Twojego zgłoszenia.</p>
+
+    <p>Kod zgłoszenia: <strong th:text="${registrationCode}">UCZ-2026-00042</strong></p>
+    <p>
+        Aktualny status:
+        <strong th:text="${status == 'ACCEPTED' ? 'Zaakceptowane' : (status == 'REJECTED' ? 'Odrzucone' : status)}">Zaakceptowane</strong>
+    </p>
+
+    <div th:if="${status == 'REJECTED' and rejectionReason != null and !#strings.isEmpty(rejectionReason)}"
+         style="margin: 20px 0; padding: 14px; border-left: 4px solid #c62828; background: #fff5f5;">
+        <p style="margin: 0 0 8px 0;"><strong>Powód odrzucenia:</strong></p>
+        <p style="margin: 0;" th:text="${rejectionReason}">Brak wymaganych dokumentów.</p>
+    </div>
+
+    <hr style="border: none; border-top: 1px solid #ececec; margin: 24px 0;" />
+    <p style="font-size: 12px; color: #6b6b6b; margin: 0;">
+        Kontakt: [tu wstaw dane kontaktowe organizatora]
+    </p>
+</div>
+</body>
+</html>

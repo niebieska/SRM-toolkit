@@ -22,3 +22,7 @@ management:
   endpoint:
     health:
       show-details: always
+
+email:
+  service:
+    url: ${EMAIL_SERVICE_URL:http://localhost:8082}

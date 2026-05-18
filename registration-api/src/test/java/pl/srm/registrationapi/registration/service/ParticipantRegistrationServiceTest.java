@@ -1,11 +1,13 @@
 package pl.srm.registrationapi.registration.service;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import pl.srm.registrationapi.email.EmailServiceClient;
 import pl.srm.registrationapi.registration.common.RegistrationCodeGenerator;
 import pl.srm.registrationapi.registration.common.RegistrationContext;
 import pl.srm.registrationapi.registration.common.RegistrationParser;
@@ -34,19 +36,26 @@ class ParticipantRegistrationServiceTest {
     private TurnusValidator turnusValidator;
     @Mock
     private RegistrationRepository repository;
+    @Mock
+    private ObjectMapper objectMapper;
+    @Mock
+    private EmailServiceClient emailServiceClient;
 
     private ParticipantRegistrationService service;
 
     @BeforeEach
-    void setUp() {
+    void setUp() throws Exception {
         service = new ParticipantRegistrationService(
                 parser,
                 turnusProvider,
                 turnusValidator,
                 new PeselUtils(),
                 new RegistrationCodeGenerator(),
-                repository
+                repository,
+                objectMapper,
+                emailServiceClient
         );
+        lenient().when(objectMapper.readTree(anyString())).thenReturn(new ObjectMapper().createObjectNode());
     }
 
     @Test
