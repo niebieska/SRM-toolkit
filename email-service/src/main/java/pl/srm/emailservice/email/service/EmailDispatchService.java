@@ -12,7 +12,8 @@ public class EmailDispatchService {
 
     private static final Map<String, String> SUBJECTS = Map.of(
             "registration-confirmation", "Potwierdzenie zgłoszenia rejestracyjnego",
-            "status-update", "Aktualizacja statusu Twojego zgłoszenia"
+            "status-update", "Aktualizacja statusu Twojego zgłoszenia",
+            "organizer-new-registration", "Nowe zgłoszenie rejestracyjne"
     );
 
     private final EmailSender emailSender;

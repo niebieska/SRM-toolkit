@@ -125,6 +125,7 @@ public class ParticipantRegistrationService implements RegistrationService {
         try {
             JsonNode root = objectMapper.readTree(payload);
             JsonNode recipient = data.isMinor() ? root.path("guardian") : root.path("person");
+            JsonNode participant = root.path("person");
             String to = recipient.path("email").asText("").trim();
             String firstName = recipient.path("firstName").asText("").trim();
             String lastName = recipient.path("lastName").asText("").trim();
@@ -132,6 +133,7 @@ public class ParticipantRegistrationService implements RegistrationService {
             if (recipientName.isBlank()) {
                 recipientName = "Uczestniku";
             }
+            String participantName = participantFullName(participant);
 
             emailServiceClient.sendRegistrationConfirmation(
                     to,
@@ -140,9 +142,22 @@ public class ParticipantRegistrationService implements RegistrationService {
                     TYPE,
                     data.turnusCode()
             );
+            emailServiceClient.sendOrganizerNewRegistrationNotification(
+                    registrationCode,
+                    TYPE,
+                    data.turnusCode(),
+                    participantName
+            );
         } catch (Exception exception) {
             LOGGER.error("Failed to prepare registration confirmation email for {}", registrationCode, exception);
         }
+    }
+
+    private String participantFullName(JsonNode participant) {
+        String firstName = participant.path("firstName").asText("").trim();
+        String lastName = participant.path("lastName").asText("").trim();
+        String participantName = (firstName + " " + lastName).trim();
+        return participantName.isBlank() ? "Nieznany uczestnik" : participantName;
     }
 
     @Override

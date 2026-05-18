@@ -132,6 +132,12 @@ public class StaffRegistrationService implements RegistrationService {
             }
 
             emailServiceClient.sendRegistrationConfirmation(to, recipientName, registrationCode, TYPE, turnusCode);
+            emailServiceClient.sendOrganizerNewRegistrationNotification(
+                    registrationCode,
+                    TYPE,
+                    turnusCode,
+                    recipientName
+            );
         } catch (Exception exception) {
             LOGGER.error("Failed to prepare registration confirmation email for {}", registrationCode, exception);
         }

@@ -51,4 +51,20 @@ class EmailDispatchServiceTest {
         assertThrows(IllegalArgumentException.class,
                 () -> emailDispatchService.sendEmail("jan.kowalski@example.com", "unknown", Map.of()));
     }
+
+    @Test
+    void organizerNotificationTemplateUsesOrganizerSubject() {
+        when(templateRenderer.render("organizer-new-registration", Map.of("registrationCode", "REG-P-1")))
+                .thenReturn("<html>ok</html>");
+
+        emailDispatchService.sendEmail(
+                "organizator@example.com",
+                "organizer-new-registration",
+                Map.of("registrationCode", "REG-P-1")
+        );
+
+        ArgumentCaptor<EmailMessage> captor = ArgumentCaptor.forClass(EmailMessage.class);
+        verify(emailSender).send(captor.capture());
+        assertEquals("Nowe zgłoszenie rejestracyjne", captor.getValue().subject());
+    }
 }
