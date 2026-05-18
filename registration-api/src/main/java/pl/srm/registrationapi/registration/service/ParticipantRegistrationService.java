@@ -126,7 +126,7 @@ public class ParticipantRegistrationService implements RegistrationService {
             JsonNode root = objectMapper.readTree(payload);
             JsonNode recipient = data.isMinor() ? root.path("guardian") : root.path("person");
             JsonNode participant = root.path("person");
-            String to = recipient.path("email").asText("").trim();
+            String to = recipient.path("contact").path("email").asText("").trim();
             String firstName = recipient.path("firstName").asText("").trim();
             String lastName = recipient.path("lastName").asText("").trim();
             String recipientName = (firstName + " " + lastName).trim();

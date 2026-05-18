@@ -45,7 +45,6 @@ public class SmtpEmailSender implements EmailSender {
             LOGGER.info("Email sent successfully to {}", message.to());
         } catch (Exception exception) {
             LOGGER.error("Failed to send email to {}", message.to(), exception);
-            throw new RuntimeException("Failed to send email.", exception);
         }
     }
 }

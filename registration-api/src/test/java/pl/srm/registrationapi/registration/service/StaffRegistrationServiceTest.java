@@ -65,7 +65,9 @@ class StaffRegistrationServiceTest {
                 new ObjectMapper().readTree("""
                         {
                           "person": {
-                            "email": "kadra@example.com",
+                            "contact": {
+                              "email": "kadra@example.com"
+                            },
                             "firstName": "Katarzyna",
                             "lastName": "Nowak"
                           }
