@@ -74,6 +74,17 @@ class ParticipantRegistrationServiceTest {
         when(turnusProvider.getByCode("ZAGLE26T1")).thenReturn(turnus());
         when(repository.countByTurnusCode("ZAGLE26T1")).thenReturn(2);
         when(repository.save(any(Registration.class))).thenAnswer(invocation -> invocation.getArgument(0));
+        when(objectMapper.readTree(anyString())).thenReturn(
+                new ObjectMapper().readTree("""
+                        {
+                          "person": {
+                            "email": "jan.kowalski@example.com",
+                            "firstName": "Jan",
+                            "lastName": "Kowalski"
+                          }
+                        }
+                        """)
+        );
 
         String code = service.register("{\"payload\":true}");
 
@@ -90,6 +101,13 @@ class ParticipantRegistrationServiceTest {
         assertFalse(saved.isMinor());
         assertNotNull(saved.getCreatedAt());
         assertNull(saved.getUpdatedAt());
+        verify(emailServiceClient).sendRegistrationConfirmation(
+                "jan.kowalski@example.com",
+                "Jan Kowalski",
+                "REG-P-ZAGLE26T1-3",
+                "PARTICIPANT",
+                "ZAGLE26T1"
+        );
     }
 
     private Turnus turnus() {
