@@ -1,0 +1,82 @@
+<!DOCTYPE html>
+<html lang="pl" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8" />
+    <title>Nowe zgłoszenie</title>
+</head>
+
+<body style="margin: 0; padding: 0; background-color: #f5f7fa; font-family: Arial, sans-serif; color: #1d1d1d;">
+
+<div style="max-width: 640px; margin: 24px auto; padding: 0 16px;">
+
+    <div style="background-color: #ffffff; padding: 20px 24px; border-radius: 10px; border: 1px solid #e5e7eb;">
+
+        <!-- Header -->
+        <h2 style="margin-top: 0; margin-bottom: 12px; font-size: 18px;">
+            Nowe zgłoszenie rejestracyjne
+        </h2>
+
+        <p style="margin: 0 0 12px;">
+            Dzień dobry,
+        </p>
+
+        <p style="margin: 0 0 16px;">
+            W systemie SRM pojawiło się nowe zgłoszenie.
+        </p>
+
+        <!-- Compact table -->
+        <table style="width: 100%; border-collapse: collapse; font-size: 13px;">
+            <tr>
+                <td style="padding: 4px 0; color: #6b7280;">Kod:</td>
+                <td style="padding: 4px 0; font-weight: bold;" th:text="${registrationCode}">
+                    REG-P-ZAGLE26T1-3
+                </td>
+            </tr>
+
+            <tr>
+                <td style="padding: 4px 0; color: #6b7280;">Rodzaj:</td>
+                <td style="padding: 4px 0; font-weight: bold;"
+                    th:text="${registrationType == 'STAFF' ? 'Kadra' : 'Uczestnik'}">
+                    Uczestnik
+                </td>
+            </tr>
+
+            <tr>
+                <td style="padding: 4px 0; color: #6b7280;">Turnus:</td>
+                <td style="padding: 4px 0; font-weight: bold;" th:text="${turnusCode}">
+                    ZAGLE26T1
+                </td>
+            </tr>
+
+            <tr>
+                <td style="padding: 4px 0; color: #6b7280;">Osoba:</td>
+                <td style="padding: 4px 0; font-weight: bold;" th:text="${participantName}">
+                    Jan Kowalski
+                </td>
+            </tr>
+        </table>
+
+        <!-- Button -->
+        <div style="margin-top: 20px; text-align: left;">
+            <a th:href="${registrationUrl}"
+               href="#"
+               style="display: inline-block; padding: 10px 16px; background-color: #2563eb; color: #ffffff; text-decoration: none; font-size: 14px; border-radius: 6px;">
+                Otwórz zgłoszenie
+            </a>
+        </div>
+
+        <!-- Divider -->
+        <hr style="border: none; border-top: 1px solid #e5e7eb; margin: 20px 0;" />
+
+        <!-- Footer -->
+        <p style="font-size: 12px; color: #9ca3af; margin: 0;">
+            Wiadomość wygenerowana automatycznie przez system SRM.<br />
+            Prosimy nie odpowiadać na tę wiadomość.
+        </p>
+
+    </div>
+
+</div>
+
+</body>
+</html>

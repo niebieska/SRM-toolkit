@@ -1,11 +1,13 @@
 package pl.srm.registrationapi.registration.service;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import pl.srm.registrationapi.email.EmailServiceClient;
 import pl.srm.registrationapi.registration.common.RegistrationCodeGenerator;
 import pl.srm.registrationapi.registration.common.RegistrationContext;
 import pl.srm.registrationapi.registration.common.RegistrationParser;
@@ -34,6 +36,10 @@ class ParticipantRegistrationServiceTest {
     private TurnusValidator turnusValidator;
     @Mock
     private RegistrationRepository repository;
+    @Mock
+    private ObjectMapper objectMapper;
+    @Mock
+    private EmailServiceClient emailServiceClient;
 
     private ParticipantRegistrationService service;
 
@@ -45,7 +51,9 @@ class ParticipantRegistrationServiceTest {
                 turnusValidator,
                 new PeselUtils(),
                 new RegistrationCodeGenerator(),
-                repository
+                repository,
+                objectMapper,
+                emailServiceClient
         );
     }
 
@@ -65,6 +73,19 @@ class ParticipantRegistrationServiceTest {
         when(turnusProvider.getByCode("ZAGLE26T1")).thenReturn(turnus());
         when(repository.countByTurnusCode("ZAGLE26T1")).thenReturn(2);
         when(repository.save(any(Registration.class))).thenAnswer(invocation -> invocation.getArgument(0));
+        when(objectMapper.readTree(anyString())).thenReturn(
+                new ObjectMapper().readTree("""
+                        {
+                          "person": {
+                            "contact": {
+                              "email": "jan.kowalski@example.com"
+                            },
+                            "firstName": "Jan",
+                            "lastName": "Kowalski"
+                          }
+                        }
+                        """)
+        );
 
         String code = service.register("{\"payload\":true}");
 
@@ -81,6 +102,64 @@ class ParticipantRegistrationServiceTest {
         assertFalse(saved.isMinor());
         assertNotNull(saved.getCreatedAt());
         assertNull(saved.getUpdatedAt());
+        verify(emailServiceClient).sendRegistrationConfirmation(
+                "jan.kowalski@example.com",
+                "Jan Kowalski",
+                "REG-P-ZAGLE26T1-3",
+                "PARTICIPANT",
+                "ZAGLE26T1"
+        );
+        verify(emailServiceClient).sendOrganizerNewRegistrationNotification(
+                "REG-P-ZAGLE26T1-3",
+                "PARTICIPANT",
+                "ZAGLE26T1",
+                "Jan Kowalski"
+        );
+    }
+
+    @Test
+    void sendsMinorConfirmationToGuardianAndOrganizerNotificationForParticipant() throws Exception {
+        when(parser.parse(any())).thenReturn(new RegistrationContext("ZAGLE26T1", "10210112312", "hash456", true, true, true));
+        when(turnusProvider.getByCode("ZAGLE26T1")).thenReturn(turnus());
+        when(repository.countByTurnusCode("ZAGLE26T1")).thenReturn(4);
+        when(repository.save(any(Registration.class))).thenAnswer(invocation -> invocation.getArgument(0));
+        when(objectMapper.readTree(anyString())).thenReturn(
+                new ObjectMapper().readTree("""
+                        {
+                          "person": {
+                            "contact": {
+                              "email": ""
+                            },
+                            "firstName": "Ania",
+                            "lastName": "Nowak"
+                          },
+                          "guardian": {
+                            "contact": {
+                              "email": "rodzic@example.com"
+                            },
+                            "firstName": "Adam",
+                            "lastName": "Nowak"
+                          }
+                        }
+                        """)
+        );
+
+        String code = service.register("{\"payload\":true}");
+
+        assertEquals("REG-P-ZAGLE26T1-5", code);
+        verify(emailServiceClient).sendRegistrationConfirmation(
+                "rodzic@example.com",
+                "Adam Nowak",
+                "REG-P-ZAGLE26T1-5",
+                "PARTICIPANT",
+                "ZAGLE26T1"
+        );
+        verify(emailServiceClient).sendOrganizerNewRegistrationNotification(
+                "REG-P-ZAGLE26T1-5",
+                "PARTICIPANT",
+                "ZAGLE26T1",
+                "Ania Nowak"
+        );
     }
 
     private Turnus turnus() {

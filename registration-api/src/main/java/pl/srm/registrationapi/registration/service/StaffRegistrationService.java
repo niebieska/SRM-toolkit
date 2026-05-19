@@ -1,6 +1,11 @@
 package pl.srm.registrationapi.registration.service;
 
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
+import pl.srm.registrationapi.email.EmailServiceClient;
 import pl.srm.registrationapi.registration.common.RegistrationCodeGenerator;
 import pl.srm.registrationapi.registration.common.RegistrationContext;
 import pl.srm.registrationapi.registration.common.RegistrationParser;
@@ -18,6 +23,7 @@ import java.util.List;
 public class StaffRegistrationService implements RegistrationService {
 
     private static final String TYPE = "STAFF";
+    private static final Logger LOGGER = LoggerFactory.getLogger(StaffRegistrationService.class);
 
     private final RegistrationParser parser;
     private final TurnusProvider turnusProvider;
@@ -25,19 +31,25 @@ public class StaffRegistrationService implements RegistrationService {
     private final PeselUtils peselUtils;
     private final RegistrationRepository repository;
     private final RegistrationCodeGenerator codeGenerator;
+    private final ObjectMapper objectMapper;
+    private final EmailServiceClient emailServiceClient;
 
     public StaffRegistrationService(RegistrationParser parser,
                                     TurnusProvider turnusProvider,
                                     TurnusValidator turnusValidator,
                                     PeselUtils peselUtils,
                                     RegistrationRepository repository,
-                                    RegistrationCodeGenerator codeGenerator) {
+                                    RegistrationCodeGenerator codeGenerator,
+                                    ObjectMapper objectMapper,
+                                    EmailServiceClient emailServiceClient) {
         this.parser = parser;
         this.turnusProvider = turnusProvider;
         this.turnusValidator = turnusValidator;
         this.peselUtils = peselUtils;
         this.repository = repository;
         this.codeGenerator = codeGenerator;
+        this.objectMapper = objectMapper;
+        this.emailServiceClient = emailServiceClient;
     }
 
     @Override
@@ -47,7 +59,9 @@ public class StaffRegistrationService implements RegistrationService {
         turnusValidator.validate(turnus);
         validatePayload(data, turnus);
         validateDuplicate(data);
-        return save(data, payload);
+        String code = save(data, payload);
+        sendRegistrationConfirmation(payload, data.turnusCode(), code);
+        return code;
     }
 
     private void validatePayload(RegistrationContext data, Turnus turnus) {
@@ -104,6 +118,31 @@ public class StaffRegistrationService implements RegistrationService {
                 null
         ));
         return code;
+    }
+
+    private void sendRegistrationConfirmation(String payload, String turnusCode, String registrationCode) {
+        try {
+            JsonNode person = objectMapper.readTree(payload).path("person");
+            String to = person.path("contact").path("email").asText("").trim();
+            String firstName = person.path("firstName").asText("").trim();
+            String lastName = person.path("lastName").asText("").trim();
+            String staffName = (firstName + " " + lastName).trim();
+            String recipientName = staffName;
+            if (staffName.isBlank()) {
+                recipientName = "Kadro";
+                staffName = "Nieznana kadra";
+            }
+
+            emailServiceClient.sendRegistrationConfirmation(to, recipientName, registrationCode, TYPE, turnusCode);
+            emailServiceClient.sendOrganizerNewRegistrationNotification(
+                    registrationCode,
+                    TYPE,
+                    turnusCode,
+                    staffName
+            );
+        } catch (Exception exception) {
+            LOGGER.error("Failed to prepare registration confirmation email for {}", registrationCode, exception);
+        }
     }
 
     @Override
