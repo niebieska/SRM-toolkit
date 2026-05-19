@@ -2,6 +2,28 @@ version: "3.9"
 
 services:
 
+  # ─── Database: MariaDB ────────────────────────────────────────────────────
+  mariadb:
+    image: mariadb:11
+    container_name: mariadb
+    ports:
+      - "3306:3306"
+    environment:
+      MYSQL_ROOT_PASSWORD: ${DB_ROOT_PASSWORD:-root_password}
+      MYSQL_DATABASE: registration_db
+      MYSQL_USER: ${DB_USER:-registration_user}
+      MYSQL_PASSWORD: ${DB_PASSWORD:-strong_password}
+    volumes:
+      - mariadb-data:/var/lib/mysql
+    networks:
+      - srm-net
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
   # ─── Backend: Registration API (port 8080) ────────────────────────────────
   registration-api:
     build:
@@ -13,6 +35,12 @@ services:
       - "8080:8080"
     environment:
       SPRING_PROFILES_ACTIVE: docker
+      DB_URL: jdbc:mariadb://mariadb:3306/registration_db
+      DB_USER: ${DB_USER:-registration_user}
+      DB_PASSWORD: ${DB_PASSWORD:-strong_password}
+    depends_on:
+      mariadb:
+        condition: service_healthy
     networks:
       - srm-net
     restart: unless-stopped
@@ -89,3 +117,6 @@ services:
 networks:
   srm-net:
     driver: bridge
+
+volumes:
+  mariadb-data:
