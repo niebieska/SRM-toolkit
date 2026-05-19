@@ -1,17 +1,18 @@
-package pl.srm.registrationapi.registration.api;
+package pl.srm.biuroapi.registration.model;
 
-import java.time.LocalDateTime;
+import java.util.Map;
 
-public record RegistrationSummaryResponse(
+public record RegistrationDetail(
         String registrationCode,
         String registrationType,
         String turnusCode,
         boolean minor,
         String status,
         String rejectionReason,
-        LocalDateTime createdAt,
+        String createdAt,
         String firstName,
         String lastName,
-        Integer age
+        Integer age,
+        Map<String, Object> payload
 ) {
 }

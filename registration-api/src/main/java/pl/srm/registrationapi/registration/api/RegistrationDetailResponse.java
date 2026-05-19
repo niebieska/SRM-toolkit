@@ -1,8 +1,10 @@
 package pl.srm.registrationapi.registration.api;
 
+import com.fasterxml.jackson.annotation.JsonRawValue;
+
 import java.time.LocalDateTime;
 
-public record RegistrationSummaryResponse(
+public record RegistrationDetailResponse(
         String registrationCode,
         String registrationType,
         String turnusCode,
@@ -12,6 +14,7 @@ public record RegistrationSummaryResponse(
         LocalDateTime createdAt,
         String firstName,
         String lastName,
-        Integer age
+        Integer age,
+        @JsonRawValue String payload
 ) {
 }

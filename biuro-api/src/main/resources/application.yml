@@ -1,0 +1,23 @@
+server:
+  port: ${BIURO_PORT:8081}
+
+biuro:
+  auth:
+    username: ${BIURO_USERNAME:biuro}
+    password: ${BIURO_PASSWORD:biuro123}
+  jwt:
+    secret: ${JWT_SECRET:changeme-very-long-secret-key-at-least-32-chars}
+    expiry-hours: 8
+
+registration:
+  api:
+    url: ${REGISTRATION_API_URL:http://localhost:8080}
+
+logging:
+  level:
+    pl.srm.biuroapi: DEBUG
+
+spring:
+  security:
+    user:
+      name: ignored

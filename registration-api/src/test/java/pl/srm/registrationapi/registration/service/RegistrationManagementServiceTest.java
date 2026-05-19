@@ -1,13 +1,17 @@
 package pl.srm.registrationapi.registration.service;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.Test;
 import pl.srm.registrationapi.registration.api.RegistrationSummaryResponse;
 import pl.srm.registrationapi.registration.api.StatusUpdateRequest;
 import pl.srm.registrationapi.registration.domain.Registration;
 import pl.srm.registrationapi.registration.exception.RegistrationException;
 import pl.srm.registrationapi.registration.repository.RegistrationRepository;
+import pl.srm.registrationapi.registration.service.PeselUtils;
+import org.springframework.data.domain.Sort;
 
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -16,7 +20,43 @@ import static org.mockito.Mockito.*;
 class RegistrationManagementServiceTest {
 
     private final RegistrationRepository repository = mock(RegistrationRepository.class);
-    private final RegistrationManagementService service = new RegistrationManagementService(repository);
+    private final RegistrationManagementService service = new RegistrationManagementService(
+            repository, new ObjectMapper(), new PeselUtils());
+
+    @Test
+    void returnsAllRegistrationsOrderedByCreatedAtDesc() {
+        Registration newer = new Registration(
+                "REG-S-ZAGLE26T1-2",
+                "STAFF",
+                "ZAGLE26T1",
+                "hash2",
+                false,
+                "NEW",
+                null,
+                "{}",
+                LocalDateTime.of(2026, 5, 2, 10, 0),
+                null
+        );
+        Registration older = new Registration(
+                "REG-P-ZAGLE26T1-1",
+                "PARTICIPANT",
+                "ZAGLE26T1",
+                "hash1",
+                true,
+                "NEW",
+                null,
+                "{}",
+                LocalDateTime.of(2026, 5, 1, 10, 0),
+                null
+        );
+        when(repository.findAll(Sort.by(Sort.Direction.DESC, "createdAt"))).thenReturn(List.of(newer, older));
+
+        List<RegistrationSummaryResponse> registrations = service.getAll();
+
+        assertEquals(2, registrations.size());
+        assertEquals("REG-S-ZAGLE26T1-2", registrations.getFirst().registrationCode());
+        assertEquals("REG-P-ZAGLE26T1-1", registrations.get(1).registrationCode());
+    }
 
     @Test
     void updatesStatusAndTimestamp() {
