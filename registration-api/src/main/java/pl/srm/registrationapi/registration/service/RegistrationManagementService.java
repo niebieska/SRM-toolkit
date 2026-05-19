@@ -1,6 +1,9 @@
 package pl.srm.registrationapi.registration.service;
 
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.stereotype.Service;
+import pl.srm.registrationapi.registration.api.RegistrationDetailResponse;
 import pl.srm.registrationapi.registration.api.RegistrationSummaryResponse;
 import pl.srm.registrationapi.registration.api.StatusUpdateRequest;
 import pl.srm.registrationapi.registration.domain.Registration;
@@ -18,13 +21,38 @@ public class RegistrationManagementService {
     private static final Set<String> ALLOWED_STATUSES = Set.of("ACCEPTED", "REJECTED");
 
     private final RegistrationRepository repository;
+    private final ObjectMapper objectMapper;
+    private final PeselUtils peselUtils;
 
-    public RegistrationManagementService(RegistrationRepository repository) {
+    public RegistrationManagementService(RegistrationRepository repository,
+                                         ObjectMapper objectMapper,
+                                         PeselUtils peselUtils) {
         this.repository = repository;
+        this.objectMapper = objectMapper;
+        this.peselUtils = peselUtils;
     }
 
     public RegistrationSummaryResponse getByCode(String code) {
         return toSummary(findByCode(code));
+    }
+
+    public RegistrationDetailResponse getDetailByCode(String code) {
+        Registration registration = findByCode(code);
+        RegistrationSummaryResponse summary = toSummary(registration);
+        JsonNode payloadNode = parsePayloadNode(registration.getPayload());
+        return new RegistrationDetailResponse(
+                summary.registrationCode(),
+                summary.registrationType(),
+                summary.turnusCode(),
+                summary.minor(),
+                summary.status(),
+                summary.rejectionReason(),
+                summary.createdAt(),
+                summary.firstName(),
+                summary.lastName(),
+                summary.age(),
+                payloadNode
+        );
     }
 
     public List<RegistrationSummaryResponse> getAll() {
@@ -53,6 +81,21 @@ public class RegistrationManagementService {
     }
 
     private RegistrationSummaryResponse toSummary(Registration registration) {
+        String firstName = null;
+        String lastName = null;
+        Integer age = null;
+        try {
+            JsonNode root = objectMapper.readTree(registration.getPayload());
+            JsonNode person = root.path("person");
+            firstName = person.path("firstName").textValue();
+            lastName = person.path("lastName").textValue();
+            String pesel = person.path("pesel").textValue();
+            if (pesel != null && !pesel.isBlank()) {
+                age = peselUtils.calculateAge(pesel);
+            }
+        } catch (Exception ignored) {
+            // leave fields null if payload cannot be parsed
+        }
         return new RegistrationSummaryResponse(
                 registration.getRegistrationCode(),
                 registration.getRegistrationType(),
@@ -60,8 +103,19 @@ public class RegistrationManagementService {
                 registration.isMinor(),
                 registration.getStatus(),
                 registration.getRejectionReason(),
-                registration.getCreatedAt()
+                registration.getCreatedAt(),
+                firstName,
+                lastName,
+                age
         );
+    }
+
+    private JsonNode parsePayloadNode(String payload) {
+        try {
+            return objectMapper.readTree(payload);
+        } catch (Exception e) {
+            return objectMapper.createObjectNode();
+        }
     }
 
     private String trimToNull(String value) {

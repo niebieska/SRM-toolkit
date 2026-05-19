@@ -1,11 +1,13 @@
 package pl.srm.registrationapi.registration.service;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.Test;
 import pl.srm.registrationapi.registration.api.RegistrationSummaryResponse;
 import pl.srm.registrationapi.registration.api.StatusUpdateRequest;
 import pl.srm.registrationapi.registration.domain.Registration;
 import pl.srm.registrationapi.registration.exception.RegistrationException;
 import pl.srm.registrationapi.registration.repository.RegistrationRepository;
+import pl.srm.registrationapi.registration.service.PeselUtils;
 import org.springframework.data.domain.Sort;
 
 import java.time.LocalDateTime;
@@ -18,7 +20,8 @@ import static org.mockito.Mockito.*;
 class RegistrationManagementServiceTest {
 
     private final RegistrationRepository repository = mock(RegistrationRepository.class);
-    private final RegistrationManagementService service = new RegistrationManagementService(repository);
+    private final RegistrationManagementService service = new RegistrationManagementService(
+            repository, new ObjectMapper(), new PeselUtils());
 
     @Test
     void returnsAllRegistrationsOrderedByCreatedAtDesc() {

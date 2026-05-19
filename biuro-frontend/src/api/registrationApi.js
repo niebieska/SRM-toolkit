@@ -36,3 +36,15 @@ export async function updateRegistrationStatus(token, code, payload) {
 
   return response.json()
 }
+
+export async function fetchRegistrationDetail(token, code) {
+  const response = await fetch(`http://localhost:8081/api/biuro/registrations/${code}`, {
+    headers: authHeaders(token),
+  })
+
+  if (!response.ok) {
+    throw new Error('FETCH_FAILED')
+  }
+
+  return response.json()
+}

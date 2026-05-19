@@ -44,8 +44,8 @@ public class RegistrationController {
     }
 
     @GetMapping("/{code}")
-    public RegistrationSummaryResponse getRegistration(@PathVariable String code) {
-        return managementService.getByCode(code);
+    public RegistrationDetailResponse getRegistration(@PathVariable String code) {
+        return managementService.getDetailByCode(code);
     }
 
     @GetMapping

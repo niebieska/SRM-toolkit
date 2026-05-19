@@ -11,6 +11,7 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.server.ResponseStatusException;
 import pl.srm.biuroapi.registration.client.RegistrationApiClient;
+import pl.srm.biuroapi.registration.model.RegistrationDetail;
 import pl.srm.biuroapi.registration.model.RegistrationSummary;
 
 import java.util.List;
@@ -35,6 +36,11 @@ public class BiuroRegistrationController {
                 .filter(registration -> matches(registrationType, registration.registrationType()))
                 .filter(registration -> matches(turnusCode, registration.turnusCode()))
                 .toList();
+    }
+
+    @GetMapping("/{code}")
+    public RegistrationDetail getRegistration(@PathVariable String code) {
+        return registrationApiClient.fetchRegistration(code);
     }
 
     @PatchMapping("/{code}/status")

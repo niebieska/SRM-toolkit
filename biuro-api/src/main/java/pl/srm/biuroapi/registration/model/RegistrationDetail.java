@@ -1,6 +1,6 @@
 package pl.srm.biuroapi.registration.model;
 
-public record RegistrationSummary(
+public record RegistrationDetail(
         String registrationCode,
         String registrationType,
         String turnusCode,
@@ -10,6 +10,7 @@ public record RegistrationSummary(
         String createdAt,
         String firstName,
         String lastName,
-        Integer age
+        Integer age,
+        Object payload
 ) {
 }
