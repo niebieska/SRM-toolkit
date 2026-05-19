@@ -1,0 +1,20 @@
+server:
+  port: ${EMAIL_SERVICE_PORT:8082}
+
+spring:
+  mail:
+    host: ${MAIL_HOST:localhost}
+    port: ${MAIL_PORT:1025}
+    username: ${MAIL_USER:}
+    password: ${MAIL_PASSWORD:}
+    properties:
+      mail.smtp.auth: ${MAIL_SMTP_AUTH:false}
+      mail.smtp.starttls.enable: ${MAIL_STARTTLS:false}
+
+email:
+  from: ${MAIL_FROM:noreply@srm.pl}
+  enabled: ${MAIL_ENABLED:true}
+
+logging:
+  level:
+    pl.srm.emailservice: DEBUG

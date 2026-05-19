@@ -8,6 +8,8 @@
         :question="q1Text"
         detailLabel="Nazwy leków i dawki:"
         :multiline="true"
+        :answerError="errors.q1Answer"
+        :detailError="errors.q1Detail"
         @update:answer="local.health.q1.answer = $event"
         @update:detail="local.health.q1.detail = $event"
       />
@@ -16,6 +18,8 @@
         :question="q2Text"
         detailLabel="Jaką chorobą?"
         :multiline="false"
+        :answerError="errors.q2Answer"
+        :detailError="errors.q2Detail"
         @update:answer="local.health.q2.answer = $event"
         @update:detail="local.health.q2.detail = $event"
       />
@@ -24,6 +28,8 @@
         :question="q3Text"
         detailLabel="Szczegóły:"
         :multiline="true"
+        :answerError="errors.q3Answer"
+        :detailError="errors.q3Detail"
         @update:answer="local.health.q3.answer = $event"
         @update:detail="local.health.q3.detail = $event"
       />
@@ -32,8 +38,30 @@
         :question="q4Text"
         detailLabel="Leki, pokarmy lub inne alergeny:"
         :multiline="true"
+        :answerError="errors.q4Answer"
+        :detailError="errors.q4Detail"
         @update:answer="local.health.q4.answer = $event"
         @update:detail="local.health.q4.detail = $event"
+      />
+      <HealthQuestion
+        :number="5"
+        :question="q5Text"
+        detailLabel="Proszę wpisać szczepienia (nazwa, rok):"
+        :multiline="true"
+        :answerError="errors.q5Answer"
+        :detailError="errors.q5Detail"
+        @update:answer="local.health.q5.answer = $event"
+        @update:detail="local.health.q5.detail = $event"
+      />
+      <HealthQuestion
+        :number="6"
+        :question="q6Text"
+        detailLabel="Proszę opisać:"
+        :multiline="true"
+        :answerError="errors.q6Answer"
+        :detailError="errors.q6Detail"
+        @update:answer="local.health.q6.answer = $event"
+        @update:detail="local.health.q6.detail = $event"
       />
     </div>
 
@@ -58,7 +86,7 @@
 </template>
 
 <script setup>
-import { ref, computed } from 'vue'
+import { ref, computed, reactive } from 'vue'
 import HealthQuestion from '../../../components/HealthQuestion.vue'
 
 const props = defineProps({
@@ -74,31 +102,40 @@ const local = ref({
     q2: { ...props.formData.health?.q2 },
     q3: { ...props.formData.health?.q3 },
     q4: { ...props.formData.health?.q4 },
+    q5: { ...props.formData.health?.q5 },
+    q6: { ...props.formData.health?.q6 },
   },
 })
 
-const participantSuffix = computed(() => {
-  if (props.gender === 'male') return 'uczestnik'
-  if (props.gender === 'female') return 'uczestniczka'
-  return 'uczestnik/uczestniczka'
-})
+const he    = computed(() => props.gender === 'female' ? 'uczestniczka' : 'uczestnik')
+const leczyl = computed(() => props.gender === 'female' ? 'uczestniczka leczyła się' : 'uczestnik leczył się')
+const uczulony = computed(() => props.gender === 'female' ? 'uczulona' : 'uczulony')
+const zaszczepiony = computed(() => props.gender === 'female' ? 'zaszczepiona' : 'zaszczepiony')
 
-const leczylSie = computed(() => {
-  if (props.gender === 'male') return 'leczył się'
-  if (props.gender === 'female') return 'leczyła się'
-  return 'leczył się / leczyła się'
-})
+const q1Text = computed(() => `Czy ${he.value} przyjmuje na stałe leki?`)
+const q2Text = computed(() => `Czy ${he.value} cierpi na przewlekłą chorobę?`)
+const q3Text = computed(() => `Czy ${leczyl.value} psychiatrycznie albo cierpi na zaburzenia emocjonalne lub osobowościowe?`)
+const q4Text = computed(() => `Czy ${he.value} jest ${uczulony.value}?`)
+const q5Text = computed(() => `Czy ${he.value} jest ${zaszczepiony.value} (tężec, błonica lub inne)?`)
+const q6Text = computed(() => `Czy ${he.value} ma specjalne potrzeby edukacyjne lub inne ważne informacje, o których organizator powinien wiedzieć?`)
 
-const uczulony = computed(() => {
-  if (props.gender === 'male') return 'uczulony'
-  if (props.gender === 'female') return 'uczulona'
-  return 'uczulony/uczulona'
-})
+const errors = reactive({})
 
-const q1Text = computed(() => `Czy ${participantSuffix.value} przyjmuje na stałe leki?`)
-const q2Text = computed(() => `Czy ${participantSuffix.value} cierpi na przewlekłą chorobę?`)
-const q3Text = computed(() => `Czy ${participantSuffix.value} ${leczylSie.value} psychiatrycznie albo cierpi na zaburzenia emocjonalne lub osobowościowe?`)
-const q4Text = computed(() => `Czy ${participantSuffix.value} jest ${uczulony.value}?`)
+function validate() {
+  Object.keys(errors).forEach(k => delete errors[k])
+
+  const questions = ['q1', 'q2', 'q3', 'q4', 'q5', 'q6']
+  questions.forEach((q) => {
+    const item = local.value.health[q]
+    if (!item?.answer) {
+      errors[`${q}Answer`] = 'To pole jest wymagane.'
+    } else if (item.answer === 'tak' && !item.detail?.trim()) {
+      errors[`${q}Detail`] = 'Proszę podać szczegóły.'
+    }
+  })
+
+  return Object.keys(errors).length === 0
+}
 
 function goPrev() {
   emit('update:formData', { ...local.value })
@@ -106,6 +143,7 @@ function goPrev() {
 }
 
 function goNext() {
+  if (!validate()) return
   emit('update:formData', { ...local.value })
   emit('next')
 }

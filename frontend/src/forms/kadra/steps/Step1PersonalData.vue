@@ -13,20 +13,19 @@
       <select
         v-else
         v-model="local.turnusCode"
-        class="w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-gray-400"
+        :class="fieldClass('turnusCode')"
       >
         <option value="">-- Wybierz turnus --</option>
         <option v-for="t in turnusy" :key="t.turnusCode" :value="t.turnusCode">
           {{ t.turnusName }} ({{ t.startDate }} – {{ t.endDate }})
         </option>
       </select>
+      <p v-if="errors.turnusCode" class="text-red-500 text-xs mt-1">{{ errors.turnusCode }}</p>
       <!-- Summary card -->
       <div v-if="selectedTurnus" class="mt-3 border border-gray-200 rounded-lg p-3 bg-gray-50 text-sm space-y-1">
         <div><span class="font-medium">Nazwa:</span> {{ selectedTurnus.turnusName }}</div>
         <div><span class="font-medium">Termin:</span> {{ selectedTurnus.startDate }} – {{ selectedTurnus.endDate }}</div>
         <div><span class="font-medium">Opis:</span> {{ selectedTurnus.turnusDescription }}</div>
-        <div><span class="font-medium">Lokalizacja:</span> {{ selectedTurnus.turnusLocation }}</div>
-        <div v-if="selectedTurnus.description"><span class="font-medium">Opis:</span> {{ selectedTurnus.description }}</div>
       </div>
     </div>
 
@@ -34,11 +33,13 @@
     <div class="grid grid-cols-2 gap-4">
       <div>
         <label class="block text-sm font-medium text-gray-700 mb-1">Imię *</label>
-        <input v-model="local.firstName" type="text" class="w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-gray-400" />
+        <input v-model="local.firstName" type="text" :class="fieldClass('firstName')" />
+        <p v-if="errors.firstName" class="text-red-500 text-xs mt-1">{{ errors.firstName }}</p>
       </div>
       <div>
         <label class="block text-sm font-medium text-gray-700 mb-1">Nazwisko *</label>
-        <input v-model="local.lastName" type="text" class="w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-gray-400" />
+        <input v-model="local.lastName" type="text" :class="fieldClass('lastName')" />
+        <p v-if="errors.lastName" class="text-red-500 text-xs mt-1">{{ errors.lastName }}</p>
       </div>
     </div>
 
@@ -48,11 +49,13 @@
       <input
         v-model="pesel"
         type="text"
+        inputmode="numeric"
         maxlength="11"
         placeholder="11 cyfr"
-        class="w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-gray-400"
+        :class="fieldClass('pesel')"
         @input="onPeselInput"
       />
+      <p v-if="errors.pesel" class="text-red-500 text-xs mt-1">{{ errors.pesel }}</p>
       <div v-if="pesel.length === 11" class="mt-1 text-sm text-gray-600">
         Wiek: <span class="font-medium">{{ isAdult ? 'dorosły' : 'niepełnoletni' }}</span> |
         Płeć: <span class="font-medium">{{ gender === 'male' ? 'mężczyzna' : gender === 'female' ? 'kobieta' : '–' }}</span>
@@ -63,11 +66,12 @@
     <div class="grid grid-cols-2 gap-4">
       <div>
         <label class="block text-sm font-medium text-gray-700 mb-1">E-mail *</label>
-        <input v-model="local.email" type="email" class="w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-gray-400" />
+        <input v-model="local.email" type="email" :class="fieldClass('email')" />
+        <p v-if="errors.email" class="text-red-500 text-xs mt-1">{{ errors.email }}</p>
       </div>
       <div>
         <label class="block text-sm font-medium text-gray-700 mb-1">Telefon *</label>
-        <input v-model="local.phone" type="tel" class="w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-gray-400" />
+        <PhoneInput v-model="local.phone" :error="errors.phone" />
       </div>
     </div>
 
@@ -77,30 +81,34 @@
       <div class="grid grid-cols-2 gap-4">
         <div>
           <label class="block text-sm font-medium text-gray-700 mb-1">Imię *</label>
-          <input v-model="local.guardianFirstName" type="text" class="w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-gray-400" />
+          <input v-model="local.guardianFirstName" type="text" :class="fieldClass('guardianFirstName')" />
+          <p v-if="errors.guardianFirstName" class="text-red-500 text-xs mt-1">{{ errors.guardianFirstName }}</p>
         </div>
         <div>
           <label class="block text-sm font-medium text-gray-700 mb-1">Nazwisko *</label>
-          <input v-model="local.guardianLastName" type="text" class="w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-gray-400" />
+          <input v-model="local.guardianLastName" type="text" :class="fieldClass('guardianLastName')" />
+          <p v-if="errors.guardianLastName" class="text-red-500 text-xs mt-1">{{ errors.guardianLastName }}</p>
         </div>
       </div>
       <div>
         <label class="block text-sm font-medium text-gray-700 mb-1">Relacja *</label>
-        <select v-model="local.guardianRelation" class="w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-gray-400">
+        <select v-model="local.guardianRelation" :class="fieldClass('guardianRelation')">
           <option value="">-- Wybierz --</option>
           <option value="matka">Matka</option>
           <option value="ojciec">Ojciec</option>
           <option value="opiekun_prawny">Opiekun prawny</option>
         </select>
+        <p v-if="errors.guardianRelation" class="text-red-500 text-xs mt-1">{{ errors.guardianRelation }}</p>
       </div>
       <div class="grid grid-cols-2 gap-4">
         <div>
           <label class="block text-sm font-medium text-gray-700 mb-1">E-mail *</label>
-          <input v-model="local.guardianEmail" type="email" class="w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-gray-400" />
+          <input v-model="local.guardianEmail" type="email" :class="fieldClass('guardianEmail')" />
+          <p v-if="errors.guardianEmail" class="text-red-500 text-xs mt-1">{{ errors.guardianEmail }}</p>
         </div>
         <div>
           <label class="block text-sm font-medium text-gray-700 mb-1">Telefon *</label>
-          <input v-model="local.guardianPhone" type="tel" class="w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-gray-400" />
+          <PhoneInput v-model="local.guardianPhone" :error="errors.guardianPhone" />
         </div>
       </div>
     </div>
@@ -111,26 +119,29 @@
       <div class="grid grid-cols-2 gap-4">
         <div>
           <label class="block text-sm font-medium text-gray-700 mb-1">Imię *</label>
-          <input v-model="local.iceFirstName" type="text" class="w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-gray-400" />
+          <input v-model="local.iceFirstName" type="text" :class="fieldClass('iceFirstName')" />
+          <p v-if="errors.iceFirstName" class="text-red-500 text-xs mt-1">{{ errors.iceFirstName }}</p>
         </div>
         <div>
           <label class="block text-sm font-medium text-gray-700 mb-1">Nazwisko *</label>
-          <input v-model="local.iceLastName" type="text" class="w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-gray-400" />
+          <input v-model="local.iceLastName" type="text" :class="fieldClass('iceLastName')" />
+          <p v-if="errors.iceLastName" class="text-red-500 text-xs mt-1">{{ errors.iceLastName }}</p>
         </div>
       </div>
       <div>
         <label class="block text-sm font-medium text-gray-700 mb-1">Relacja *</label>
-        <select v-model="local.iceRelation" class="w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-gray-400">
+        <select v-model="local.iceRelation" :class="fieldClass('iceRelation')">
           <option value="">-- Wybierz --</option>
           <option value="matka">Matka</option>
           <option value="ojciec">Ojciec</option>
           <option value="opiekun_prawny">Opiekun prawny</option>
           <option value="inna">Inna</option>
         </select>
+        <p v-if="errors.iceRelation" class="text-red-500 text-xs mt-1">{{ errors.iceRelation }}</p>
       </div>
       <div>
         <label class="block text-sm font-medium text-gray-700 mb-1">Telefon *</label>
-        <input v-model="local.icePhone" type="tel" class="w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-gray-400" />
+        <PhoneInput v-model="local.icePhone" :error="errors.icePhone" />
       </div>
     </div>
 
@@ -140,21 +151,31 @@
       <div class="grid grid-cols-2 gap-4">
         <div>
           <label class="block text-sm font-medium text-gray-700 mb-1">Ulica *</label>
-          <input v-model="local.street" type="text" class="w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-gray-400" />
+          <input v-model="local.street" type="text" :class="fieldClass('street')" />
+          <p v-if="errors.street" class="text-red-500 text-xs mt-1">{{ errors.street }}</p>
         </div>
         <div>
           <label class="block text-sm font-medium text-gray-700 mb-1">Nr domu/mieszkania *</label>
-          <input v-model="local.houseNumber" type="text" class="w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-gray-400" />
+          <input v-model="local.houseNumber" type="text" :class="fieldClass('houseNumber')" />
+          <p v-if="errors.houseNumber" class="text-red-500 text-xs mt-1">{{ errors.houseNumber }}</p>
         </div>
       </div>
       <div class="grid grid-cols-2 gap-4">
         <div>
           <label class="block text-sm font-medium text-gray-700 mb-1">Kod pocztowy *</label>
-          <input v-model="local.postalCode" type="text" placeholder="00-000" class="w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-gray-400" />
+          <input
+            v-model="local.postalCode"
+            type="text"
+            placeholder="00-000"
+            :class="fieldClass('postalCode')"
+            @input="onPostalCodeInput"
+          />
+          <p v-if="errors.postalCode" class="text-red-500 text-xs mt-1">{{ errors.postalCode }}</p>
         </div>
         <div>
           <label class="block text-sm font-medium text-gray-700 mb-1">Miejscowość *</label>
-          <input v-model="local.city" type="text" class="w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-gray-400" />
+          <input v-model="local.city" type="text" :class="fieldClass('city')" />
+          <p v-if="errors.city" class="text-red-500 text-xs mt-1">{{ errors.city }}</p>
         </div>
       </div>
     </div>
@@ -168,9 +189,11 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted, watch } from 'vue'
+import { ref, computed, onMounted, watch, reactive } from 'vue'
 import { usePesel } from '../../../composables/usePesel.js'
 import { fetchTurnusy } from '../../../api/turnusApi.js'
+import { validatePesel, validateEmail, validatePhone, validatePostalCode } from '../../../utils/validators.js'
+import PhoneInput from '../../../components/PhoneInput.vue'
 
 const props = defineProps({
   formData: { type: Object, required: true },
@@ -181,7 +204,6 @@ const local = ref({ ...props.formData })
 const { pesel, isAdult, gender } = usePesel()
 pesel.value = local.value.pesel || ''
 
-// Sync pesel from local
 watch(() => local.value.pesel, (val) => {
   pesel.value = val || ''
 })
@@ -207,11 +229,82 @@ onMounted(async () => {
   }
 })
 
-const selectedTurnus = computed(() => {
-  return turnusy.value.find(t => t.turnusCode === local.value.turnusCode) || null
-})
+const selectedTurnus = computed(() =>
+  turnusy.value.find(t => t.turnusCode === local.value.turnusCode) || null
+)
+
+// Validation
+const errors = reactive({})
+
+function fieldClass(field) {
+  const base = 'w-full border rounded px-3 py-2 focus:outline-none focus:ring-2'
+  return errors[field]
+    ? `${base} border-red-500 focus:ring-red-400`
+    : `${base} border-gray-300 focus:ring-gray-400`
+}
+
+function onPostalCodeInput() {
+  const digits = (local.value.postalCode || '').replace(/\D/g, '').slice(0, 5)
+  local.value.postalCode = digits.length > 2 ? `${digits.slice(0, 2)}-${digits.slice(2)}` : digits
+}
+
+function validate() {
+  Object.keys(errors).forEach(k => delete errors[k])
+
+  if (!local.value.turnusCode)          errors.turnusCode  = 'Wybierz turnus.'
+  if (!local.value.firstName?.trim())   errors.firstName   = 'Podaj imię.'
+  if (!local.value.lastName?.trim())    errors.lastName    = 'Podaj nazwisko.'
+  if (pesel.value.length !== 11) {
+    errors.pesel = 'PESEL musi mieć 11 cyfr.'
+  } else if (!validatePesel(pesel.value)) {
+    errors.pesel = 'PESEL ma nieprawidłową sumę kontrolną.'
+  }
+  if (!local.value.email?.trim()) {
+    errors.email = 'Podaj adres e-mail.'
+  } else if (!validateEmail(local.value.email)) {
+    errors.email = 'Podaj prawidłowy adres e-mail.'
+  }
+  if (!validatePhone(local.value.phone)) {
+    errors.phone = 'Podaj prawidłowy numer telefonu (9 cyfr).'
+  }
+
+  if (!isAdult.value && pesel.value.length === 11) {
+    if (!local.value.guardianFirstName?.trim()) errors.guardianFirstName = 'Podaj imię opiekuna.'
+    if (!local.value.guardianLastName?.trim())  errors.guardianLastName  = 'Podaj nazwisko opiekuna.'
+    if (!local.value.guardianRelation)          errors.guardianRelation  = 'Wybierz relację.'
+    if (!local.value.guardianEmail?.trim()) {
+      errors.guardianEmail = 'Podaj e-mail opiekuna.'
+    } else if (!validateEmail(local.value.guardianEmail)) {
+      errors.guardianEmail = 'Podaj prawidłowy adres e-mail opiekuna.'
+    }
+    if (!validatePhone(local.value.guardianPhone)) {
+      errors.guardianPhone = 'Podaj prawidłowy numer telefonu opiekuna (9 cyfr).'
+    }
+  }
+
+  if (isAdult.value && pesel.value.length === 11) {
+    if (!local.value.iceFirstName?.trim()) errors.iceFirstName = 'Podaj imię osoby ICE.'
+    if (!local.value.iceLastName?.trim())  errors.iceLastName  = 'Podaj nazwisko osoby ICE.'
+    if (!local.value.iceRelation)          errors.iceRelation  = 'Wybierz relację.'
+    if (!validatePhone(local.value.icePhone)) {
+      errors.icePhone = 'Podaj prawidłowy numer telefonu osoby ICE (9 cyfr).'
+    }
+  }
+
+  if (!local.value.street?.trim())      errors.street      = 'Podaj ulicę.'
+  if (!local.value.houseNumber?.trim()) errors.houseNumber = 'Podaj numer domu.'
+  if (!local.value.postalCode?.trim()) {
+    errors.postalCode = 'Podaj kod pocztowy.'
+  } else if (!validatePostalCode(local.value.postalCode)) {
+    errors.postalCode = 'Podaj prawidłowy kod pocztowy (format: XX-XXX).'
+  }
+  if (!local.value.city?.trim())        errors.city        = 'Podaj miejscowość.'
+
+  return Object.keys(errors).length === 0
+}
 
 function goNext() {
+  if (!validate()) return
   emit('update:formData', { ...local.value, isAdult: isAdult.value, gender: gender.value })
   emit('next')
 }

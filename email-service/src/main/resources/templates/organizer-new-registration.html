@@ -1,0 +1,24 @@
+<!DOCTYPE html>
+<html lang="pl" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8" />
+    <title>Nowe zgłoszenie</title>
+</head>
+<body style="font-family: Arial, sans-serif; color: #1d1d1d; line-height: 1.5;">
+<div style="max-width: 640px; margin: 0 auto; padding: 24px; border: 1px solid #e5e5e5; border-radius: 8px;">
+    <p>Dzień dobry,</p>
+    <p>W systemie pojawiło się nowe zgłoszenie rejestracyjne.</p>
+
+    <p>Kod zgłoszenia: <strong th:text="${registrationCode}">REG-P-ZAGLE26T1-3</strong></p>
+    <p>
+        Rodzaj zgłoszenia:
+        <strong th:text="${registrationType == 'STAFF' ? 'Kadra' : 'Uczestnik'}">Uczestnik</strong>
+    </p>
+    <p>Turnus: <strong th:text="${turnusCode}">ZAGLE26T1</strong></p>
+    <p>Osoba zgłaszana: <strong th:text="${participantName}">Jan Kowalski</strong></p>
+
+    <hr style="border: none; border-top: 1px solid #ececec; margin: 24px 0;" />
+    <p style="font-size: 12px; color: #6b6b6b; margin: 0;">Wiadomość wygenerowana automatycznie przez system SRM.</p>
+</div>
+</body>
+</html>

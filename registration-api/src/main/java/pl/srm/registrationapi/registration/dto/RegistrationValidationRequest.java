@@ -1,4 +1,3 @@
-
 package pl.srm.registrationapi.registration.dto;
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
@@ -10,7 +9,7 @@ public record RegistrationValidationRequest(
         @JsonProperty("turnusCode")
         String turnusCode,
 
-        @JsonProperty("uczestnik")
+        @JsonProperty("person")
         Person person
 
 ) {}

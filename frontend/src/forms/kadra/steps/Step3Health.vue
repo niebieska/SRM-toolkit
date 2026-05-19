@@ -8,6 +8,8 @@
         :question="q1Text"
         detailLabel="Nazwy leków i dawki:"
         :multiline="true"
+        :answerError="errors.q1Answer"
+        :detailError="errors.q1Detail"
         @update:answer="local.health.q1.answer = $event"
         @update:detail="local.health.q1.detail = $event"
       />
@@ -16,6 +18,8 @@
         :question="q2Text"
         detailLabel="Jaką chorobą?"
         :multiline="false"
+        :answerError="errors.q2Answer"
+        :detailError="errors.q2Detail"
         @update:answer="local.health.q2.answer = $event"
         @update:detail="local.health.q2.detail = $event"
       />
@@ -24,6 +28,8 @@
         :question="q3Text"
         detailLabel="Szczegóły:"
         :multiline="true"
+        :answerError="errors.q3Answer"
+        :detailError="errors.q3Detail"
         @update:answer="local.health.q3.answer = $event"
         @update:detail="local.health.q3.detail = $event"
       />
@@ -32,6 +38,8 @@
         :question="q4Text"
         detailLabel="Leki, pokarmy lub inne alergeny:"
         :multiline="true"
+        :answerError="errors.q4Answer"
+        :detailError="errors.q4Detail"
         @update:answer="local.health.q4.answer = $event"
         @update:detail="local.health.q4.detail = $event"
       />
@@ -59,7 +67,7 @@
 </template>
 
 <script setup>
-import { ref, computed } from 'vue'
+import { ref, computed, reactive } from 'vue'
 import HealthQuestion from '../../../components/HealthQuestion.vue'
 
 const props = defineProps({
@@ -101,12 +109,31 @@ const q2Text = computed(() => `Czy ${participantSuffix.value} cierpi na przewlek
 const q3Text = computed(() => `Czy ${participantSuffix.value} ${leczylSie.value} psychiatrycznie albo cierpi na zaburzenia emocjonalne lub osobowościowe?`)
 const q4Text = computed(() => `Czy ${participantSuffix.value} jest ${uczulony.value}?`)
 
+const errors = reactive({})
+
+function validate() {
+  Object.keys(errors).forEach(k => delete errors[k])
+
+  const questions = ['q1', 'q2', 'q3', 'q4']
+  questions.forEach((q) => {
+    const item = local.value.health[q]
+    if (!item?.answer) {
+      errors[`${q}Answer`] = 'To pole jest wymagane.'
+    } else if (item.answer === 'tak' && !item.detail?.trim()) {
+      errors[`${q}Detail`] = 'Proszę podać szczegóły.'
+    }
+  })
+
+  return Object.keys(errors).length === 0
+}
+
 function goPrev() {
   emit('update:formData', { ...local.value })
   emit('prev')
 }
 
 function goNext() {
+  if (!validate()) return
   emit('update:formData', { ...local.value })
   emit('next')
 }

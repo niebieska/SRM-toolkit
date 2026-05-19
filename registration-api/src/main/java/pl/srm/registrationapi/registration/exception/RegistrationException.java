@@ -1,11 +1,11 @@
 package pl.srm.registrationapi.registration.exception;
 
-public class TurnusUnavailableException extends RuntimeException {
+public class RegistrationException extends RuntimeException {
 
     private final String code;
 
-    public TurnusUnavailableException(String code) {
-        super(code);
+    public RegistrationException(String code, String message) {
+        super(message);
         this.code = code;
     }
 

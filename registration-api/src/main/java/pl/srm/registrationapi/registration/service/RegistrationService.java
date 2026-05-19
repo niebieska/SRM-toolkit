@@ -1,7 +1,10 @@
-
 package pl.srm.registrationapi.registration.service;
 
-public interface RegistrationService {
+import pl.srm.registrationapi.registration.domain.Registration;
 
-    void register(String payload);
+import java.util.List;
+
+public interface RegistrationService {
+    String register(String payload);
+    List<Registration> getAll();
 }

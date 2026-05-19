@@ -8,21 +8,25 @@
       <div class="grid grid-cols-2 gap-4">
         <div>
           <label class="block text-sm font-medium text-gray-700 mb-1">Ulica *</label>
-          <input v-model="local.street" type="text" class="w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-gray-400" />
+          <input v-model="local.street" type="text" :class="fieldClass('street')" />
+          <p v-if="errors.street" class="text-red-500 text-xs mt-1">{{ errors.street }}</p>
         </div>
         <div>
           <label class="block text-sm font-medium text-gray-700 mb-1">Nr domu/mieszkania *</label>
-          <input v-model="local.houseNumber" type="text" class="w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-gray-400" />
+          <input v-model="local.houseNumber" type="text" :class="fieldClass('houseNumber')" />
+          <p v-if="errors.houseNumber" class="text-red-500 text-xs mt-1">{{ errors.houseNumber }}</p>
         </div>
       </div>
       <div class="grid grid-cols-2 gap-4">
         <div>
           <label class="block text-sm font-medium text-gray-700 mb-1">Kod pocztowy *</label>
-          <input v-model="local.postalCode" type="text" placeholder="00-000" class="w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-gray-400" />
+          <input v-model="local.postalCode" type="text" placeholder="00-000" :class="fieldClass('postalCode')" @input="onPostalCodeInput('postalCode')" />
+          <p v-if="errors.postalCode" class="text-red-500 text-xs mt-1">{{ errors.postalCode }}</p>
         </div>
         <div>
           <label class="block text-sm font-medium text-gray-700 mb-1">Miejscowość *</label>
-          <input v-model="local.city" type="text" class="w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-gray-400" />
+          <input v-model="local.city" type="text" :class="fieldClass('city')" />
+          <p v-if="errors.city" class="text-red-500 text-xs mt-1">{{ errors.city }}</p>
         </div>
       </div>
     </div>
@@ -39,21 +43,25 @@
         <div class="grid grid-cols-2 gap-4">
           <div>
             <label class="block text-sm font-medium text-gray-700 mb-1">Ulica *</label>
-            <input v-model="local.parentStreet" type="text" class="w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-gray-400" />
+            <input v-model="local.parentStreet" type="text" :class="fieldClass('parentStreet')" />
+            <p v-if="errors.parentStreet" class="text-red-500 text-xs mt-1">{{ errors.parentStreet }}</p>
           </div>
           <div>
             <label class="block text-sm font-medium text-gray-700 mb-1">Nr domu/mieszkania *</label>
-            <input v-model="local.parentHouseNumber" type="text" class="w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-gray-400" />
+            <input v-model="local.parentHouseNumber" type="text" :class="fieldClass('parentHouseNumber')" />
+            <p v-if="errors.parentHouseNumber" class="text-red-500 text-xs mt-1">{{ errors.parentHouseNumber }}</p>
           </div>
         </div>
         <div class="grid grid-cols-2 gap-4">
           <div>
             <label class="block text-sm font-medium text-gray-700 mb-1">Kod pocztowy *</label>
-            <input v-model="local.parentPostalCode" type="text" placeholder="00-000" class="w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-gray-400" />
+            <input v-model="local.parentPostalCode" type="text" placeholder="00-000" :class="fieldClass('parentPostalCode')" @input="onPostalCodeInput('parentPostalCode')" />
+            <p v-if="errors.parentPostalCode" class="text-red-500 text-xs mt-1">{{ errors.parentPostalCode }}</p>
           </div>
           <div>
             <label class="block text-sm font-medium text-gray-700 mb-1">Miejscowość *</label>
-            <input v-model="local.parentCity" type="text" class="w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-gray-400" />
+            <input v-model="local.parentCity" type="text" :class="fieldClass('parentCity')" />
+            <p v-if="errors.parentCity" class="text-red-500 text-xs mt-1">{{ errors.parentCity }}</p>
           </div>
         </div>
       </div>
@@ -71,7 +79,8 @@
 </template>
 
 <script setup>
-import { ref } from 'vue'
+import { ref, reactive } from 'vue'
+import { validatePostalCode } from '../../../utils/validators.js'
 
 const props = defineProps({
   formData: { type: Object, required: true },
@@ -80,6 +89,51 @@ const props = defineProps({
 const emit = defineEmits(['update:formData', 'prev', 'next'])
 
 const local = ref({ ...props.formData })
+const errors = reactive({})
+
+function fieldClass(field) {
+  const base = 'w-full border rounded px-3 py-2 focus:outline-none focus:ring-2'
+  return errors[field]
+    ? `${base} border-red-500 focus:ring-red-400`
+    : `${base} border-gray-300 focus:ring-gray-400`
+}
+
+function formatPostalCode(val) {
+  // Keep only digits (max 5), insert dash after first 2 digits
+  const digits = val.replace(/\D/g, '').slice(0, 5)
+  if (digits.length > 2) return digits.slice(0, 2) + '-' + digits.slice(2)
+  return digits
+}
+
+function onPostalCodeInput(field) {
+  local.value[field] = formatPostalCode(local.value[field] || '')
+}
+
+function validate() {
+  Object.keys(errors).forEach(k => delete errors[k])
+
+  if (!local.value.street?.trim())      errors.street      = 'Podaj ulicę.'
+  if (!local.value.houseNumber?.trim()) errors.houseNumber = 'Podaj numer domu.'
+  if (!local.value.postalCode?.trim()) {
+    errors.postalCode = 'Podaj kod pocztowy.'
+  } else if (!validatePostalCode(local.value.postalCode)) {
+    errors.postalCode = 'Podaj prawidłowy kod pocztowy (format: XX-XXX).'
+  }
+  if (!local.value.city?.trim())        errors.city        = 'Podaj miejscowość.'
+
+  if (!props.isAdult && !local.value.sameAddress) {
+    if (!local.value.parentStreet?.trim())      errors.parentStreet      = 'Podaj ulicę rodziców.'
+    if (!local.value.parentHouseNumber?.trim()) errors.parentHouseNumber = 'Podaj numer domu rodziców.'
+    if (!local.value.parentPostalCode?.trim()) {
+      errors.parentPostalCode = 'Podaj kod pocztowy rodziców.'
+    } else if (!validatePostalCode(local.value.parentPostalCode)) {
+      errors.parentPostalCode = 'Podaj prawidłowy kod pocztowy (format: XX-XXX).'
+    }
+    if (!local.value.parentCity?.trim())        errors.parentCity        = 'Podaj miejscowość rodziców.'
+  }
+
+  return Object.keys(errors).length === 0
+}
 
 function goPrev() {
   emit('update:formData', { ...local.value })
@@ -87,6 +141,7 @@ function goPrev() {
 }
 
 function goNext() {
+  if (!validate()) return
   emit('update:formData', { ...local.value })
   emit('next')
 }
