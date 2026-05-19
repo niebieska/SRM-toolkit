@@ -8,7 +8,9 @@ import pl.srm.registrationapi.registration.exception.RegistrationException;
 import pl.srm.registrationapi.registration.repository.RegistrationRepository;
 
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.Set;
+import org.springframework.data.domain.Sort;
 
 @Service
 public class RegistrationManagementService {
@@ -23,6 +25,13 @@ public class RegistrationManagementService {
 
     public RegistrationSummaryResponse getByCode(String code) {
         return toSummary(findByCode(code));
+    }
+
+    public List<RegistrationSummaryResponse> getAll() {
+        return repository.findAll(Sort.by(Sort.Direction.DESC, "createdAt"))
+                .stream()
+                .map(this::toSummary)
+                .toList();
     }
 
     public RegistrationSummaryResponse updateStatus(String code, StatusUpdateRequest request) {

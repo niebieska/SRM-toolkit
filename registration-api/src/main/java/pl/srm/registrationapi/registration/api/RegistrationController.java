@@ -48,6 +48,11 @@ public class RegistrationController {
         return managementService.getByCode(code);
     }
 
+    @GetMapping
+    public List<RegistrationSummaryResponse> getAllRegistrations() {
+        return managementService.getAll();
+    }
+
     @PatchMapping("/{code}/status")
     public RegistrationSummaryResponse updateStatus(@PathVariable String code,
                                                     @RequestBody StatusUpdateRequest request) {
