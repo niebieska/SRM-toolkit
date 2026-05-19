@@ -1,6 +1,6 @@
 package pl.srm.registrationapi.registration.api;
 
-import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.annotation.JsonRawValue;
 
 import java.time.LocalDateTime;
 
@@ -15,6 +15,6 @@ public record RegistrationDetailResponse(
         String firstName,
         String lastName,
         Integer age,
-        JsonNode payload
+        @JsonRawValue String payload
 ) {
 }

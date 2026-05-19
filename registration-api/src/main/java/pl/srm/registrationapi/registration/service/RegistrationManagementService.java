@@ -39,7 +39,6 @@ public class RegistrationManagementService {
     public RegistrationDetailResponse getDetailByCode(String code) {
         Registration registration = findByCode(code);
         RegistrationSummaryResponse summary = toSummary(registration);
-        JsonNode payloadNode = parsePayloadNode(registration.getPayload());
         return new RegistrationDetailResponse(
                 summary.registrationCode(),
                 summary.registrationType(),
@@ -51,7 +50,7 @@ public class RegistrationManagementService {
                 summary.firstName(),
                 summary.lastName(),
                 summary.age(),
-                payloadNode
+                registration.getPayload()
         );
     }
 
@@ -108,14 +107,6 @@ public class RegistrationManagementService {
                 lastName,
                 age
         );
-    }
-
-    private JsonNode parsePayloadNode(String payload) {
-        try {
-            return objectMapper.readTree(payload);
-        } catch (Exception e) {
-            return objectMapper.createObjectNode();
-        }
     }
 
     private String trimToNull(String value) {

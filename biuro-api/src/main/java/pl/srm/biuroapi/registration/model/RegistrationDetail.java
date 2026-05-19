@@ -1,5 +1,7 @@
 package pl.srm.biuroapi.registration.model;
 
+import java.util.Map;
+
 public record RegistrationDetail(
         String registrationCode,
         String registrationType,
@@ -11,6 +13,6 @@ public record RegistrationDetail(
         String firstName,
         String lastName,
         Integer age,
-        Object payload
+        Map<String, Object> payload
 ) {
 }
