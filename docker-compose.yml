@@ -1,0 +1,91 @@
+version: "3.9"
+
+services:
+
+  # ─── Backend: Registration API (port 8080) ────────────────────────────────
+  registration-api:
+    build:
+      context: .
+      dockerfile: registration-api/Dockerfile
+    image: srm/registration-api:latest
+    container_name: registration-api
+    ports:
+      - "8080:8080"
+    environment:
+      SPRING_PROFILES_ACTIVE: docker
+    networks:
+      - srm-net
+    restart: unless-stopped
+
+  # ─── Backend: Biuro API (port 8081) ───────────────────────────────────────
+  biuro-api:
+    build:
+      context: .
+      dockerfile: biuro-api/Dockerfile
+    image: srm/biuro-api:latest
+    container_name: biuro-api
+    ports:
+      - "8081:8081"
+    environment:
+      BIURO_PORT: 8081
+      BIURO_USERNAME: ${BIURO_USERNAME:-biuro}
+      BIURO_PASSWORD: ${BIURO_PASSWORD:-biuro123}
+      JWT_SECRET: ${JWT_SECRET:-changeme-very-long-secret-key-at-least-32-chars}
+      REGISTRATION_API_URL: http://registration-api:8080
+    depends_on:
+      - registration-api
+    networks:
+      - srm-net
+    restart: unless-stopped
+
+  # ─── Backend: Email Service (port 8082) ───────────────────────────────────
+  email-service:
+    build:
+      context: .
+      dockerfile: email-service/Dockerfile
+    image: srm/email-service:latest
+    container_name: email-service
+    ports:
+      - "8082:8082"
+    environment:
+      SPRING_MAIL_HOST: ${MAIL_HOST:-mailhog}
+      SPRING_MAIL_PORT: ${MAIL_PORT:-1025}
+      SPRING_MAIL_USERNAME: ${MAIL_USERNAME:-}
+      SPRING_MAIL_PASSWORD: ${MAIL_PASSWORD:-}
+      SPRING_MAIL_PROPERTIES_MAIL_SMTP_AUTH: "false"
+      SPRING_MAIL_PROPERTIES_MAIL_SMTP_STARTTLS_ENABLE: "false"
+    depends_on:
+      - mailhog
+    networks:
+      - srm-net
+    restart: unless-stopped
+
+  # ─── Frontend: Biuro Vue 3 App (port 5174) ────────────────────────────────
+  biuro-frontend:
+    build:
+      context: biuro-frontend
+      dockerfile: Dockerfile
+    image: srm/biuro-frontend:latest
+    container_name: biuro-frontend
+    ports:
+      - "5174:80"
+    depends_on:
+      - biuro-api
+    networks:
+      - srm-net
+    restart: unless-stopped
+
+  # ─── Dev tool: MailHog (SMTP catch-all) ───────────────────────────────────
+  mailhog:
+    image: mailhog/mailhog:latest
+    container_name: mailhog
+    ports:
+      - "1025:1025"   # SMTP
+      - "8025:8025"   # Web UI
+    networks:
+      - srm-net
+    restart: unless-stopped
+
+networks:
+  srm-net:
+    driver: bridge
