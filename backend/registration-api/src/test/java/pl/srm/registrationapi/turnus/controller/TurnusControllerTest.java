@@ -1,10 +1,9 @@
-package pl.srm.registrationapi.turnus.api;
+package pl.srm.registrationapi.turnus.controller;
 
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
-import pl.srm.registrationapi.turnus.controller.TurnusController;
 import pl.srm.registrationapi.turnus.service.TurnusProvider;
 
 import java.util.List;

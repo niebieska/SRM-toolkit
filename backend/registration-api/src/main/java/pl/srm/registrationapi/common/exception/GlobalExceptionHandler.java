@@ -1,9 +1,10 @@
-package pl.srm.registrationapi.common.api;
+package pl.srm.registrationapi.common.exception;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import pl.srm.registrationapi.common.dto.ApiError;
 import pl.srm.registrationapi.registration.exception.RegistrationException;
 
 @RestControllerAdvice
