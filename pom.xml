@@ -18,8 +18,8 @@
         <java.version>21</java.version>
     </properties>
     <modules>
-        <module>registration-api</module>
-        <module>biuro-api</module>
-        <module>email-service</module>
+        <module>backend/registration-api</module>
+        <module>backend/biuro-api</module>
+        <module>backend/email-service</module>
     </modules>
 </project>
