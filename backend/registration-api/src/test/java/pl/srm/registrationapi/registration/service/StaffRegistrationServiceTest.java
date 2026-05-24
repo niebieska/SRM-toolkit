@@ -12,8 +12,8 @@ import pl.srm.registrationapi.registration.parser.RegistrationContext;
 import pl.srm.registrationapi.registration.parser.RegistrationParser;
 import pl.srm.registrationapi.registration.validator.TurnusValidator;
 import pl.srm.registrationapi.registration.repository.RegistrationRepository;
-import pl.srm.registrationapi.turnus.domain.SeasonType;
-import pl.srm.registrationapi.turnus.domain.Turnus;
+import pl.srm.registrationapi.turnus.model.SeasonType;
+import pl.srm.registrationapi.turnus.model.Turnus;
 import pl.srm.registrationapi.turnus.service.TurnusProvider;
 
 import java.time.LocalDate;

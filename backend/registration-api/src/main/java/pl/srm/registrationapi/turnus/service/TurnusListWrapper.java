@@ -1,7 +1,7 @@
 package pl.srm.registrationapi.turnus.service;
 
 import com.fasterxml.jackson.annotation.JsonProperty;
-import pl.srm.registrationapi.turnus.domain.Turnus;
+import pl.srm.registrationapi.turnus.model.Turnus;
 
 import java.util.List;
 

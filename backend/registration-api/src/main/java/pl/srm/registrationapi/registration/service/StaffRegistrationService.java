@@ -13,7 +13,7 @@ import pl.srm.registrationapi.registration.validator.TurnusValidator;
 import pl.srm.registrationapi.registration.model.Registration;
 import pl.srm.registrationapi.registration.exception.RegistrationException;
 import pl.srm.registrationapi.registration.repository.RegistrationRepository;
-import pl.srm.registrationapi.turnus.domain.Turnus;
+import pl.srm.registrationapi.turnus.model.Turnus;
 import pl.srm.registrationapi.turnus.service.TurnusProvider;
 
 import java.time.LocalDateTime;

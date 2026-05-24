@@ -5,7 +5,7 @@ import jakarta.annotation.PostConstruct;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.stereotype.Component;
 import pl.srm.registrationapi.registration.exception.RegistrationException;
-import pl.srm.registrationapi.turnus.domain.Turnus;
+import pl.srm.registrationapi.turnus.model.Turnus;
 
 import java.io.InputStream;
 import java.util.List;

@@ -1,4 +1,4 @@
-package pl.srm.registrationapi.turnus.domain;
+package pl.srm.registrationapi.turnus.model;
 
 
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;

@@ -2,7 +2,7 @@ package pl.srm.registrationapi.registration.validator;
 
 import org.springframework.stereotype.Component;
 import pl.srm.registrationapi.registration.exception.RegistrationException;
-import pl.srm.registrationapi.turnus.domain.Turnus;
+import pl.srm.registrationapi.turnus.model.Turnus;
 
 @Component
 public class TurnusValidator {
