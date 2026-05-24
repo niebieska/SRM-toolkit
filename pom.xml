@@ -18,7 +18,7 @@
         <java.version>21</java.version>
     </properties>
     <modules>
-        <module>registration-api</module>
+        <module>backend/registration-api</module>
         <module>biuro-api</module>
         <module>email-service</module>
     </modules>
