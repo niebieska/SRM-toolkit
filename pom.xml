@@ -20,6 +20,6 @@
     <modules>
         <module>backend/registration-api</module>
         <module>backend/biuro-api</module>
-        <module>email-service</module>
+        <module>backend/email-service</module>
     </modules>
 </project>
