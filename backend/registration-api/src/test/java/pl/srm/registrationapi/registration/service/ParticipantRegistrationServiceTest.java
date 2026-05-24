@@ -7,16 +7,17 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import pl.srm.registrationapi.email.EmailServiceClient;
-import pl.srm.registrationapi.registration.common.RegistrationCodeGenerator;
-import pl.srm.registrationapi.registration.common.RegistrationContext;
-import pl.srm.registrationapi.registration.common.RegistrationParser;
-import pl.srm.registrationapi.registration.common.TurnusValidator;
-import pl.srm.registrationapi.registration.domain.Registration;
+import pl.srm.registrationapi.email.client.EmailServiceClient;
+import pl.srm.registrationapi.registration.util.PeselHelper;
+import pl.srm.registrationapi.registration.util.RegistrationCodeGenerator;
+import pl.srm.registrationapi.registration.parser.RegistrationContext;
+import pl.srm.registrationapi.registration.parser.RegistrationParser;
+import pl.srm.registrationapi.registration.validator.TurnusValidator;
+import pl.srm.registrationapi.registration.model.Registration;
 import pl.srm.registrationapi.registration.exception.RegistrationException;
 import pl.srm.registrationapi.registration.repository.RegistrationRepository;
-import pl.srm.registrationapi.turnus.domain.SeasonType;
-import pl.srm.registrationapi.turnus.domain.Turnus;
+import pl.srm.registrationapi.turnus.model.SeasonType;
+import pl.srm.registrationapi.turnus.model.Turnus;
 import pl.srm.registrationapi.turnus.service.TurnusProvider;
 
 import java.time.LocalDate;
@@ -49,7 +50,7 @@ class ParticipantRegistrationServiceTest {
                 parser,
                 turnusProvider,
                 turnusValidator,
-                new PeselUtils(),
+                new PeselHelper(),
                 new RegistrationCodeGenerator(),
                 repository,
                 objectMapper,

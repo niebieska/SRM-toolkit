@@ -1,7 +1,7 @@
 package pl.srm.registrationapi.registration.repository;
 
 import org.springframework.data.jpa.repository.JpaRepository;
-import pl.srm.registrationapi.registration.domain.Registration;
+import pl.srm.registrationapi.registration.model.Registration;
 
 import java.util.List;
 import java.util.Optional;

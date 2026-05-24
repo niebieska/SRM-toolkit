@@ -1,6 +1,6 @@
 package pl.srm.registrationapi.turnus.service;
 
-import pl.srm.registrationapi.turnus.domain.Turnus;
+import pl.srm.registrationapi.turnus.model.Turnus;
 
 import java.util.List;
 

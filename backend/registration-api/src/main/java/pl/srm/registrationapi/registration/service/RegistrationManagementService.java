@@ -3,10 +3,10 @@ package pl.srm.registrationapi.registration.service;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.stereotype.Service;
-import pl.srm.registrationapi.registration.api.RegistrationDetailResponse;
-import pl.srm.registrationapi.registration.api.RegistrationSummaryResponse;
-import pl.srm.registrationapi.registration.api.StatusUpdateRequest;
-import pl.srm.registrationapi.registration.domain.Registration;
+import pl.srm.registrationapi.registration.dto.response.RegistrationDetailResponse;
+import pl.srm.registrationapi.registration.dto.response.RegistrationSummaryResponse;
+import pl.srm.registrationapi.registration.dto.request.StatusUpdateRequest;
+import pl.srm.registrationapi.registration.model.Registration;
 import pl.srm.registrationapi.registration.exception.RegistrationException;
 import pl.srm.registrationapi.registration.repository.RegistrationRepository;
 
@@ -14,6 +14,7 @@ import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Set;
 import org.springframework.data.domain.Sort;
+import pl.srm.registrationapi.registration.util.PeselHelper;
 
 @Service
 public class RegistrationManagementService {
@@ -22,14 +23,14 @@ public class RegistrationManagementService {
 
     private final RegistrationRepository repository;
     private final ObjectMapper objectMapper;
-    private final PeselUtils peselUtils;
+    private final PeselHelper peselHelper;
 
     public RegistrationManagementService(RegistrationRepository repository,
                                          ObjectMapper objectMapper,
-                                         PeselUtils peselUtils) {
+                                         PeselHelper peselHelper) {
         this.repository = repository;
         this.objectMapper = objectMapper;
-        this.peselUtils = peselUtils;
+        this.peselHelper = peselHelper;
     }
 
     public RegistrationSummaryResponse getByCode(String code) {
@@ -90,7 +91,7 @@ public class RegistrationManagementService {
             lastName = person.path("lastName").textValue();
             String pesel = person.path("pesel").textValue();
             if (pesel != null && !pesel.isBlank()) {
-                age = peselUtils.calculateAge(pesel);
+                age = peselHelper.calculateAge(pesel);
             }
         } catch (Exception ignored) {
             // leave fields null if payload cannot be parsed
