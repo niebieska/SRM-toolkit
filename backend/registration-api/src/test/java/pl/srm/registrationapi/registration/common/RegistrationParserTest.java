@@ -2,7 +2,10 @@ package pl.srm.registrationapi.registration.common;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.Test;
+import pl.srm.registrationapi.registration.parser.RegistrationContext;
+import pl.srm.registrationapi.registration.parser.RegistrationParser;
 import pl.srm.registrationapi.registration.service.PeselUtils;
+import pl.srm.registrationapi.registration.util.PeselHasher;
 
 import static org.junit.jupiter.api.Assertions.*;
 

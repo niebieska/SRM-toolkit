@@ -1,8 +1,9 @@
-package pl.srm.registrationapi.registration.common;
+package pl.srm.registrationapi.registration.parser;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.stereotype.Component;
+import pl.srm.registrationapi.registration.util.PeselHasher;
 import pl.srm.registrationapi.registration.exception.RegistrationException;
 import pl.srm.registrationapi.registration.service.PeselUtils;
 

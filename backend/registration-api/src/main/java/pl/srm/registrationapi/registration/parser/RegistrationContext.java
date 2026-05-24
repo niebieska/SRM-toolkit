@@ -1,4 +1,4 @@
-package pl.srm.registrationapi.registration.common;
+package pl.srm.registrationapi.registration.parser;
 
 public record RegistrationContext(
         String turnusCode,

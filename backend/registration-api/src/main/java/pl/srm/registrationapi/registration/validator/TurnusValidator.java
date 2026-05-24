@@ -1,4 +1,4 @@
-package pl.srm.registrationapi.registration.common;
+package pl.srm.registrationapi.registration.validator;
 
 import org.springframework.stereotype.Component;
 import pl.srm.registrationapi.registration.exception.RegistrationException;
