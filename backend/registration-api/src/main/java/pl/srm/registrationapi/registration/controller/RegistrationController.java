@@ -12,7 +12,7 @@ import pl.srm.registrationapi.registration.dto.response.RegistrationDetailRespon
 import pl.srm.registrationapi.registration.dto.response.RegistrationResponse;
 import pl.srm.registrationapi.registration.dto.response.RegistrationSummaryResponse;
 import pl.srm.registrationapi.registration.dto.request.StatusUpdateRequest;
-import pl.srm.registrationapi.registration.domain.Registration;
+import pl.srm.registrationapi.registration.model.Registration;
 import pl.srm.registrationapi.registration.service.ParticipantRegistrationService;
 import pl.srm.registrationapi.registration.service.RegistrationManagementService;
 import pl.srm.registrationapi.registration.service.StaffRegistrationService;

@@ -10,7 +10,7 @@ import pl.srm.registrationapi.registration.util.RegistrationCodeGenerator;
 import pl.srm.registrationapi.registration.parser.RegistrationContext;
 import pl.srm.registrationapi.registration.parser.RegistrationParser;
 import pl.srm.registrationapi.registration.validator.TurnusValidator;
-import pl.srm.registrationapi.registration.domain.Registration;
+import pl.srm.registrationapi.registration.model.Registration;
 import pl.srm.registrationapi.registration.exception.RegistrationException;
 import pl.srm.registrationapi.registration.repository.RegistrationRepository;
 import pl.srm.registrationapi.turnus.domain.Turnus;

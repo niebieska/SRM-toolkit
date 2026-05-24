@@ -1,4 +1,4 @@
-package pl.srm.registrationapi.registration.domain;
+package pl.srm.registrationapi.registration.model;
 
 import com.fasterxml.jackson.annotation.JsonRawValue;
 import jakarta.persistence.Column;

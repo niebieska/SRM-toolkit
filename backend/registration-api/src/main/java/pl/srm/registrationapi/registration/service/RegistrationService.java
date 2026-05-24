@@ -1,6 +1,6 @@
 package pl.srm.registrationapi.registration.service;
 
-import pl.srm.registrationapi.registration.domain.Registration;
+import pl.srm.registrationapi.registration.model.Registration;
 
 import java.util.List;
 
