@@ -5,7 +5,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.stereotype.Component;
 import pl.srm.registrationapi.registration.util.PeselHasher;
 import pl.srm.registrationapi.registration.exception.RegistrationException;
-import pl.srm.registrationapi.registration.service.PeselUtils;
+import pl.srm.registrationapi.registration.util.PeselHelper;
 
 import java.time.LocalDate;
 
@@ -13,14 +13,14 @@ import java.time.LocalDate;
 public class RegistrationParser {
 
     private final ObjectMapper objectMapper;
-    private final PeselUtils peselUtils;
+    private final PeselHelper peselHelper;
     private final PeselHasher peselHasher;
 
     public RegistrationParser(ObjectMapper objectMapper,
-                              PeselUtils peselUtils,
+                              PeselHelper peselHelper,
                               PeselHasher peselHasher) {
         this.objectMapper = objectMapper;
-        this.peselUtils = peselUtils;
+        this.peselHelper = peselHelper;
         this.peselHasher = peselHasher;
     }
 
@@ -34,7 +34,7 @@ public class RegistrationParser {
             JsonNode guardian = root.path("guardian");
             boolean hasGuardian = guardian.isObject() && !guardian.path("firstName").asText("").isBlank();
             boolean hasConsent1 = root.path("consents").path("dataProcessing").asBoolean(false);
-            boolean minor = peselUtils.isMinor(pesel, LocalDate.now());
+            boolean minor = peselHelper.isMinor(pesel, LocalDate.now());
 
             return new RegistrationContext(turnusCode, pesel, peselHash, minor, hasGuardian, hasConsent1);
         } catch (RegistrationException ex) {

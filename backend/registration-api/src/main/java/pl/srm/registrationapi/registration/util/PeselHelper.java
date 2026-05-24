@@ -1,4 +1,4 @@
-package pl.srm.registrationapi.registration.service;
+package pl.srm.registrationapi.registration.util;
 
 import org.springframework.stereotype.Component;
 
@@ -6,7 +6,7 @@ import java.time.LocalDate;
 import java.time.Period;
 
 @Component
-public class PeselUtils {
+public class PeselHelper {
 
     private static final int[] PESEL_WEIGHTS = {1, 3, 7, 9, 1, 3, 7, 9, 1, 3, 1};
 

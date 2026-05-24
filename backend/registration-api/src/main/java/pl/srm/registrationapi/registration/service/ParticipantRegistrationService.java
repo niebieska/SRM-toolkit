@@ -6,6 +6,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import pl.srm.registrationapi.email.client.EmailServiceClient;
+import pl.srm.registrationapi.registration.util.PeselHelper;
 import pl.srm.registrationapi.registration.util.RegistrationCodeGenerator;
 import pl.srm.registrationapi.registration.parser.RegistrationContext;
 import pl.srm.registrationapi.registration.parser.RegistrationParser;
@@ -28,7 +29,7 @@ public class ParticipantRegistrationService implements RegistrationService {
     private final RegistrationParser parser;
     private final TurnusProvider turnusProvider;
     private final TurnusValidator turnusValidator;
-    private final PeselUtils peselUtils;
+    private final PeselHelper peselHelper;
     private final RegistrationCodeGenerator codeGenerator;
     private final RegistrationRepository repository;
     private final ObjectMapper objectMapper;
@@ -37,7 +38,7 @@ public class ParticipantRegistrationService implements RegistrationService {
     public ParticipantRegistrationService(RegistrationParser parser,
                                           TurnusProvider turnusProvider,
                                           TurnusValidator turnusValidator,
-                                          PeselUtils peselUtils,
+                                          PeselHelper peselHelper,
                                           RegistrationCodeGenerator codeGenerator,
                                           RegistrationRepository repository,
                                           ObjectMapper objectMapper,
@@ -45,7 +46,7 @@ public class ParticipantRegistrationService implements RegistrationService {
         this.parser = parser;
         this.turnusProvider = turnusProvider;
         this.turnusValidator = turnusValidator;
-        this.peselUtils = peselUtils;
+        this.peselHelper = peselHelper;
         this.codeGenerator = codeGenerator;
         this.repository = repository;
         this.objectMapper = objectMapper;
@@ -72,7 +73,7 @@ public class ParticipantRegistrationService implements RegistrationService {
     }
 
     private void validatePesel(RegistrationContext data) {
-        if (!peselUtils.isValid(data.pesel())) {
+        if (!peselHelper.isValid(data.pesel())) {
             throw new RegistrationException("INVALID_PESEL", "Podany numer PESEL jest nieprawidłowy.");
         }
     }
@@ -90,7 +91,7 @@ public class ParticipantRegistrationService implements RegistrationService {
     }
 
     private void validateAge(RegistrationContext data, Turnus turnus) {
-        int age = peselUtils.calculateAge(data.pesel(), turnus.startDate());
+        int age = peselHelper.calculateAge(data.pesel(), turnus.startDate());
         if (age < turnus.minAge()) {
             throw new RegistrationException("AGE_TOO_LOW", "Uczestnik nie spełnia minimalnego wieku dla tego turnusu.");
         }

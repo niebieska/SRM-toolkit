@@ -2,14 +2,14 @@ package pl.srm.registrationapi.registration.parser;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.Test;
-import pl.srm.registrationapi.registration.service.PeselUtils;
+import pl.srm.registrationapi.registration.util.PeselHelper;
 import pl.srm.registrationapi.registration.util.PeselHasher;
 
 import static org.junit.jupiter.api.Assertions.*;
 
 class RegistrationParserTest {
 
-    private final RegistrationParser parser = new RegistrationParser(new ObjectMapper(), new PeselUtils(), new PeselHasher());
+    private final RegistrationParser parser = new RegistrationParser(new ObjectMapper(), new PeselHelper(), new PeselHasher());
 
     @Test
     void parsesNestedParticipantPayloadIntoContext() throws Exception {

@@ -7,6 +7,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import pl.srm.registrationapi.email.client.EmailServiceClient;
+import pl.srm.registrationapi.registration.util.PeselHelper;
 import pl.srm.registrationapi.registration.util.RegistrationCodeGenerator;
 import pl.srm.registrationapi.registration.parser.RegistrationContext;
 import pl.srm.registrationapi.registration.parser.RegistrationParser;
@@ -48,7 +49,7 @@ class StaffRegistrationServiceTest {
                 parser,
                 turnusProvider,
                 turnusValidator,
-                new PeselUtils(),
+                new PeselHelper(),
                 repository,
                 new RegistrationCodeGenerator(),
                 objectMapper,
