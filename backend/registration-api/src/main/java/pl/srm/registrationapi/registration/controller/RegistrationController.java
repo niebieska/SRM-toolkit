@@ -1,4 +1,4 @@
-package pl.srm.registrationapi.registration.api;
+package pl.srm.registrationapi.registration.controller;
 
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -8,6 +8,10 @@ import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
+import pl.srm.registrationapi.registration.dto.response.RegistrationDetailResponse;
+import pl.srm.registrationapi.registration.dto.response.RegistrationResponse;
+import pl.srm.registrationapi.registration.dto.response.RegistrationSummaryResponse;
+import pl.srm.registrationapi.registration.dto.request.StatusUpdateRequest;
 import pl.srm.registrationapi.registration.domain.Registration;
 import pl.srm.registrationapi.registration.service.ParticipantRegistrationService;
 import pl.srm.registrationapi.registration.service.RegistrationManagementService;

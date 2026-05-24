@@ -1,3 +1,3 @@
-package pl.srm.registrationapi.registration.api;
+package pl.srm.registrationapi.registration.dto.response;
 
 public record RegistrationResponse(String registrationCode) {}

@@ -1,4 +1,4 @@
-package pl.srm.registrationapi.email;
+package pl.srm.registrationapi.email.client;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;

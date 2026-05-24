@@ -1,4 +1,4 @@
-package pl.srm.registrationapi.registration.api;
+package pl.srm.registrationapi.registration.dto.response;
 
 import com.fasterxml.jackson.annotation.JsonRawValue;
 

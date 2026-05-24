@@ -7,7 +7,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import pl.srm.registrationapi.email.EmailServiceClient;
+import pl.srm.registrationapi.email.client.EmailServiceClient;
 import pl.srm.registrationapi.registration.util.RegistrationCodeGenerator;
 import pl.srm.registrationapi.registration.parser.RegistrationContext;
 import pl.srm.registrationapi.registration.parser.RegistrationParser;
