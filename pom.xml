@@ -19,7 +19,7 @@
     </properties>
     <modules>
         <module>backend/registration-api</module>
-        <module>biuro-api</module>
+        <module>backend/biuro-api</module>
         <module>email-service</module>
     </modules>
 </project>
