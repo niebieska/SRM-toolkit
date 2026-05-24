@@ -1,33 +1,96 @@
+# ======================
+# Java / Maven
+# ======================
+
 HELP.md
 target/
+**/target/
+
 .mvn/wrapper/maven-wrapper.jar
+
 !**/src/main/**/target/
 !**/src/test/**/target/
+
+# ======================
+# Node / Frontend
+# ======================
+
+node_modules/
+**/node_modules/
+
+dist/
+**/dist/
+
+coverage/
+**/coverage/
+
+vite.svg
+
+# ======================
+# IDE
+# ======================
+
+### IntelliJ ###
+.idea/
+*.iws
+*.iml
+*.ipr
+
+### VSCode ###
+.vscode/
 
 ### STS ###
 .apt_generated
 .classpath
 .factorypath
 .project
-.settings
+.settings/
 .springBeans
 .sts4-cache
 
-### IntelliJ IDEA ###
-.idea
-*.iws
-*.iml
-*.ipr
-
 ### NetBeans ###
-/nbproject/private/
-/nbbuild/
-/dist/
-/nbdist/
-/.nb-gradle/
+nbproject/private/
+nbbuild/
+nbdist/
+.nb-gradle/
+
+# ======================
+# OS
+# ======================
+
+.DS_Store
+Thumbs.db
+
+# ======================
+# Logs
+# ======================
+
+*.log
+logs/
+
+# ======================
+# Environment
+# ======================
+
+.env
+.env.*
+
+!.env.example
+
+# ======================
+# Docker
+# ======================
+
+docker-data/
+
+# ======================
+# Generated files
+# ======================
+
 build/
+**/build/
+
 !**/src/main/**/build/
 !**/src/test/**/build/
 
-### VS Code ###
-.vscode/
+out/
