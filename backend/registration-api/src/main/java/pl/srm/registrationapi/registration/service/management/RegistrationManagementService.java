@@ -8,6 +8,7 @@ import pl.srm.registrationapi.registration.dto.response.RegistrationSummaryRespo
 import pl.srm.registrationapi.registration.dto.request.StatusUpdateRequest;
 import pl.srm.registrationapi.registration.model.Registration;
 import pl.srm.registrationapi.registration.exception.RegistrationException;
+import pl.srm.registrationapi.registration.model.RegistrationType;
 import pl.srm.registrationapi.registration.repository.RegistrationRepository;
 
 import java.time.LocalDateTime;
@@ -116,5 +117,19 @@ public class RegistrationManagementService {
         }
         String trimmed = value.trim();
         return trimmed.isEmpty() ? null : trimmed;
+    }
+
+    public List<RegistrationSummaryResponse> getParticipants() {
+        return repository.findByRegistrationType(RegistrationType.PARTICIPANT.name())
+                .stream()
+                .map(this::toSummary)
+                .toList();
+    }
+
+    public List<RegistrationSummaryResponse> getStaff() {
+        return repository.findByRegistrationType(RegistrationType.STAFF.name())
+                .stream()
+                .map(this::toSummary)
+                .toList();
     }
 }

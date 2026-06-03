@@ -9,10 +9,9 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import pl.srm.registrationapi.email.client.EmailServiceClient;
 import pl.srm.registrationapi.registration.parser.RegistrationContext;
 import pl.srm.registrationapi.registration.parser.RegistrationParser;
-import pl.srm.registrationapi.registration.repository.RegistrationRepository;
+import pl.srm.registrationapi.registration.service.submission.RegistrationPersistenceService;
 import pl.srm.registrationapi.registration.service.submission.RegistrationValidationService;
 import pl.srm.registrationapi.registration.service.submission.StaffRegistrationService;
-import pl.srm.registrationapi.registration.util.RegistrationCodeGenerator;
 import pl.srm.registrationapi.registration.validator.TurnusValidator;
 import pl.srm.registrationapi.turnus.model.SeasonType;
 import pl.srm.registrationapi.turnus.model.Turnus;
@@ -31,18 +30,24 @@ class StaffRegistrationServiceTest {
 
     @Mock
     private RegistrationParser parser;
+
     @Mock
     private TurnusProvider turnusProvider;
+
     @Mock
     private TurnusValidator turnusValidator;
-    @Mock
-    private RegistrationRepository repository;
+
     @Mock
     private ObjectMapper objectMapper;
+
     @Mock
     private EmailServiceClient emailServiceClient;
+
     @Mock
     private RegistrationValidationService validationService;
+
+    @Mock
+    private RegistrationPersistenceService persistenceService;
 
     private StaffRegistrationService service;
 
@@ -52,20 +57,33 @@ class StaffRegistrationServiceTest {
                 parser,
                 turnusProvider,
                 turnusValidator,
-                repository,
-                new RegistrationCodeGenerator(),
                 objectMapper,
                 emailServiceClient,
-                validationService
-
+                validationService,
+                persistenceService
         );
     }
 
     @Test
     void sendsStaffConfirmationAndOrganizerNotification() throws Exception {
-        when(parser.parse(any())).thenReturn(new RegistrationContext("ZAGLE26T1", "90010112349", "hash123", false, true, true));
-        when(turnusProvider.getByCode("ZAGLE26T1")).thenReturn(turnus());
-        when(repository.countByTurnusCode("ZAGLE26T1")).thenReturn(1);
+
+        when(parser.parse(any())).thenReturn(
+                new RegistrationContext(
+                        "ZAGLE26T1",
+                        "90010112349",
+                        "hash123",
+                        false,
+                        true,
+                        true
+                )
+        );
+
+        when(turnusProvider.getByCode("ZAGLE26T1"))
+                .thenReturn(turnus());
+
+        when(persistenceService.saveStaff(any(), anyString()))
+                .thenReturn("REG-S-ZAGLE26T1-2");
+
         when(objectMapper.readTree(anyString())).thenReturn(
                 new ObjectMapper().readTree("""
                         {
@@ -83,19 +101,29 @@ class StaffRegistrationServiceTest {
         String code = service.register("{\"payload\":true}");
 
         assertEquals("REG-S-ZAGLE26T1-2", code);
-        verify(emailServiceClient).sendRegistrationConfirmation(
-                "kadra@example.com",
-                "Katarzyna Nowak",
-                "REG-S-ZAGLE26T1-2",
-                "STAFF",
-                "ZAGLE26T1"
-        );
-        verify(emailServiceClient).sendOrganizerNewRegistrationNotification(
-                "REG-S-ZAGLE26T1-2",
-                "STAFF",
-                "ZAGLE26T1",
-                "Katarzyna Nowak"
-        );
+
+        verify(validationService)
+                .validateEligibility(any(), any());
+
+        verify(persistenceService)
+                .saveStaff(any(), anyString());
+
+        verify(emailServiceClient)
+                .sendRegistrationConfirmation(
+                        "kadra@example.com",
+                        "Katarzyna Nowak",
+                        "REG-S-ZAGLE26T1-2",
+                        "STAFF",
+                        "ZAGLE26T1"
+                );
+
+        verify(emailServiceClient)
+                .sendOrganizerNewRegistrationNotification(
+                        "REG-S-ZAGLE26T1-2",
+                        "STAFF",
+                        "ZAGLE26T1",
+                        "Katarzyna Nowak"
+                );
     }
 
     private Turnus turnus() {

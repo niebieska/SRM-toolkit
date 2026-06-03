@@ -64,12 +64,12 @@ public class RegistrationController {
     }
 
     @GetMapping("/participant")
-    public List<Registration> getParticipants() {
-        return participantService.getAll();
+    public List<RegistrationSummaryResponse> getParticipants() {
+        return managementService.getParticipants();
     }
 
     @GetMapping("/staff")
-    public List<Registration> getStaff() {
-        return staffService.getAll();
+    public List<RegistrationSummaryResponse> getStaff() {
+        return managementService.getStaff();
     }
 }
