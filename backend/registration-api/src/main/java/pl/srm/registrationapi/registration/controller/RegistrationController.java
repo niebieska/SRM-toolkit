@@ -13,9 +13,9 @@ import pl.srm.registrationapi.registration.dto.response.RegistrationResponse;
 import pl.srm.registrationapi.registration.dto.response.RegistrationSummaryResponse;
 import pl.srm.registrationapi.registration.dto.request.StatusUpdateRequest;
 import pl.srm.registrationapi.registration.model.Registration;
-import pl.srm.registrationapi.registration.service.ParticipantRegistrationService;
-import pl.srm.registrationapi.registration.service.RegistrationManagementService;
-import pl.srm.registrationapi.registration.service.StaffRegistrationService;
+import pl.srm.registrationapi.registration.service.submission.ParticipantRegistrationService;
+import pl.srm.registrationapi.registration.service.management.RegistrationManagementService;
+import pl.srm.registrationapi.registration.service.submission.StaffRegistrationService;
 
 import java.util.List;
 

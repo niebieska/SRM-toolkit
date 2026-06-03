@@ -1,4 +1,4 @@
-package pl.srm.registrationapi.registration.service;
+package pl.srm.registrationapi.registration.service.management;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;

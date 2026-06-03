@@ -8,6 +8,7 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import pl.srm.registrationapi.email.client.EmailServiceClient;
+import pl.srm.registrationapi.registration.service.submission.ParticipantRegistrationService;
 import pl.srm.registrationapi.registration.util.PeselHelper;
 import pl.srm.registrationapi.registration.util.RegistrationCodeGenerator;
 import pl.srm.registrationapi.registration.parser.RegistrationContext;

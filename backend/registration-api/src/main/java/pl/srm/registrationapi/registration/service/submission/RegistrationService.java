@@ -1,4 +1,4 @@
-package pl.srm.registrationapi.registration.service;
+package pl.srm.registrationapi.registration.service.submission;
 
 import pl.srm.registrationapi.registration.model.Registration;
 
