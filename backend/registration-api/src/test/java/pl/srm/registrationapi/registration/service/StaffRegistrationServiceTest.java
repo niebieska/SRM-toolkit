@@ -7,13 +7,13 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import pl.srm.registrationapi.email.client.EmailServiceClient;
-import pl.srm.registrationapi.registration.service.submission.StaffRegistrationService;
-import pl.srm.registrationapi.registration.util.PeselHelper;
-import pl.srm.registrationapi.registration.util.RegistrationCodeGenerator;
 import pl.srm.registrationapi.registration.parser.RegistrationContext;
 import pl.srm.registrationapi.registration.parser.RegistrationParser;
-import pl.srm.registrationapi.registration.validator.TurnusValidator;
 import pl.srm.registrationapi.registration.repository.RegistrationRepository;
+import pl.srm.registrationapi.registration.service.submission.RegistrationValidationService;
+import pl.srm.registrationapi.registration.service.submission.StaffRegistrationService;
+import pl.srm.registrationapi.registration.util.RegistrationCodeGenerator;
+import pl.srm.registrationapi.registration.validator.TurnusValidator;
 import pl.srm.registrationapi.turnus.model.SeasonType;
 import pl.srm.registrationapi.turnus.model.Turnus;
 import pl.srm.registrationapi.turnus.service.TurnusProvider;
@@ -41,6 +41,8 @@ class StaffRegistrationServiceTest {
     private ObjectMapper objectMapper;
     @Mock
     private EmailServiceClient emailServiceClient;
+    @Mock
+    private RegistrationValidationService validationService;
 
     private StaffRegistrationService service;
 
@@ -50,11 +52,12 @@ class StaffRegistrationServiceTest {
                 parser,
                 turnusProvider,
                 turnusValidator,
-                new PeselHelper(),
                 repository,
                 new RegistrationCodeGenerator(),
                 objectMapper,
-                emailServiceClient
+                emailServiceClient,
+                validationService
+
         );
     }
 

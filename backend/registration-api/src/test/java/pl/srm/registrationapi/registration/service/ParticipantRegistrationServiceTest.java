@@ -8,15 +8,15 @@ import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import pl.srm.registrationapi.email.client.EmailServiceClient;
-import pl.srm.registrationapi.registration.service.submission.ParticipantRegistrationService;
-import pl.srm.registrationapi.registration.util.PeselHelper;
-import pl.srm.registrationapi.registration.util.RegistrationCodeGenerator;
+import pl.srm.registrationapi.registration.exception.RegistrationException;
+import pl.srm.registrationapi.registration.model.Registration;
 import pl.srm.registrationapi.registration.parser.RegistrationContext;
 import pl.srm.registrationapi.registration.parser.RegistrationParser;
-import pl.srm.registrationapi.registration.validator.TurnusValidator;
-import pl.srm.registrationapi.registration.model.Registration;
-import pl.srm.registrationapi.registration.exception.RegistrationException;
 import pl.srm.registrationapi.registration.repository.RegistrationRepository;
+import pl.srm.registrationapi.registration.service.submission.ParticipantRegistrationService;
+import pl.srm.registrationapi.registration.service.submission.RegistrationValidationService;
+import pl.srm.registrationapi.registration.util.RegistrationCodeGenerator;
+import pl.srm.registrationapi.registration.validator.TurnusValidator;
 import pl.srm.registrationapi.turnus.model.SeasonType;
 import pl.srm.registrationapi.turnus.model.Turnus;
 import pl.srm.registrationapi.turnus.service.TurnusProvider;
@@ -42,8 +42,11 @@ class ParticipantRegistrationServiceTest {
     private ObjectMapper objectMapper;
     @Mock
     private EmailServiceClient emailServiceClient;
+    @Mock
+    private RegistrationValidationService validationService;
 
     private ParticipantRegistrationService service;
+
 
     @BeforeEach
     void setUp() {
@@ -51,11 +54,11 @@ class ParticipantRegistrationServiceTest {
                 parser,
                 turnusProvider,
                 turnusValidator,
-                new PeselHelper(),
                 new RegistrationCodeGenerator(),
                 repository,
                 objectMapper,
-                emailServiceClient
+                emailServiceClient,
+                validationService
         );
     }
 
@@ -63,6 +66,12 @@ class ParticipantRegistrationServiceTest {
     void rejectsMinorWithoutGuardian() throws Exception {
         when(parser.parse(any())).thenReturn(new RegistrationContext("ZAGLE26T1", "10210112312", "hash", true, false, true));
         when(turnusProvider.getByCode("ZAGLE26T1")).thenReturn(turnus());
+        doThrow(new RegistrationException(
+                "MISSING_GUARDIAN",
+                "Dla osoby niepełnoletniej wymagane są dane opiekuna."
+        ))
+                .when(validationService)
+                .validateEligibility(any(), any());
 
         RegistrationException exception = assertThrows(RegistrationException.class, () -> service.register("payload"));
 

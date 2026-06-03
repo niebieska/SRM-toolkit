@@ -6,14 +6,12 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import pl.srm.registrationapi.email.client.EmailServiceClient;
-import pl.srm.registrationapi.registration.util.PeselHelper;
-import pl.srm.registrationapi.registration.util.RegistrationCodeGenerator;
+import pl.srm.registrationapi.registration.model.Registration;
 import pl.srm.registrationapi.registration.parser.RegistrationContext;
 import pl.srm.registrationapi.registration.parser.RegistrationParser;
-import pl.srm.registrationapi.registration.validator.TurnusValidator;
-import pl.srm.registrationapi.registration.model.Registration;
-import pl.srm.registrationapi.registration.exception.RegistrationException;
 import pl.srm.registrationapi.registration.repository.RegistrationRepository;
+import pl.srm.registrationapi.registration.util.RegistrationCodeGenerator;
+import pl.srm.registrationapi.registration.validator.TurnusValidator;
 import pl.srm.registrationapi.turnus.model.Turnus;
 import pl.srm.registrationapi.turnus.service.TurnusProvider;
 
@@ -29,28 +27,28 @@ public class StaffRegistrationService implements RegistrationService {
     private final RegistrationParser parser;
     private final TurnusProvider turnusProvider;
     private final TurnusValidator turnusValidator;
-    private final PeselHelper peselHelper;
     private final RegistrationRepository repository;
     private final RegistrationCodeGenerator codeGenerator;
     private final ObjectMapper objectMapper;
     private final EmailServiceClient emailServiceClient;
+    private final RegistrationValidationService validationService;
 
     public StaffRegistrationService(RegistrationParser parser,
                                     TurnusProvider turnusProvider,
                                     TurnusValidator turnusValidator,
-                                    PeselHelper peselHelper,
                                     RegistrationRepository repository,
                                     RegistrationCodeGenerator codeGenerator,
                                     ObjectMapper objectMapper,
-                                    EmailServiceClient emailServiceClient) {
+                                    EmailServiceClient emailServiceClient,
+                                    RegistrationValidationService validationService) {
         this.parser = parser;
         this.turnusProvider = turnusProvider;
         this.turnusValidator = turnusValidator;
-        this.peselHelper = peselHelper;
         this.repository = repository;
         this.codeGenerator = codeGenerator;
         this.objectMapper = objectMapper;
         this.emailServiceClient = emailServiceClient;
+        this.validationService = validationService;
     }
 
     @Override
@@ -58,50 +56,12 @@ public class StaffRegistrationService implements RegistrationService {
         RegistrationContext data = parser.parse(payload);
         Turnus turnus = turnusProvider.getByCode(data.turnusCode());
         turnusValidator.validate(turnus);
-        validatePayload(data, turnus);
-        validateDuplicate(data);
+        validationService.validateEligibility(data, turnus);
         String code = save(data, payload);
         sendRegistrationConfirmation(payload, data.turnusCode(), code);
         return code;
     }
 
-    private void validatePayload(RegistrationContext data, Turnus turnus) {
-        validatePesel(data);
-        validateGuardian(data);
-        validateConsents(data);
-        validateAge(data, turnus);
-    }
-
-    private void validatePesel(RegistrationContext data) {
-        if (!peselHelper.isValid(data.pesel())) {
-            throw new RegistrationException("INVALID_PESEL", "Podany numer PESEL jest nieprawidłowy.");
-        }
-    }
-
-    private void validateGuardian(RegistrationContext data) {
-        if (data.isMinor() && !data.hasGuardian()) {
-            throw new RegistrationException("MISSING_GUARDIAN", "Dla osoby niepełnoletniej wymagane są dane opiekuna.");
-        }
-    }
-
-    private void validateConsents(RegistrationContext data) {
-        if (!data.hasConsent1()) {
-            throw new RegistrationException("MISSING_CONSENTS", "Wymagana jest zgoda na przetwarzanie danych osobowych.");
-        }
-    }
-
-    private void validateAge(RegistrationContext data, Turnus turnus) {
-        int age = peselHelper.calculateAge(data.pesel(), turnus.startDate());
-        if (age < turnus.minAge()) {
-            throw new RegistrationException("AGE_TOO_LOW", "Osoba zgłaszana nie spełnia minimalnego wieku dla tego turnusu.");
-        }
-    }
-
-    private void validateDuplicate(RegistrationContext data) {
-        if (repository.existsByTurnusCodeAndPeselHash(data.turnusCode(), data.key())) {
-            throw new RegistrationException("ALREADY_REGISTERED", "Ta osoba jest już zarejestrowana na ten turnus.");
-        }
-    }
 
     private String save(RegistrationContext data, String payload) {
         int count = repository.countByTurnusCode(data.turnusCode());

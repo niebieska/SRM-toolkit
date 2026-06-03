@@ -29,28 +29,28 @@ public class ParticipantRegistrationService implements RegistrationService {
     private final RegistrationParser parser;
     private final TurnusProvider turnusProvider;
     private final TurnusValidator turnusValidator;
-    private final PeselHelper peselHelper;
     private final RegistrationCodeGenerator codeGenerator;
     private final RegistrationRepository repository;
     private final ObjectMapper objectMapper;
     private final EmailServiceClient emailServiceClient;
+    private final RegistrationValidationService validationService;
 
     public ParticipantRegistrationService(RegistrationParser parser,
                                           TurnusProvider turnusProvider,
                                           TurnusValidator turnusValidator,
-                                          PeselHelper peselHelper,
                                           RegistrationCodeGenerator codeGenerator,
                                           RegistrationRepository repository,
                                           ObjectMapper objectMapper,
-                                          EmailServiceClient emailServiceClient) {
+                                          EmailServiceClient emailServiceClient,
+                                          RegistrationValidationService validationService) {
         this.parser = parser;
         this.turnusProvider = turnusProvider;
         this.turnusValidator = turnusValidator;
-        this.peselHelper = peselHelper;
         this.codeGenerator = codeGenerator;
         this.repository = repository;
         this.objectMapper = objectMapper;
         this.emailServiceClient = emailServiceClient;
+        this.validationService = validationService;
     }
 
     @Override
@@ -58,49 +58,10 @@ public class ParticipantRegistrationService implements RegistrationService {
         RegistrationContext data = parser.parse(payload);
         Turnus turnus = turnusProvider.getByCode(data.turnusCode());
         turnusValidator.validate(turnus);
-        validatePayload(data, turnus);
-        validateDuplicate(data);
-        String code = save(data, payload);
+        validationService.validateEligibility(data, turnus);
+               String code = save(data, payload);
         sendRegistrationConfirmation(payload, data, code);
         return code;
-    }
-
-    private void validatePayload(RegistrationContext data, Turnus turnus) {
-        validatePesel(data);
-        validateGuardian(data);
-        validateConsents(data);
-        validateAge(data, turnus);
-    }
-
-    private void validatePesel(RegistrationContext data) {
-        if (!peselHelper.isValid(data.pesel())) {
-            throw new RegistrationException("INVALID_PESEL", "Podany numer PESEL jest nieprawidłowy.");
-        }
-    }
-
-    private void validateGuardian(RegistrationContext data) {
-        if (data.isMinor() && !data.hasGuardian()) {
-            throw new RegistrationException("MISSING_GUARDIAN", "Dla osoby niepełnoletniej wymagane są dane opiekuna.");
-        }
-    }
-
-    private void validateConsents(RegistrationContext data) {
-        if (!data.hasConsent1()) {
-            throw new RegistrationException("MISSING_CONSENTS", "Wymagana jest zgoda na przetwarzanie danych osobowych.");
-        }
-    }
-
-    private void validateAge(RegistrationContext data, Turnus turnus) {
-        int age = peselHelper.calculateAge(data.pesel(), turnus.startDate());
-        if (age < turnus.minAge()) {
-            throw new RegistrationException("AGE_TOO_LOW", "Uczestnik nie spełnia minimalnego wieku dla tego turnusu.");
-        }
-    }
-
-    private void validateDuplicate(RegistrationContext data) {
-        if (repository.existsByTurnusCodeAndPeselHash(data.turnusCode(), data.key())) {
-            throw new RegistrationException("ALREADY_REGISTERED", "Ta osoba jest już zarejestrowana na ten turnus.");
-        }
     }
 
     private String save(RegistrationContext data, String payload) {
