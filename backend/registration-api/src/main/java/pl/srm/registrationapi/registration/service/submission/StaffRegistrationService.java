@@ -56,7 +56,7 @@ public class StaffRegistrationService implements RegistrationService {
                 data.turnusCode()
         );
 
-        notificationService.sendStaffRegistrationConfirmation(payload, data.turnusCode(), code);
+        notificationService.sendStaffRegistrationConfirmation(payload,data, code);
 
         return code;
     }

@@ -22,6 +22,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.ArgumentMatchers.same;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -30,14 +31,19 @@ class StaffRegistrationServiceTest {
 
     @Mock
     private RegistrationParser parser;
+
     @Mock
     private TurnusProvider turnusProvider;
+
     @Mock
     private TurnusValidator turnusValidator;
+
     @Mock
     private RegistrationValidationService validationService;
+
     @Mock
     private RegistrationPersistenceService persistenceService;
+
     @Mock
     private RegistrationNotificationService notificationService;
 
@@ -76,12 +82,13 @@ class StaffRegistrationServiceTest {
         assertEquals("REG-S-ZAGLE26T1-2", code);
 
         verify(turnusValidator).validate(any());
-        verify(validationService).validateEligibility(eq(context), any());
-        verify(persistenceService).saveStaff(context, "{\"payload\":true}");
+        verify(validationService).validateEligibility(same(context), any());
+        verify(persistenceService).saveStaff(same(context), eq("{\"payload\":true}"));
+
         verify(notificationService).sendStaffRegistrationConfirmation(
-                "{\"payload\":true}",
-                "ZAGLE26T1",
-                "REG-S-ZAGLE26T1-2"
+                eq("{\"payload\":true}"),
+                same(context),
+                eq("REG-S-ZAGLE26T1-2")
         );
     }
 

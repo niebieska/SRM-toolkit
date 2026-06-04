@@ -14,38 +14,35 @@ public class RegistrationNotificationService {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(RegistrationNotificationService.class);
 
-    private final ObjectMapper objectMapper = new ObjectMapper();
     private final EmailServiceClient emailServiceClient;
+    private final ObjectMapper objectMapper;
 
-    public RegistrationNotificationService(EmailServiceClient emailServiceClient) {
+    public RegistrationNotificationService(EmailServiceClient emailServiceClient,
+                                           ObjectMapper objectMapper) {
         this.emailServiceClient = emailServiceClient;
+        this.objectMapper = objectMapper;
     }
 
-
-   public void sendParticipantRegistrationConfirmation(String payload,
-                                              RegistrationContext data,
-                                              String registrationCode) {
+    public void sendParticipantRegistrationConfirmation(String payload,
+                                                        RegistrationContext data,
+                                                        String registrationCode) {
         try {
             JsonNode root = objectMapper.readTree(payload);
-            JsonNode recipient = data.isMinor() ? root.path("guardian") : root.path("person");
+
+            JsonNode recipient = data.isMinor()
+                    ? root.path("guardian")
+                    : root.path("person");
+
             JsonNode participant = root.path("person");
 
-            String to = recipient.path("contact").path("email").asText("").trim();
-            String firstName = recipient.path("firstName").asText("").trim();
-            String lastName = recipient.path("lastName").asText("").trim();
+            String recipientName = fullName(recipient, "Uczestniku");
+            String participantName = fullName(participant, "Nieznany uczestnik");
 
-            String recipientName = (firstName + " " + lastName).trim();
-            if (recipientName.isBlank()) {
-                recipientName = "Uczestniku";
-            }
-
-            String participantName = participantFullName(participant);
-
-            emailServiceClient.sendRegistrationConfirmation(
-                    to,
+            sendConfirmation(
+                    recipient,
                     recipientName,
                     registrationCode,
-                    RegistrationType.PARTICIPANT.name(),
+                    RegistrationType.PARTICIPANT,
                     data.turnusCode()
             );
 
@@ -60,41 +57,40 @@ public class RegistrationNotificationService {
         }
     }
 
-    private String participantFullName(JsonNode participant) {
-        String firstName = participant.path("firstName").asText("").trim();
-        String lastName = participant.path("lastName").asText("").trim();
-        String participantName = (firstName + " " + lastName).trim();
-
-        return participantName.isBlank() ? "Nieznany uczestnik" : participantName;
-    }
-
-   public void sendStaffRegistrationConfirmation(String payload, String turnusCode, String registrationCode) {
+    public void sendStaffRegistrationConfirmation(String payload,
+                                                  RegistrationContext data,
+                                                  String registrationCode) {
         try {
-            JsonNode person = objectMapper.readTree(payload).path("person");
-            String to = person.path("contact").path("email").asText("").trim();
-            String firstName = person.path("firstName").asText("").trim();
-            String lastName = person.path("lastName").asText("").trim();
+            JsonNode root = objectMapper.readTree(payload);
+            JsonNode person = root.path("person");
 
-            String staffName = (firstName + " " + lastName).trim();
-            String recipientName = staffName;
+            String staffName = fullName(person, "Nieznana kadra");
 
-            if (staffName.isBlank()) {
-                recipientName = "Kadro";
-                staffName = "Nieznana kadra";
-            }
-
-            emailServiceClient.sendRegistrationConfirmation(
-                    to,
-                    recipientName,
+            sendConfirmation(
+                    person,
+                    staffName,
                     registrationCode,
-                    RegistrationType.STAFF.name(),
-                    turnusCode
+                    RegistrationType.STAFF,
+                    data.turnusCode()
             );
+
+            if (data.isMinor()) {
+                JsonNode guardian = root.path("guardian");
+                String guardianName = fullName(guardian, "Opiekunie");
+
+                sendConfirmation(
+                        guardian,
+                        guardianName,
+                        registrationCode,
+                        RegistrationType.STAFF,
+                        data.turnusCode()
+                );
+            }
 
             emailServiceClient.sendOrganizerNewRegistrationNotification(
                     registrationCode,
                     RegistrationType.STAFF.name(),
-                    turnusCode,
+                    data.turnusCode(),
                     staffName
             );
         } catch (Exception exception) {
@@ -102,4 +98,27 @@ public class RegistrationNotificationService {
         }
     }
 
+    private void sendConfirmation(JsonNode recipient,
+                                  String recipientName,
+                                  String registrationCode,
+                                  RegistrationType registrationType,
+                                  String turnusCode) {
+        String to = recipient.path("contact").path("email").asText("").trim();
+
+        emailServiceClient.sendRegistrationConfirmation(
+                to,
+                recipientName,
+                registrationCode,
+                registrationType.name(),
+                turnusCode
+        );
+    }
+
+    private String fullName(JsonNode node, String fallback) {
+        String firstName = node.path("firstName").asText("").trim();
+        String lastName = node.path("lastName").asText("").trim();
+        String fullName = (firstName + " " + lastName).trim();
+
+        return fullName.isBlank() ? fallback : fullName;
+    }
 }
