@@ -6,7 +6,6 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestClient;
-import pl.srm.registrationapi.registration.model.RegistrationStatus;
 
 import java.util.Map;
 
@@ -18,40 +17,28 @@ public class EmailServiceClient {
     private final RestClient restClient;
 
     public EmailServiceClient(RestClient.Builder restClientBuilder,
-                              @Value("${email.service.url:http://localhost:8082}") String emailServiceUrl
-                             ) {
+                              @Value("${email.service.url:http://localhost:8082}") String emailServiceUrl) {
         this.restClient = restClientBuilder.baseUrl(emailServiceUrl).build();
-
     }
 
-    public void sendRegistrationConfirmation(String to,
-                                             String recipientName,
-                                             String registeredName,
-                                             String registrationCode,
-                                             String registrationType,
-                                             String turnusCode) {
+    public void sendEmail(String to,
+                          String templateName,
+                          Map<String, String> variables) {
         if (to == null || to.isBlank()) {
-            LOGGER.warn("Skipping registration email - missing recipient address for code {}", registrationCode);
+            LOGGER.warn("Skipping email - missing recipient address for template {}", templateName);
             return;
         }
 
         SendEmailRequest request = new SendEmailRequest(
                 to,
-                "registration-confirmation",
-                Map.of(
-                        "registrationCode", registrationCode,
-                        "registrationType", registrationType,
-                        "turnusCode", turnusCode,
-                        "recipientName", recipientName,
-                        "registeredName", registeredName,
-                        "status", RegistrationStatus.NEW.name()
-                )
+                templateName,
+                variables == null ? Map.of() : variables
         );
 
-        sendEmailRequest(request, registrationCode, "registration confirmation");
+        sendEmailRequest(request, templateName);
     }
 
-    private void sendEmailRequest(SendEmailRequest request, String registrationCode, String emailType) {
+    private void sendEmailRequest(SendEmailRequest request, String templateName) {
         try {
             restClient.post()
                     .uri("/api/email/send")
@@ -60,9 +47,9 @@ public class EmailServiceClient {
                     .retrieve()
                     .toBodilessEntity();
 
-            LOGGER.debug("Sent {} email for registration {}", emailType, registrationCode);
+            LOGGER.debug("Sent email using template {}", templateName);
         } catch (Exception exception) {
-            LOGGER.error("Failed to call email-service for {} of registration {}", emailType, registrationCode, exception);
+            LOGGER.error("Failed to call email-service for template {}", templateName, exception);
         }
     }
 

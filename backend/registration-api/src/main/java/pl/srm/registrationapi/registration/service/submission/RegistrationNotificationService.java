@@ -6,13 +6,18 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import pl.srm.registrationapi.email.client.EmailServiceClient;
+import pl.srm.registrationapi.registration.model.RegistrationStatus;
 import pl.srm.registrationapi.registration.model.RegistrationType;
 import pl.srm.registrationapi.registration.parser.RegistrationContext;
+
+import java.util.Map;
 
 @Service
 public class RegistrationNotificationService {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(RegistrationNotificationService.class);
+    private static final String PARTICIPANT_TEMPLATE = "registration-confirmation-participant";
+    private static final String STAFF_TEMPLATE = "registration-confirmation-staff";
 
     private final EmailServiceClient emailServiceClient;
     private final ObjectMapper objectMapper;
@@ -37,16 +42,15 @@ public class RegistrationNotificationService {
             String recipientName = fullName(recipient, "Uczestniku");
             String registeredName = fullName(participant, "Nieznany uczestnik");
 
-            sendConfirmation(
+            sendParticipantConfirmation(
                     recipient,
                     recipientName,
                     registeredName,
                     registrationCode,
-                    RegistrationType.PARTICIPANT,
                     data.turnusCode()
             );
         } catch (Exception exception) {
-            LOGGER.error("Failed to prepare registration confirmation email for {}", registrationCode, exception);
+            LOGGER.error("Failed to prepare participant registration confirmation email for {}", registrationCode, exception);
         }
     }
 
@@ -57,14 +61,15 @@ public class RegistrationNotificationService {
             JsonNode root = objectMapper.readTree(payload);
             JsonNode staff = root.path("person");
 
+            String staffRole = getStaffRole(root);
             String staffName = fullName(staff, "Nieznana kadra");
 
-            sendConfirmation(
+            sendStaffConfirmation(
                     staff,
                     staffName,
                     staffName,
+                    staffRole,
                     registrationCode,
-                    RegistrationType.STAFF,
                     data.turnusCode()
             );
 
@@ -72,35 +77,61 @@ public class RegistrationNotificationService {
                 JsonNode guardian = root.path("guardian");
                 String guardianName = fullName(guardian, "Opiekunie");
 
-                sendConfirmation(
+                sendStaffConfirmation(
                         guardian,
                         guardianName,
                         staffName,
+                        staffRole,
                         registrationCode,
-                        RegistrationType.STAFF,
                         data.turnusCode()
                 );
             }
         } catch (Exception exception) {
-            LOGGER.error("Failed to prepare registration confirmation email for {}", registrationCode, exception);
+            LOGGER.error("Failed to prepare staff registration confirmation email for {}", registrationCode, exception);
         }
     }
 
-    private void sendConfirmation(JsonNode recipient,
-                                  String recipientName,
-                                  String registeredName,
-                                  String registrationCode,
-                                  RegistrationType registrationType,
-                                  String turnusCode) {
+    private void sendParticipantConfirmation(JsonNode recipient,
+                                             String recipientName,
+                                             String registeredName,
+                                             String registrationCode,
+                                             String turnusCode) {
         String to = recipient.path("contact").path("email").asText("").trim();
 
-        emailServiceClient.sendRegistrationConfirmation(
+        emailServiceClient.sendEmail(
                 to,
-                recipientName,
-                registeredName,
-                registrationCode,
-                registrationType.name(),
-                turnusCode
+                PARTICIPANT_TEMPLATE,
+                Map.of(
+                        "recipientName", recipientName,
+                        "registeredName", registeredName,
+                        "registrationCode", registrationCode,
+                        "registrationType", RegistrationType.PARTICIPANT.name(),
+                        "turnusCode", turnusCode,
+                        "status", RegistrationStatus.NEW.name()
+                )
+        );
+    }
+
+    private void sendStaffConfirmation(JsonNode recipient,
+                                       String recipientName,
+                                       String registeredName,
+                                       String staffRole,
+                                       String registrationCode,
+                                       String turnusCode) {
+        String to = recipient.path("contact").path("email").asText("").trim();
+
+        emailServiceClient.sendEmail(
+                to,
+                STAFF_TEMPLATE,
+                Map.of(
+                        "recipientName", recipientName,
+                        "registeredName", registeredName,
+                        "staffRole", staffRole,
+                        "registrationCode", registrationCode,
+                        "registrationType", RegistrationType.STAFF.name(),
+                        "turnusCode", turnusCode,
+                        "status", RegistrationStatus.NEW.name()
+                )
         );
     }
 
@@ -110,5 +141,15 @@ public class RegistrationNotificationService {
         String fullName = (firstName + " " + lastName).trim();
 
         return fullName.isBlank() ? fallback : fullName;
+    }
+
+    private String getStaffRole(JsonNode root) {
+        String role = root.path("staff").path("role").asText("").trim();
+
+        if (role.isBlank()) {
+            role = root.path("role").asText("").trim();
+        }
+
+        return role.isBlank() ? "Kadra" : role;
     }
 }
