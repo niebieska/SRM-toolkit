@@ -1,14 +1,13 @@
 package pl.srm.registrationapi.registration.service;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import pl.srm.registrationapi.email.client.EmailServiceClient;
 import pl.srm.registrationapi.registration.parser.RegistrationContext;
 import pl.srm.registrationapi.registration.parser.RegistrationParser;
+import pl.srm.registrationapi.registration.service.submission.RegistrationNotificationService;
 import pl.srm.registrationapi.registration.service.submission.RegistrationPersistenceService;
 import pl.srm.registrationapi.registration.service.submission.RegistrationValidationService;
 import pl.srm.registrationapi.registration.service.submission.StaffRegistrationService;
@@ -22,6 +21,7 @@ import java.time.LocalDate;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -30,24 +30,16 @@ class StaffRegistrationServiceTest {
 
     @Mock
     private RegistrationParser parser;
-
     @Mock
     private TurnusProvider turnusProvider;
-
     @Mock
     private TurnusValidator turnusValidator;
-
-    @Mock
-    private ObjectMapper objectMapper;
-
-    @Mock
-    private EmailServiceClient emailServiceClient;
-
     @Mock
     private RegistrationValidationService validationService;
-
     @Mock
     private RegistrationPersistenceService persistenceService;
+    @Mock
+    private RegistrationNotificationService notificationService;
 
     private StaffRegistrationService service;
 
@@ -57,73 +49,40 @@ class StaffRegistrationServiceTest {
                 parser,
                 turnusProvider,
                 turnusValidator,
-                objectMapper,
-                emailServiceClient,
                 validationService,
-                persistenceService
+                persistenceService,
+                notificationService
         );
     }
 
     @Test
-    void sendsStaffConfirmationAndOrganizerNotification() throws Exception {
-
-        when(parser.parse(any())).thenReturn(
-                new RegistrationContext(
-                        "ZAGLE26T1",
-                        "90010112349",
-                        "hash123",
-                        false,
-                        true,
-                        true
-                )
+    void registersStaffAndSendsNotification() {
+        RegistrationContext context = new RegistrationContext(
+                "ZAGLE26T1",
+                "90010112349",
+                "hash123",
+                false,
+                true,
+                true
         );
 
-        when(turnusProvider.getByCode("ZAGLE26T1"))
-                .thenReturn(turnus());
-
-        when(persistenceService.saveStaff(any(), anyString()))
+        when(parser.parse(anyString())).thenReturn(context);
+        when(turnusProvider.getByCode("ZAGLE26T1")).thenReturn(turnus());
+        when(persistenceService.saveStaff(context, "{\"payload\":true}"))
                 .thenReturn("REG-S-ZAGLE26T1-2");
-
-        when(objectMapper.readTree(anyString())).thenReturn(
-                new ObjectMapper().readTree("""
-                        {
-                          "person": {
-                            "contact": {
-                              "email": "kadra@example.com"
-                            },
-                            "firstName": "Katarzyna",
-                            "lastName": "Nowak"
-                          }
-                        }
-                        """)
-        );
 
         String code = service.register("{\"payload\":true}");
 
         assertEquals("REG-S-ZAGLE26T1-2", code);
 
-        verify(validationService)
-                .validateEligibility(any(), any());
-
-        verify(persistenceService)
-                .saveStaff(any(), anyString());
-
-        verify(emailServiceClient)
-                .sendRegistrationConfirmation(
-                        "kadra@example.com",
-                        "Katarzyna Nowak",
-                        "REG-S-ZAGLE26T1-2",
-                        "STAFF",
-                        "ZAGLE26T1"
-                );
-
-        verify(emailServiceClient)
-                .sendOrganizerNewRegistrationNotification(
-                        "REG-S-ZAGLE26T1-2",
-                        "STAFF",
-                        "ZAGLE26T1",
-                        "Katarzyna Nowak"
-                );
+        verify(turnusValidator).validate(any());
+        verify(validationService).validateEligibility(eq(context), any());
+        verify(persistenceService).saveStaff(context, "{\"payload\":true}");
+        verify(notificationService).sendStaffRegistrationConfirmation(
+                "{\"payload\":true}",
+                "ZAGLE26T1",
+                "REG-S-ZAGLE26T1-2"
+        );
     }
 
     private Turnus turnus() {

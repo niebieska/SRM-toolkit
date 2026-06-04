@@ -1,16 +1,15 @@
 package pl.srm.registrationapi.registration.service;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import pl.srm.registrationapi.email.client.EmailServiceClient;
 import pl.srm.registrationapi.registration.exception.RegistrationException;
 import pl.srm.registrationapi.registration.parser.RegistrationContext;
 import pl.srm.registrationapi.registration.parser.RegistrationParser;
 import pl.srm.registrationapi.registration.service.submission.ParticipantRegistrationService;
+import pl.srm.registrationapi.registration.service.submission.RegistrationNotificationService;
 import pl.srm.registrationapi.registration.service.submission.RegistrationPersistenceService;
 import pl.srm.registrationapi.registration.service.submission.RegistrationValidationService;
 import pl.srm.registrationapi.registration.validator.TurnusValidator;
@@ -24,6 +23,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -33,24 +33,16 @@ class ParticipantRegistrationServiceTest {
 
     @Mock
     private RegistrationParser parser;
-
     @Mock
     private TurnusProvider turnusProvider;
-
     @Mock
     private TurnusValidator turnusValidator;
-
-    @Mock
-    private ObjectMapper objectMapper;
-
-    @Mock
-    private EmailServiceClient emailServiceClient;
-
     @Mock
     private RegistrationValidationService validationService;
-
     @Mock
     private RegistrationPersistenceService persistenceService;
+    @Mock
+    private RegistrationNotificationService notificationService;
 
     private ParticipantRegistrationService service;
 
@@ -60,10 +52,9 @@ class ParticipantRegistrationServiceTest {
                 parser,
                 turnusProvider,
                 turnusValidator,
-                objectMapper,
-                emailServiceClient,
                 validationService,
-                persistenceService
+                persistenceService,
+                notificationService
         );
     }
 
@@ -78,11 +69,8 @@ class ParticipantRegistrationServiceTest {
                 true
         );
 
-        when(parser.parse(any()))
-                .thenReturn(context);
-
-        when(turnusProvider.getByCode("ZAGLE26T1"))
-                .thenReturn(turnus());
+        when(parser.parse(anyString())).thenReturn(context);
+        when(turnusProvider.getByCode("ZAGLE26T1")).thenReturn(turnus());
 
         doThrow(new RegistrationException(
                 "MISSING_GUARDIAN",
@@ -98,12 +86,11 @@ class ParticipantRegistrationServiceTest {
 
         assertEquals("MISSING_GUARDIAN", exception.getCode());
 
-        verify(validationService)
-                .validateEligibility(any(), any());
+        verify(validationService).validateEligibility(eq(context), any());
     }
 
     @Test
-    void sendsAdultParticipantConfirmationAndOrganizerNotification() throws Exception {
+    void registersAdultParticipantAndSendsNotification() {
         RegistrationContext context = new RegistrationContext(
                 "ZAGLE26T1",
                 "90010112349",
@@ -113,57 +100,27 @@ class ParticipantRegistrationServiceTest {
                 true
         );
 
-        when(parser.parse(any()))
-                .thenReturn(context);
-
-        when(turnusProvider.getByCode("ZAGLE26T1"))
-                .thenReturn(turnus());
-
-        when(persistenceService.saveParticipant(any(), anyString()))
+        when(parser.parse(anyString())).thenReturn(context);
+        when(turnusProvider.getByCode("ZAGLE26T1")).thenReturn(turnus());
+        when(persistenceService.saveParticipant(context, "{\"payload\":true}"))
                 .thenReturn("REG-P-ZAGLE26T1-3");
-
-        when(objectMapper.readTree(anyString())).thenReturn(
-                new ObjectMapper().readTree("""
-                        {
-                          "person": {
-                            "contact": {
-                              "email": "jan.kowalski@example.com"
-                            },
-                            "firstName": "Jan",
-                            "lastName": "Kowalski"
-                          }
-                        }
-                        """)
-        );
 
         String code = service.register("{\"payload\":true}");
 
         assertEquals("REG-P-ZAGLE26T1-3", code);
 
-        verify(validationService)
-                .validateEligibility(any(), any());
-
-        verify(persistenceService)
-                .saveParticipant(any(), anyString());
-
-        verify(emailServiceClient).sendRegistrationConfirmation(
-                "jan.kowalski@example.com",
-                "Jan Kowalski",
-                "REG-P-ZAGLE26T1-3",
-                "PARTICIPANT",
-                "ZAGLE26T1"
-        );
-
-        verify(emailServiceClient).sendOrganizerNewRegistrationNotification(
-                "REG-P-ZAGLE26T1-3",
-                "PARTICIPANT",
-                "ZAGLE26T1",
-                "Jan Kowalski"
+        verify(turnusValidator).validate(any());
+        verify(validationService).validateEligibility(eq(context), any());
+        verify(persistenceService).saveParticipant(context, "{\"payload\":true}");
+        verify(notificationService).sendParticipantRegistrationConfirmation(
+                "{\"payload\":true}",
+                context,
+                "REG-P-ZAGLE26T1-3"
         );
     }
 
     @Test
-    void sendsMinorConfirmationToGuardianAndOrganizerNotificationForParticipant() throws Exception {
+    void registersMinorParticipantAndSendsNotification() {
         RegistrationContext context = new RegistrationContext(
                 "ZAGLE26T1",
                 "10210112312",
@@ -173,59 +130,21 @@ class ParticipantRegistrationServiceTest {
                 true
         );
 
-        when(parser.parse(any()))
-                .thenReturn(context);
-
-        when(turnusProvider.getByCode("ZAGLE26T1"))
-                .thenReturn(turnus());
-
-        when(persistenceService.saveParticipant(any(), anyString()))
+        when(parser.parse(anyString())).thenReturn(context);
+        when(turnusProvider.getByCode("ZAGLE26T1")).thenReturn(turnus());
+        when(persistenceService.saveParticipant(context, "{\"payload\":true}"))
                 .thenReturn("REG-P-ZAGLE26T1-5");
-
-        when(objectMapper.readTree(anyString())).thenReturn(
-                new ObjectMapper().readTree("""
-                        {
-                          "person": {
-                            "contact": {
-                              "email": ""
-                            },
-                            "firstName": "Ania",
-                            "lastName": "Nowak"
-                          },
-                          "guardian": {
-                            "contact": {
-                              "email": "rodzic@example.com"
-                            },
-                            "firstName": "Adam",
-                            "lastName": "Nowak"
-                          }
-                        }
-                        """)
-        );
 
         String code = service.register("{\"payload\":true}");
 
         assertEquals("REG-P-ZAGLE26T1-5", code);
 
-        verify(validationService)
-                .validateEligibility(any(), any());
-
-        verify(persistenceService)
-                .saveParticipant(any(), anyString());
-
-        verify(emailServiceClient).sendRegistrationConfirmation(
-                "rodzic@example.com",
-                "Adam Nowak",
-                "REG-P-ZAGLE26T1-5",
-                "PARTICIPANT",
-                "ZAGLE26T1"
-        );
-
-        verify(emailServiceClient).sendOrganizerNewRegistrationNotification(
-                "REG-P-ZAGLE26T1-5",
-                "PARTICIPANT",
-                "ZAGLE26T1",
-                "Ania Nowak"
+        verify(validationService).validateEligibility(eq(context), any());
+        verify(persistenceService).saveParticipant(context, "{\"payload\":true}");
+        verify(notificationService).sendParticipantRegistrationConfirmation(
+                "{\"payload\":true}",
+                context,
+                "REG-P-ZAGLE26T1-5"
         );
     }
 
