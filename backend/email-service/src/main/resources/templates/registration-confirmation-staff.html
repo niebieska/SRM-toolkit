@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="pl" xmlns:th="http://www.thymeleaf.org">
+<head>
+    <meta charset="UTF-8"/>
+    <title>Potwierdzenie zgłoszenia kadry</title>
+</head>
+<body style="font-family: Arial, sans-serif; color: #1d1d1d; line-height: 1.5;">
+<div style="max-width: 640px; margin: 0 auto; padding: 24px; border: 1px solid #e5e5e5; border-radius: 8px;">
+
+    <!-- Greeting -->
+    <p>Dzień dobry,</p>
+
+    <!-- Intro -->
+    <p>
+        Dziękujemy za zgłoszenie:
+        <strong th:text="${registeredName}">Jan Kowalski</strong>
+        w roli
+        <strong th:text="${staffRole}">Animator</strong>.
+    </p>
+
+    <p style="margin: 8px 0 0 0;">
+        Wybrany turnus:
+    </p>
+
+    <!-- Turnus info -->
+    <div style="margin: 16px 0;">
+        <p style="margin: 4px 0;">
+            Nazwa:
+            <strong th:text="${turnusName}">Rekolekcje pod żaglami</strong>
+        </p>
+
+        <p style="margin: 4px 0;">
+            Termin:
+            <strong>
+                <span th:text="${turnusStartDate}">01.07.2026</span>
+                –
+                <span th:text="${turnusEndDate}">10.07.2026</span>
+            </strong>
+        </p>
+
+        <p style="margin: 4px 0;">
+            Opis:
+            <strong th:text="${turnusDescription}">
+                Letni turnus wypoczynkowy.
+            </strong>
+        </p>
+    </div>
+
+    <!-- Registration code -->
+    <hr style="border: none; border-top: 1px solid #ececec; margin: 24px 0;"/>
+
+    <div style="margin: 20px 0; padding: 16px; background: #f5f7ff; border-radius: 6px;">
+        <p style="margin: 0 0 8px 0;">Kod zgłoszenia:</p>
+
+        <p style="margin: 0; font-size: 22px; font-weight: bold; letter-spacing: 1px;"
+           th:text="${registrationCode}">
+            KAD-2026-00042
+        </p>
+    </div>
+
+    <hr style="border: none; border-top: 1px solid #ececec; margin: 24px 0;"/>
+
+    <p>
+        Wkrótce przekażemy informacje dotyczące kolejnych kroków.
+    </p>
+
+    <p style="margin: 12px 0; white-space: nowrap;">
+        Zachęcamy również do przejrzenia
+        <a th:href="${regulationsUrl}" href="#" style="color: #2a5bd7; text-decoration: none; font-weight: 600;">
+            regulaminu
+        </a>
+        oraz
+        <a th:href="${infoUrl}" href="#" style="color: #2a5bd7; text-decoration: none; font-weight: 600;">
+            informacji organizacyjnych.
+        </a>
+    </p>
+
+
+    <!-- Closing -->
+    <p style="margin: 20px 0 4px 0;">
+        Pozdrawiamy,
+    </p>
+
+    <p style="margin: 0;">
+        Zespół Sercańskich Rekolekcji Młodzieżowych
+    </p>
+
+    <!-- Footer -->
+    <hr style="border: none; border-top: 1px solid #ececec; margin: 32px 0;"/>
+
+    <table width="100%"
+           cellspacing="0"
+           cellpadding="0"
+           style="font-size: 13px; color: #6b6b6b; line-height: 1.6;">
+        <tr>
+
+            <!-- Contact -->
+            <td width="60%" style="vertical-align: top; padding-right: 16px;">
+
+                <p style="margin: 0 0 6px 0; font-weight: bold; color: #1d1d1d;">
+                    Biuro Rekolekcji
+                </p>
+
+                <p style="margin: 0 0 12px 0;">
+                    📧
+                    <a th:href="'mailto:' + ${contactEmail}"
+                       th:text="${contactEmail}"
+                       href="mailto:zgloszenia.rek@scj.pl"
+                       style="color: #2a5bd7; text-decoration: none;">
+                        zgloszenia.rek@scj.pl
+                    </a>
+                    <br/>
+
+                    📞
+                    <span th:text="${contactPhone}">
+                        +48 602 439 696
+                    </span>
+                </p>
+
+                <p style="margin: 0 0 6px 0; font-weight: bold; color: #1d1d1d;">
+                    ks. Franciszek Wielgut SCJ
+                </p>
+
+                <p style="margin: 0;">
+                    📞 +48 510 797 569
+                </p>
+
+            </td>
+
+            <!-- Logo -->
+            <td width="30%"
+                style="vertical-align: middle; text-align: right;">
+
+                <img th:src="${logoUrl}"
+                     src="old_logo.png"
+                     alt="Logo"
+                     style="height: 100px; width: auto;"/>
+
+            </td>
+
+        </tr>
+    </table>
+
+</div>
+</body>
+</html>
