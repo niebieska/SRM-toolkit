@@ -28,29 +28,22 @@ public class RegistrationNotificationService {
                                                         String registrationCode) {
         try {
             JsonNode root = objectMapper.readTree(payload);
+            JsonNode participant = root.path("person");
 
             JsonNode recipient = data.isMinor()
                     ? root.path("guardian")
-                    : root.path("person");
-
-            JsonNode participant = root.path("person");
+                    : participant;
 
             String recipientName = fullName(recipient, "Uczestniku");
-            String participantName = fullName(participant, "Nieznany uczestnik");
+            String registeredName = fullName(participant, "Nieznany uczestnik");
 
             sendConfirmation(
                     recipient,
                     recipientName,
+                    registeredName,
                     registrationCode,
                     RegistrationType.PARTICIPANT,
                     data.turnusCode()
-            );
-
-            emailServiceClient.sendOrganizerNewRegistrationNotification(
-                    registrationCode,
-                    RegistrationType.PARTICIPANT.name(),
-                    data.turnusCode(),
-                    participantName
             );
         } catch (Exception exception) {
             LOGGER.error("Failed to prepare registration confirmation email for {}", registrationCode, exception);
@@ -62,12 +55,13 @@ public class RegistrationNotificationService {
                                                   String registrationCode) {
         try {
             JsonNode root = objectMapper.readTree(payload);
-            JsonNode person = root.path("person");
+            JsonNode staff = root.path("person");
 
-            String staffName = fullName(person, "Nieznana kadra");
+            String staffName = fullName(staff, "Nieznana kadra");
 
             sendConfirmation(
-                    person,
+                    staff,
+                    staffName,
                     staffName,
                     registrationCode,
                     RegistrationType.STAFF,
@@ -81,18 +75,12 @@ public class RegistrationNotificationService {
                 sendConfirmation(
                         guardian,
                         guardianName,
+                        staffName,
                         registrationCode,
                         RegistrationType.STAFF,
                         data.turnusCode()
                 );
             }
-
-            emailServiceClient.sendOrganizerNewRegistrationNotification(
-                    registrationCode,
-                    RegistrationType.STAFF.name(),
-                    data.turnusCode(),
-                    staffName
-            );
         } catch (Exception exception) {
             LOGGER.error("Failed to prepare registration confirmation email for {}", registrationCode, exception);
         }
@@ -100,6 +88,7 @@ public class RegistrationNotificationService {
 
     private void sendConfirmation(JsonNode recipient,
                                   String recipientName,
+                                  String registeredName,
                                   String registrationCode,
                                   RegistrationType registrationType,
                                   String turnusCode) {
@@ -108,6 +97,7 @@ public class RegistrationNotificationService {
         emailServiceClient.sendRegistrationConfirmation(
                 to,
                 recipientName,
+                registeredName,
                 registrationCode,
                 registrationType.name(),
                 turnusCode

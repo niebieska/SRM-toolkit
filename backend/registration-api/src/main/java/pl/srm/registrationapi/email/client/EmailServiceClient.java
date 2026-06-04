@@ -6,6 +6,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.RestClient;
+import pl.srm.registrationapi.registration.model.RegistrationStatus;
 
 import java.util.Map;
 
@@ -15,17 +16,17 @@ public class EmailServiceClient {
     private static final Logger LOGGER = LoggerFactory.getLogger(EmailServiceClient.class);
 
     private final RestClient restClient;
-    private final String organizerEmail;
 
     public EmailServiceClient(RestClient.Builder restClientBuilder,
-                              @Value("${email.service.url:http://localhost:8082}") String emailServiceUrl,
-                              @Value("${email.organizer.email:}") String organizerEmail) {
+                              @Value("${email.service.url:http://localhost:8082}") String emailServiceUrl
+                             ) {
         this.restClient = restClientBuilder.baseUrl(emailServiceUrl).build();
-        this.organizerEmail = organizerEmail;
+
     }
 
     public void sendRegistrationConfirmation(String to,
                                              String recipientName,
+                                             String registeredName,
                                              String registrationCode,
                                              String registrationType,
                                              String turnusCode) {
@@ -42,34 +43,12 @@ public class EmailServiceClient {
                         "registrationType", registrationType,
                         "turnusCode", turnusCode,
                         "recipientName", recipientName,
-                        "status", "NEW"
+                        "registeredName", registeredName,
+                        "status", RegistrationStatus.NEW.name()
                 )
         );
 
         sendEmailRequest(request, registrationCode, "registration confirmation");
-    }
-
-    public void sendOrganizerNewRegistrationNotification(String registrationCode,
-                                                         String registrationType,
-                                                         String turnusCode,
-                                                         String participantName) {
-        if (organizerEmail == null || organizerEmail.isBlank()) {
-            LOGGER.warn("Skipping organizer notification - missing organizer email for code {}", registrationCode);
-            return;
-        }
-
-        SendEmailRequest request = new SendEmailRequest(
-                organizerEmail,
-                "organizer-new-registration",
-                Map.of(
-                        "registrationCode", registrationCode,
-                        "registrationType", registrationType,
-                        "turnusCode", turnusCode,
-                        "participantName", participantName == null || participantName.isBlank() ? "Nieznany" : participantName
-                )
-        );
-
-        sendEmailRequest(request, registrationCode, "organizer notification");
     }
 
     private void sendEmailRequest(SendEmailRequest request, String registrationCode, String emailType) {
@@ -80,6 +59,8 @@ public class EmailServiceClient {
                     .body(request)
                     .retrieve()
                     .toBodilessEntity();
+
+            LOGGER.debug("Sent {} email for registration {}", emailType, registrationCode);
         } catch (Exception exception) {
             LOGGER.error("Failed to call email-service for {} of registration {}", emailType, registrationCode, exception);
         }
