@@ -31,40 +31,67 @@ class EmailDispatchServiceTest {
     private EmailDispatchService emailDispatchService;
 
     @Test
-    void sendEmailCallsSenderWithCorrectRecipient() {
-        when(templateRenderer.render("registration-confirmation", Map.of("registrationCode", "UCZ-2026-00042")))
-                .thenReturn("<html>ok</html>");
+    void sendParticipantEmailCallsSenderWithCorrectRecipient() {
+        when(templateRenderer.render(
+                "registration-confirmation-participant",
+                Map.of("registrationCode", "UCZ-2026-00042")
+        )).thenReturn("<html>ok</html>");
 
         emailDispatchService.sendEmail(
                 "jan.kowalski@example.com",
-                "registration-confirmation",
+                "registration-confirmation-participant",
                 Map.of("registrationCode", "UCZ-2026-00042")
         );
 
-        ArgumentCaptor<EmailMessage> captor = ArgumentCaptor.forClass(EmailMessage.class);
+        ArgumentCaptor<EmailMessage> captor =
+                ArgumentCaptor.forClass(EmailMessage.class);
+
         verify(emailSender).send(captor.capture());
-        assertEquals("jan.kowalski@example.com", captor.getValue().to());
+
+        assertEquals(
+                "jan.kowalski@example.com",
+                captor.getValue().to()
+        );
+
+        assertEquals(
+                "Potwierdzenie zgłoszenia uczestnika",
+                captor.getValue().subject()
+        );
+    }
+
+    @Test
+    void staffConfirmationTemplateUsesStaffSubject() {
+        when(templateRenderer.render(
+                "registration-confirmation-staff",
+                Map.of("registrationCode", "KAD-2026-00042")
+        )).thenReturn("<html>ok</html>");
+
+        emailDispatchService.sendEmail(
+                "kadra@example.com",
+                "registration-confirmation-staff",
+                Map.of("registrationCode", "KAD-2026-00042")
+        );
+
+        ArgumentCaptor<EmailMessage> captor =
+                ArgumentCaptor.forClass(EmailMessage.class);
+
+        verify(emailSender).send(captor.capture());
+
+        assertEquals(
+                "Potwierdzenie zgłoszenia kadry",
+                captor.getValue().subject()
+        );
     }
 
     @Test
     void unknownTemplateThrowsException() {
-        assertThrows(IllegalArgumentException.class,
-                () -> emailDispatchService.sendEmail("jan.kowalski@example.com", "unknown", Map.of()));
-    }
-
-    @Test
-    void organizerNotificationTemplateUsesOrganizerSubject() {
-        when(templateRenderer.render("organizer-new-registration", Map.of("registrationCode", "REG-P-1")))
-                .thenReturn("<html>ok</html>");
-
-        emailDispatchService.sendEmail(
-                "organizator@example.com",
-                "organizer-new-registration",
-                Map.of("registrationCode", "REG-P-1")
+        assertThrows(
+                IllegalArgumentException.class,
+                () -> emailDispatchService.sendEmail(
+                        "jan.kowalski@example.com",
+                        "unknown",
+                        Map.of()
+                )
         );
-
-        ArgumentCaptor<EmailMessage> captor = ArgumentCaptor.forClass(EmailMessage.class);
-        verify(emailSender).send(captor.capture());
-        assertEquals("Nowe zgłoszenie rejestracyjne", captor.getValue().subject());
     }
 }
