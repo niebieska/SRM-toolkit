@@ -9,7 +9,6 @@
 
     <p>
         Dzień dobry,
-        <strong th:text="${recipientName}">Uczestniku</strong>,
     </p>
 
     <p>
@@ -63,11 +62,13 @@
 
     <p style="margin: 12px 0;">
         W międzyczasie zapraszamy do zapoznania się z
-        <a th:href="${regulationsUrl}" href="#" style="color: #2a5bd7; text-decoration: none; font-weight: 600;">
+        <a href="https://rekolekcje.scj.pl/informacje-organizacyjne/"
+           style="color: #2a5bd7; text-decoration: none; font-weight: 600;">
             regulaminem rekolekcji
         </a><br/>
         oraz
-        <a th:href="${infoUrl}" href="#" style="color: #2a5bd7; text-decoration: none; font-weight: 600;">
+        <a href="https://rekolekcje.scj.pl/informacje-organizacyjne/"
+           style="color: #2a5bd7; text-decoration: none; font-weight: 600;">
             informacjami organizacyjnymi
         </a>.
     </p>
@@ -96,13 +97,11 @@
 
                 <p style="margin: 0 0 12px 0;">
                     📧
-                    <a th:href="'mailto:' + ${contactEmail}"
-                       th:text="${contactEmail}"
-                       href="mailto:zgloszenia.rek@scj.pl"
+                    <a href="mailto:zgloszenia.rek@scj.pl"
                        style="color: #2a5bd7; text-decoration: none;">
                         zgloszenia.rek@scj.pl
                     </a><br/>
-                    📞 <span th:text="${contactPhone}">+48 602 439 696</span>
+                    📞 <span>+48 602 439 696</span>
                 </p>
 
                 <p style="margin: 0 0 6px 0; font-weight: bold; color: #1d1d1d;">
@@ -115,10 +114,9 @@
             </td>
 
             <td width="30%" style="vertical-align: middle; text-align: right;">
-                <img th:src="${logoUrl}"
-                     src="old_logo.png"
-                     alt="Logo"
-                     style="height: 100px; width: auto;" />
+                <img src="https://rekolekcje.scj.pl/beta/wp-content/uploads/logo3.png"
+                      alt="Logo"
+                      style="height: 100px; width: auto;" />
             </td>
         </tr>
     </table>
