@@ -93,6 +93,7 @@ const props = defineProps({
 const emit = defineEmits(['update:formData', 'prev', 'next'])
 const local = ref({
   ...props.formData,
+  subrole: props.formData.subrole || '',
   certificateDetails: {...(props.formData.certificateDetails || {})},
 })
 const availableRoles = computed(() => {
@@ -108,17 +109,66 @@ const currentRole = computed(() => {
 })
 
 const selectedCertificates = ref(Object.keys(props.formData.certificates || {}).filter(k => props.formData.certificates[k]))
-
-const currentCertificates = computed(() => {
-  return certificatesByRole[local.value.role] || []
+const certificateSource = computed(() => {
+  const subrole = local.value.subrole
+  if (subrole && certificatesByRole[subrole]) {
+    return subrole
+  }
+  return local.value.role
 })
-
 // Reset certificates when role changes
-watch(() => local.value.role, () => {
-  selectedCertificates.value = []
-  local.value.certificateDetails = {}
-  local.value.subrole = ''
+const currentCertificates = computed(() => {
+  const roleStillAvailable = availableRoles.value.some(
+      role => role.value === local.value.role
+  )
+
+  if (!roleStillAvailable) {
+    return []
+  }
+
+  return certificatesByRole[certificateSource.value] || []
 })
+
+
+watch(
+    availableRoles,
+    roles => {
+      const roleStillAvailable = roles.some(role => role.value === local.value.role)
+
+      if (!roleStillAvailable) {
+        local.value.role = ''
+        local.value.subrole = ''
+        selectedCertificates.value = []
+        local.value.certificateDetails = {}
+      }
+    },
+    { immediate: true }
+)
+watch(
+    currentRole,
+    role => {
+      if (!role || !role.subroles || !role.subroles.length) {
+        local.value.subrole = ''
+        return
+      }
+
+      const subroleStillAvailable = role.subroles.some(
+          subrole => subrole.value === local.value.subrole
+      )
+
+      if (!subroleStillAvailable) {
+        local.value.subrole = ''
+      }
+    },
+    { immediate: true }
+)
+watch(
+    () => [local.value.role, local.value.subrole],
+    () => {
+      selectedCertificates.value = []
+      local.value.certificateDetails = {}
+    }
+)
 
 function goPrev() {
   emit('update:formData', {...local.value})
