@@ -60,6 +60,16 @@
       <p v-if="errors.consent3" class="text-red-500 text-xs">{{ errors.consent3 }}</p>
     </div>
 
+    <!-- Declaration -->
+    <div class="border border-gray-200 rounded-lg p-4 bg-gray-50">
+      <label class="flex items-start gap-3 cursor-pointer">
+        <input type="checkbox" v-model="local.truthDeclaration" class="w-4 h-4 mt-1" />
+        <span class="text-sm text-gray-700">
+          Oświadczam, że podane informacje są zgodne z prawdą i zobowiązuję się do niezwłocznego powiadomienia organizatora o wszelkich zmianach stanu zdrowia uczestnika.
+        </span>
+      </label>
+    </div>
+
     <p v-if="submitError" class="text-red-600 text-sm text-center">{{ submitError }}</p>
 
     <div class="flex justify-between">

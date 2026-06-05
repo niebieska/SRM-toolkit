@@ -45,17 +45,7 @@
       />
     </div>
 
-    <!-- Declaration -->
-    <div class="border border-gray-200 rounded-lg p-4 bg-gray-50">
-      <label class="flex items-start gap-3 cursor-pointer">
-        <input type="checkbox" v-model="local.healthDeclaration" class="w-4 h-4 mt-1" />
-        <span class="text-sm text-gray-700">
-          Oświadczam, że podane informacje są zgodne z prawdą i zobowiązuję się do niezwłocznego powiadomienia organizatora o wszelkich zmianach stanu zdrowia uczestnika.
-        </span>
-      </label>
-    </div>
-
-    <div class="flex justify-between">
+     <div class="flex justify-between">
       <button @click="goPrev" class="border border-gray-300 text-gray-700 px-8 py-3 rounded-xl font-semibold hover:bg-gray-50 transition">
         ← Wstecz
       </button>
