@@ -8,6 +8,7 @@ import pl.srm.registrationapi.registration.model.Registration;
 import pl.srm.registrationapi.registration.exception.RegistrationException;
 import pl.srm.registrationapi.registration.repository.RegistrationRepository;
 import org.springframework.data.domain.Sort;
+import pl.srm.registrationapi.registration.service.management.RegistrationManagementService;
 import pl.srm.registrationapi.registration.util.PeselHelper;
 
 import java.time.LocalDateTime;

@@ -14,6 +14,12 @@ spring:
 email:
   from: ${MAIL_FROM:noreply@srm.pl}
   enabled: ${MAIL_ENABLED:true}
+templates:
+  regulations-url: https://rekolekcje.scj.pl/informacje-organizacyjne/
+  info-url: https://rekolekcje.scj.pl/informacje-organizacyjne/
+  contact-email: zgloszenia.rek@scj.pl
+  contact-phone: "+48 602 439 696"
+  logo-url: https://rekolekcje.scj.pl/beta/wp-content/uploads/logo3.png
 
 logging:
   level:

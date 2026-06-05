@@ -15,64 +15,30 @@ public class EmailServiceClient {
     private static final Logger LOGGER = LoggerFactory.getLogger(EmailServiceClient.class);
 
     private final RestClient restClient;
-    private final String organizerEmail;
 
     public EmailServiceClient(RestClient.Builder restClientBuilder,
-                              @Value("${email.service.url:http://localhost:8082}") String emailServiceUrl,
-                              @Value("${email.organizer.email:}") String organizerEmail) {
+                              @Value("${email.service.url:http://localhost:8082}") String emailServiceUrl) {
         this.restClient = restClientBuilder.baseUrl(emailServiceUrl).build();
-        this.organizerEmail = organizerEmail;
     }
 
-    public void sendRegistrationConfirmation(String to,
-                                             String recipientName,
-                                             String registrationCode,
-                                             String registrationType,
-                                             String turnusCode) {
+    public void sendEmail(String to,
+                          String templateName,
+                          Map<String, String> variables) {
         if (to == null || to.isBlank()) {
-            LOGGER.warn("Skipping registration email - missing recipient address for code {}", registrationCode);
+            LOGGER.warn("Skipping email - missing recipient address for template {}", templateName);
             return;
         }
 
         SendEmailRequest request = new SendEmailRequest(
                 to,
-                "registration-confirmation",
-                Map.of(
-                        "registrationCode", registrationCode,
-                        "registrationType", registrationType,
-                        "turnusCode", turnusCode,
-                        "recipientName", recipientName,
-                        "status", "NEW"
-                )
+                templateName,
+                variables == null ? Map.of() : variables
         );
 
-        sendEmailRequest(request, registrationCode, "registration confirmation");
+        sendEmailRequest(request, templateName);
     }
 
-    public void sendOrganizerNewRegistrationNotification(String registrationCode,
-                                                         String registrationType,
-                                                         String turnusCode,
-                                                         String participantName) {
-        if (organizerEmail == null || organizerEmail.isBlank()) {
-            LOGGER.warn("Skipping organizer notification - missing organizer email for code {}", registrationCode);
-            return;
-        }
-
-        SendEmailRequest request = new SendEmailRequest(
-                organizerEmail,
-                "organizer-new-registration",
-                Map.of(
-                        "registrationCode", registrationCode,
-                        "registrationType", registrationType,
-                        "turnusCode", turnusCode,
-                        "participantName", participantName == null || participantName.isBlank() ? "Nieznany" : participantName
-                )
-        );
-
-        sendEmailRequest(request, registrationCode, "organizer notification");
-    }
-
-    private void sendEmailRequest(SendEmailRequest request, String registrationCode, String emailType) {
+    private void sendEmailRequest(SendEmailRequest request, String templateName) {
         try {
             restClient.post()
                     .uri("/api/email/send")
@@ -80,8 +46,10 @@ public class EmailServiceClient {
                     .body(request)
                     .retrieve()
                     .toBodilessEntity();
+
+            LOGGER.debug("Sent email using template {}", templateName);
         } catch (Exception exception) {
-            LOGGER.error("Failed to call email-service for {} of registration {}", emailType, registrationCode, exception);
+            LOGGER.error("Failed to call email-service for template {}", templateName, exception);
         }
     }
 

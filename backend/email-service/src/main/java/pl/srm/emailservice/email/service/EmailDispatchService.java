@@ -11,9 +11,9 @@ import java.util.Map;
 public class EmailDispatchService {
 
     private static final Map<String, String> SUBJECTS = Map.of(
-            "registration-confirmation", "Potwierdzenie zgłoszenia rejestracyjnego",
-            "status-update", "Aktualizacja statusu Twojego zgłoszenia",
-            "organizer-new-registration", "Nowe zgłoszenie rejestracyjne"
+            "registration-confirmation-participant", "Potwierdzenie zgłoszenia uczestnika",
+            "registration-confirmation-staff", "Potwierdzenie zgłoszenia kadry",
+            "status-update", "Aktualizacja statusu Twojego zgłoszenia"
     );
 
     private final EmailSender emailSender;
