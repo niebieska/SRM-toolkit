@@ -1,6 +1,6 @@
 export const staffRoles = [
-    { value: 'kandydat_na_animatora', label: 'Kandydat na animatora', adultOnly: false },
-    { value: 'sternik_z_opiekunem', label: 'Sternik z opiekunem', adultOnly: false },
+    { value: 'kandydat_na_animatora', label: 'Kandydat na animatora', minorOnly: true },
+    { value: 'sternik_z_opiekunem', label: 'Sternik z opiekunem', minorOnly: true },
     { value: 'animator', label: 'Animator', adultOnly: true },
     { value: 'sternik', label: 'Sternik', adultOnly: true },
     { value: 'ksiadz_sternik', label: 'Ksiądz sternik', adultOnly: true },
