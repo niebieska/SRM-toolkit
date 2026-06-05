@@ -69,7 +69,7 @@ import ErrorPage from '../../components/ErrorPage.vue'
 import { submitStaffRegistration } from '../../api/registrationApi.js'
 
 const currentStep = ref(1)
-const stepLabels = ['Dane osobowe', 'Rola', 'Zdrowie', 'Zgody']
+const stepLabels = ['Dane osobowe', 'Rola', 'Kwestionariusz', 'Zgody']
 const registrationCode = ref('')
 const errorMessage = ref('')
 
