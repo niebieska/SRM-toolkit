@@ -24,6 +24,27 @@
       </select>
     </div>
 
+    <div v-if="currentRole?.subroles?.length">
+      <label class="block text-sm font-medium text-gray-700 mb-1">
+        Funkcja *
+      </label>
+
+      <select
+          v-model="local.subrole"
+          class="w-full border border-gray-300 rounded px-3 py-2 focus:outline-none focus:ring-2 focus:ring-gray-400"
+      >
+        <option value="">-- Wybierz funkcję --</option>
+
+        <option
+            v-for="subrole in currentRole.subroles"
+            :key="subrole.value"
+            :value="subrole.value"
+        >
+          {{ subrole.label }}
+        </option>
+      </select>
+    </div>
+
     <!-- Certificates -->
     <div v-if="local.role && currentCertificates.length > 0" class="space-y-3">
       <h3 class="font-semibold text-gray-700">Posiadane certyfikaty / uprawnienia</h3>
@@ -82,6 +103,9 @@ const availableRoles = computed(() => {
     return !role.adultOnly
   })
 })
+const currentRole = computed(() => {
+  return allRoles.find(role => role.value === local.value.role)
+})
 
 const selectedCertificates = ref(Object.keys(props.formData.certificates || {}).filter(k => props.formData.certificates[k]))
 
@@ -93,6 +117,7 @@ const currentCertificates = computed(() => {
 watch(() => local.value.role, () => {
   selectedCertificates.value = []
   local.value.certificateDetails = {}
+  local.value.subrole = ''
 })
 
 function goPrev() {
