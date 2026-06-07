@@ -1,7 +1,7 @@
 <script setup>
-import { reactive } from 'vue'
-import { useRouter } from 'vue-router'
-import { useAuthStore } from '../stores/auth'
+import {reactive, ref, computed} from 'vue'
+import {useRouter} from 'vue-router'
+import {useAuthStore} from '../stores/auth'
 import RegistrationTable from '../components/RegistrationTable.vue'
 
 const authStore = useAuthStore()
@@ -12,6 +12,7 @@ const filters = reactive({
   registrationType: '',
   turnusCode: '',
 })
+const turnusOptions = ['ZAGLE26T1', 'ZAGLE26T2']
 
 async function logout() {
   authStore.logout()
@@ -40,15 +41,15 @@ async function logout() {
           <option value="PARTICIPANT">Uczestnik</option>
           <option value="STAFF">Kadra</option>
         </select>
-
-        <input
-          v-model="filters.turnusCode"
-          class="rounded border border-slate-300 px-3 py-2"
-          placeholder="Kod turnusu"
-        />
+        <select v-model="filters.turnusCode" class="rounded border border-slate-300 px-3 py-2">
+          <option value="">Wszystkie turnusy</option>
+          <option v-for="code in turnusOptions" :key="code" :value="code" >
+            {{ code }}
+          </option>
+        </select>
       </section>
 
-      <RegistrationTable :filters="filters" />
+      <RegistrationTable :filters="filters"/>
     </div>
   </main>
 </template>
