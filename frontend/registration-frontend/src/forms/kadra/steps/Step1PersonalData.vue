@@ -42,25 +42,33 @@
         <p v-if="errors.lastName" class="text-red-500 text-xs mt-1">{{ errors.lastName }}</p>
       </div>
     </div>
-
-    <!-- PESEL -->
-    <div>
-      <label class="block text-sm font-medium text-gray-700 mb-1">PESEL *</label>
-      <input
-        v-model="pesel"
-        type="text"
-        inputmode="numeric"
-        maxlength="11"
-        placeholder="11 cyfr"
-        :class="fieldClass('pesel')"
-        @input="onPeselInput"
-      />
-      <p v-if="errors.pesel" class="text-red-500 text-xs mt-1">{{ errors.pesel }}</p>
-      <div v-if="pesel.length === 11" class="mt-1 text-sm text-gray-600">
-        Wiek: <span class="font-medium">{{ isAdult ? 'dorosły' : 'niepełnoletni' }}</span> |
-        Płeć: <span class="font-medium">{{ gender === 'male' ? 'mężczyzna' : gender === 'female' ? 'kobieta' : '–' }}</span>
+    <div class="grid grid-cols-2 gap-4">
+      <div>
+        <label class="block text-sm font-medium text-gray-700 mb-1">PESEL *</label>
+        <input
+            v-model="pesel"
+            type="text"
+            inputmode="numeric"
+            maxlength="11"
+            placeholder="11 cyfr"
+            :class="fieldClass('pesel')"
+            @input="onPeselInput"
+        />
+        <p v-if="errors.pesel" class="text-red-500 text-xs mt-1">{{ errors.pesel }}</p>
+      </div>
+      <div>
+        <label class="block text-sm font-medium text-gray-700 mb-1">Płeć</label>
+        <input
+            type="text"
+            readonly
+            :value="gender === 'male' ? 'Mężczyzna' : gender === 'female' ? 'Kobieta' : ''"
+            class="w-full border border-gray-200 rounded px-3 py-2 bg-gray-50 text-gray-600 cursor-default"
+        />
       </div>
     </div>
+
+
+
 
     <!-- Contact -->
     <div class="grid grid-cols-2 gap-4">
@@ -111,7 +119,23 @@
           <PhoneInput v-model="local.guardianPhone" :error="errors.guardianPhone" />
         </div>
       </div>
+      <!-- Parent names (combined, pre-filled from guardian) -->
+      <div>
+        <label class="block text-sm font-medium text-gray-700 mb-1">
+          Imiona i nazwiska rodziców (opiekunów prawnych) *
+        </label>
+        <input
+            v-model="local.parentNames"
+            type="text"
+            placeholder="np. Jan Kowalski, Anna Kowalska"
+            :class="fieldClass('parentNames')"
+            @input="onParentNamesInput"
+        />
+        <p class="text-xs text-gray-400 mt-1">Wypełnione automatycznie na podstawie danych opiekuna — można edytować.</p>
+        <p v-if="errors.parentNames" class="text-red-500 text-xs mt-1">{{ errors.parentNames }}</p>
+      </div>
     </div>
+
 
     <!-- ICE section (adult) -->
     <div v-if="isAdult && pesel.length === 11" class="border border-blue-200 rounded-lg p-4 bg-blue-50 space-y-4">
@@ -128,22 +152,31 @@
           <p v-if="errors.iceLastName" class="text-red-500 text-xs mt-1">{{ errors.iceLastName }}</p>
         </div>
       </div>
-      <div>
-        <label class="block text-sm font-medium text-gray-700 mb-1">Relacja *</label>
-        <select v-model="local.iceRelation" :class="fieldClass('iceRelation')">
-          <option value="">-- Wybierz --</option>
-          <option value="matka">Matka</option>
-          <option value="ojciec">Ojciec</option>
-          <option value="opiekun_prawny">Opiekun prawny</option>
-          <option value="inna">Inna</option>
-        </select>
-        <p v-if="errors.iceRelation" class="text-red-500 text-xs mt-1">{{ errors.iceRelation }}</p>
+      <div class="grid grid-cols-2 gap-4">
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1">Relacja *</label>
+          <select v-model="local.iceRelation" :class="fieldClass('iceRelation')">
+            <option value="">-- Wybierz --</option>
+            <option value="matka">Matka</option>
+            <option value="ojciec">Ojciec</option>
+            <option value="opiekun_prawny">Opiekun prawny</option>
+            <option value="inna">Inna</option>
+          </select>
+          <p v-if="errors.iceRelation" class="text-red-500 text-xs mt-1">{{ errors.iceRelation }}</p>
+        </div>
+        <div>
+          <label class="block text-sm font-medium text-gray-700 mb-1">Telefon *</label>
+          <PhoneInput v-model="local.icePhone" :error="errors.icePhone" />
+        </div>
       </div>
-      <div>
-        <label class="block text-sm font-medium text-gray-700 mb-1">Telefon *</label>
-        <PhoneInput v-model="local.icePhone" :error="errors.icePhone" />
+      <div v-if="local.iceRelation === 'inna'">
+        <label class="block text-sm font-medium text-gray-700 mb-1">Podaj relację *</label>
+        <input v-model="local.iceRelationOther" type="text" placeholder="np. brat, znajomy" :class="fieldClass('iceRelationOther')" />
+        <p v-if="errors.iceRelationOther" class="text-red-500 text-xs mt-1">{{ errors.iceRelationOther }}</p>
       </div>
     </div>
+
+
 
     <!-- Address -->
     <div class="space-y-4">
@@ -286,6 +319,9 @@ function validate() {
     if (!local.value.iceFirstName?.trim()) errors.iceFirstName = 'Podaj imię osoby ICE.'
     if (!local.value.iceLastName?.trim())  errors.iceLastName  = 'Podaj nazwisko osoby ICE.'
     if (!local.value.iceRelation)          errors.iceRelation  = 'Wybierz relację.'
+    if (local.value.iceRelation === 'inna' && !local.value.iceRelationOther?.trim()) {
+      errors.iceRelationOther = 'Podaj relację.'
+    }
     if (!validatePhone(local.value.icePhone)) {
       errors.icePhone = 'Podaj prawidłowy numer telefonu osoby ICE (9 cyfr).'
     }

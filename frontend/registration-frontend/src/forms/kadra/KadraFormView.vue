@@ -94,6 +94,7 @@ const emptyForm = () => ({
   iceFirstName: '',
   iceLastName: '',
   iceRelation: '',
+  iceRelationOther: '',
   icePhone: '',
 
   street: '',
