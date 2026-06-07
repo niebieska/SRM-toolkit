@@ -144,12 +144,27 @@ public class RegistrationNotificationService {
     }
 
     private String getStaffRole(JsonNode root) {
-        String role = root.path("staff").path("role").asText("").trim();
+        String role = root.path("role").asText("").trim();
+        String subrole = root.path("subrole").asText("").trim();
 
         if (role.isBlank()) {
-            role = root.path("role").asText("").trim();
+            role = root.path("staff").path("role").asText("").trim();
         }
 
-        return role.isBlank() ? "Kadra" : role;
+        if (subrole.isBlank()) {
+            subrole = root.path("staff").path("subrole").asText("").trim();
+        }
+
+        if (role.isBlank()) {
+            return "Kadra";
+        }
+
+        if (!subrole.isBlank()) {
+            return role + " - " + subrole;
+        }
+
+        return role;
     }
+
+
 }
