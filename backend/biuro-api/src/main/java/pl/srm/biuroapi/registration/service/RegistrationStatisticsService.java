@@ -51,10 +51,13 @@ public class RegistrationStatisticsService {
         int accepted = acceptedMale + acceptedFemale;
         int waitlist = waitlistMale + waitlistFemale;
 
+        int occupiedPlaces = accepted;
+        int availablePlaces = Math.max(0, TURNUS_CAPACITY - occupiedPlaces);
+
         return new TurnusRegistrationStats(
                 turnusCode,
-                accepted,
-                TURNUS_CAPACITY,
+                occupiedPlaces,
+                availablePlaces,
                 accepted,
                 acceptedMale,
                 acceptedFemale,
