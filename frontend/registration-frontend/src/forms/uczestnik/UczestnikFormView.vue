@@ -69,7 +69,7 @@ import ErrorPage from '../../components/ErrorPage.vue'
 import { submitParticipantRegistration } from '../../api/registrationApi.js'
 
 const currentStep = ref(1)
-const stepLabels = ['Dane osobowe', 'Adres', 'Zdrowie', 'Zgody']
+const stepLabels = ['Dane osobowe', 'Adres', 'Kwestionariusz', 'Zgody']
 const registrationCode = ref('')
 const errorMessage = ref('')
 
@@ -105,9 +105,6 @@ const emptyForm = () => ({
     q1: { answer: '', detail: '' },
     q2: { answer: '', detail: '' },
     q3: { answer: '', detail: '' },
-    q4: { answer: '', detail: '' },
-    q5: { answer: '', detail: '' },
-    q6: { answer: '', detail: '' },
   },
   healthDeclaration: false,
   consent1: false,
