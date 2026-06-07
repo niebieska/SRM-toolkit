@@ -48,11 +48,28 @@ function buildHealthBlock(f) {
   }
 }
 
-function buildConsentsBlock(f) {
+function buildStaffHealthBlock(f) {
+  return {
+    q1: f.health.q1,
+    q2: f.health.q2,
+    additionalInfo: f.health.additionalInfo || '',
+  }
+}
+
+/*function buildConsentsBlock(f) {
   return {
     dataProcessing: f.consent1,
     imageUsage: f.consent2,
     regulations: f.consent3,
+  }
+}*/
+
+function buildConsentsBlock(f) {
+  return {
+    dataProcessing: !!f.consent1,
+    imageUsage: !!f.consent2,
+    regulations: !!f.consent3,
+    truthDeclaration: !!f.truthDeclaration,
   }
 }
 
@@ -93,9 +110,10 @@ export function buildStaffPayload(f) {
     guardian: f.isAdult ? null : buildGuardianBlock(f),
     ice: f.isAdult ? buildIceBlock(f) : null,
     role: f.role,
+    subrole: f.subrole,
     certificates: f.certificates,
     certificateDetails: f.certificateDetails,
-    health: buildHealthBlock(f),
+    health: buildStaffHealthBlock(f),
     consents: buildConsentsBlock(f),
   }
 }
