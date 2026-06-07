@@ -38,6 +38,7 @@
         v-else
         type="text"
         v-model="detail"
+        :placeholder="placeholder"
         :class="['w-full border rounded px-3 py-2 text-sm focus:outline-none focus:ring-2', detailError ? 'border-red-500 focus:ring-red-400' : 'border-gray-300 focus:ring-gray-400']"
       />
       <p v-if="detailError" class="text-red-500 text-xs mt-1">{{ detailError }}</p>
