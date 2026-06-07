@@ -5,7 +5,7 @@
     <div class="space-y-4">
       <HealthQuestion
           :number="1"
-          question="Czy posiadasz choroby przewlekłe, o których organizator powinien wiedzieć? *"
+          question="Czy posiadasz choroby przewlekłe, o których organizator powinien wiedzieć?*"
           placeholder="Jakie? Prosze krótko opisać"
           :multiline="true"
           :answerError="errors.q1Answer"
@@ -16,7 +16,7 @@
 
       <HealthQuestion
           :number="2"
-          question="Czy występują u Ciebie alergie lub nietolerancje pokarmowe, które powinny zostać uwzględnione przy przygotowywaniu posiłków? *"
+          question="Czy występują u Ciebie alergie lub nietolerancje pokarmowe, które powinny zostać uwzględnione przy przygotowywaniu posiłków?*"
           placeholder="Jakie? Prosze krótko opisać"
           :multiline="true"
           :answerError="errors.q2Answer"
@@ -34,7 +34,7 @@
             v-model="local.health.additionalInfo"
             rows="4"
             maxlength="1000"
-            placeholder="Istotne kwestie organizacyjne, np. inny termin przyjazdu, wyjazdu"
+            placeholder="Istotne kwestie organizacyjne, np. inny termin przyjazdu, wyjazdu itp."
             class="w-full border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-gray-400"
         />
       </div>
