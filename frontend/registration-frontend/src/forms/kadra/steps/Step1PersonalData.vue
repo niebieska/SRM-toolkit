@@ -67,9 +67,6 @@
       </div>
     </div>
 
-
-
-
     <!-- Contact -->
     <div class="grid grid-cols-2 gap-4">
       <div>
@@ -136,7 +133,6 @@
       </div>
     </div>
 
-
     <!-- ICE section (adult) -->
     <div v-if="isAdult && pesel.length === 11" class="border border-blue-200 rounded-lg p-4 bg-blue-50 space-y-4">
       <h3 class="font-semibold text-gray-700">Osoba do kontaktu w nagłych przypadkach (ICE)</h3>
@@ -175,8 +171,6 @@
         <p v-if="errors.iceRelationOther" class="text-red-500 text-xs mt-1">{{ errors.iceRelationOther }}</p>
       </div>
     </div>
-
-
 
     <!-- Address -->
     <div class="space-y-4">
