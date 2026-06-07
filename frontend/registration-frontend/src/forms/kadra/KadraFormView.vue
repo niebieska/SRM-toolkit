@@ -38,11 +38,12 @@
         @next="currentStep = 4"
       />
       <Step4Consents
-        v-else-if="currentStep === 4"
-        v-model:formData="formData"
-        :isAdult="formData.isAdult"
-        @prev="currentStep = 3"
-        @submit="handleSubmit"
+          v-else-if="currentStep === 4"
+          v-model:formData="formData"
+          :isAdult="formData.isAdult"
+          :gender="formData.gender"
+          @prev="currentStep = 3"
+          @submit="handleSubmit"
       />
       <SuccessPage
         v-else-if="currentStep === 5"
@@ -69,12 +70,13 @@ import ErrorPage from '../../components/ErrorPage.vue'
 import { submitStaffRegistration } from '../../api/registrationApi.js'
 
 const currentStep = ref(1)
-const stepLabels = ['Dane osobowe', 'Rola', 'Zdrowie', 'Zgody']
+const stepLabels = ['Dane osobowe', 'Rola', 'Kwestionariusz', 'Zgody']
 const registrationCode = ref('')
 const errorMessage = ref('')
 
 const emptyForm = () => ({
   turnusCode: '',
+
   firstName: '',
   lastName: '',
   pesel: '',
@@ -82,32 +84,40 @@ const emptyForm = () => ({
   gender: null,
   email: '',
   phone: '',
+
   guardianFirstName: '',
   guardianLastName: '',
   guardianRelation: '',
   guardianEmail: '',
   guardianPhone: '',
+
   iceFirstName: '',
   iceLastName: '',
   iceRelation: '',
+  iceRelationOther: '',
   icePhone: '',
+
   street: '',
   houseNumber: '',
   postalCode: '',
   city: '',
+
   role: '',
+  subrole: '',
+
   certificates: {},
   certificateDetails: {},
+
   health: {
     q1: { answer: '', detail: '' },
     q2: { answer: '', detail: '' },
-    q3: { answer: '', detail: '' },
-    q4: { answer: '', detail: '' },
+    additionalInfo: '',
   },
-  healthDeclaration: false,
+
   consent1: false,
   consent2: false,
   consent3: false,
+  truthDeclaration: false,
 })
 
 const formData = ref(emptyForm())
