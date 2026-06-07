@@ -10,6 +10,7 @@ public record RegistrationSummary(
         String createdAt,
         String firstName,
         String lastName,
-        Integer age
+        Integer age,
+        String gender
 ) {
 }
