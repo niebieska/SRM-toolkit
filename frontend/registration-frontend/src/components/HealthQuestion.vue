@@ -27,11 +27,11 @@
     </div>
     <p v-if="answerError" class="text-red-500 text-xs mt-1 mb-2">{{ answerError }}</p>
     <div v-if="answer === 'tak'" class="mt-2">
-      <label class="block text-sm font-medium text-gray-700 mb-1">{{ detailLabel }}</label>
       <textarea
         v-if="multiline"
         v-model="detail"
         rows="3"
+        :placeholder="placeholder"
         :class="['w-full border rounded px-3 py-2 text-sm focus:outline-none focus:ring-2', detailError ? 'border-red-500 focus:ring-red-400' : 'border-gray-300 focus:ring-gray-400']"
       ></textarea>
       <input
@@ -51,7 +51,7 @@ import { ref, watch } from 'vue'
 const props = defineProps({
   number: { type: Number, required: true },
   question: { type: String, required: true },
-  detailLabel: { type: String, default: 'Szczegóły' },
+  placeholder: { type: String, default: 'Proszę opisać...' },
   multiline: { type: Boolean, default: true },
   answerError: { type: String, default: '' },
   detailError: { type: String, default: '' },
