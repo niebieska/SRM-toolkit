@@ -56,14 +56,6 @@ function buildStaffHealthBlock(f) {
   }
 }
 
-/*function buildConsentsBlock(f) {
-  return {
-    dataProcessing: f.consent1,
-    imageUsage: f.consent2,
-    regulations: f.consent3,
-  }
-}*/
-
 function buildConsentsBlock(f) {
   return {
     dataProcessing: !!f.consent1,

@@ -34,7 +34,7 @@
             v-model="local.health.additionalInfo"
             rows="4"
             maxlength="1000"
-            placeholder=""
+            placeholder="Istotne kwestie organizacyjne, np. inny termin przyjazdu, wyjazdu"
             class="w-full border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-gray-400"
         />
       </div>
