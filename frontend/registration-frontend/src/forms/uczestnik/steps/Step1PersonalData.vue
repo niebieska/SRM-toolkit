@@ -37,7 +37,6 @@
         <p v-if="errors.lastName" class="text-red-500 text-xs mt-1">{{ errors.lastName }}</p>
       </div>
     </div>
-
     <!-- PESEL -->
     <div class="grid grid-cols-2 gap-4">
       <div>
@@ -113,7 +112,6 @@
           <PhoneInput v-model="local.guardianPhone" :error="errors.guardianPhone" />
         </div>
       </div>
-
       <!-- Parent names (combined, pre-filled from guardian) -->
       <div>
         <label class="block text-sm font-medium text-gray-700 mb-1">
@@ -131,7 +129,7 @@
       </div>
     </div>
 
-    <!-- ICE (adult) -->
+    <!-- ICE section (adult) -->
     <div v-if="isAdult && pesel.length === 11" class="border border-blue-200 rounded-lg p-4 bg-blue-50 space-y-4">
       <h3 class="font-semibold text-gray-700">Osoba do kontaktu w nagłych przypadkach (ICE)</h3>
       <div class="grid grid-cols-2 gap-4">
@@ -295,6 +293,9 @@ function validate() {
     if (!local.value.iceFirstName?.trim()) errors.iceFirstName = 'Podaj imię osoby ICE.'
     if (!local.value.iceLastName?.trim())  errors.iceLastName  = 'Podaj nazwisko osoby ICE.'
     if (!local.value.iceRelation)          errors.iceRelation  = 'Wybierz relację.'
+    if (local.value.iceRelation === 'inna' && !local.value.iceRelationOther?.trim()) {
+      errors.iceRelationOther = 'Podaj relację.'
+    }
     if (!validatePhone(local.value.icePhone)) {
       errors.icePhone = 'Podaj prawidłowy numer telefonu osoby ICE (9 cyfr).'
     }

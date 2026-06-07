@@ -81,7 +81,7 @@
       </div>
     </div>
 
-    <!-- Guardian section (minor) -->
+    <!-- Guardian (minor) -->
     <div v-if="!isAdult && pesel.length === 11" class="border border-yellow-200 rounded-lg p-4 bg-yellow-50 space-y-4">
       <h3 class="font-semibold text-gray-700">Dane rodzica / opiekuna prawnego</h3>
       <div class="grid grid-cols-2 gap-4">
@@ -123,11 +123,11 @@
           Imiona i nazwiska rodziców (opiekunów prawnych) *
         </label>
         <input
-            v-model="local.parentNames"
-            type="text"
-            placeholder="np. Jan Kowalski, Anna Kowalska"
-            :class="fieldClass('parentNames')"
-            @input="onParentNamesInput"
+          v-model="local.parentNames"
+          type="text"
+          placeholder="np. Jan Kowalski, Anna Kowalska"
+          :class="fieldClass('parentNames')"
+          @input="onParentNamesInput"
         />
         <p class="text-xs text-gray-400 mt-1">Wypełnione automatycznie na podstawie danych opiekuna — można edytować.</p>
         <p v-if="errors.parentNames" class="text-red-500 text-xs mt-1">{{ errors.parentNames }}</p>
@@ -242,6 +242,27 @@ function onPeselInput() {
   local.value.gender = gender.value
 }
 
+// Track last auto-generated value so we only overwrite parentNames
+// when the user hasn't manually edited it.
+let lastAutoParentNames = local.value.parentNames || ''
+let parentNamesManuallyEdited = false
+
+function onParentNamesInput() {
+  // Mark as manually edited if it diverges from the last auto value
+  parentNamesManuallyEdited = local.value.parentNames !== lastAutoParentNames
+}
+
+watch(
+  [() => local.value.guardianFirstName, () => local.value.guardianLastName],
+  ([fn, ln]) => {
+    const auto = [fn, ln].filter(Boolean).join(' ')
+    if (!parentNamesManuallyEdited) {
+      local.value.parentNames = auto
+      lastAutoParentNames = auto
+    }
+  }
+)
+
 // Turnus
 const turnusy = ref([])
 const loadingTurnusy = ref(true)
@@ -282,16 +303,19 @@ function validate() {
   if (!local.value.turnusCode)          errors.turnusCode  = 'Wybierz turnus.'
   if (!local.value.firstName?.trim())   errors.firstName   = 'Podaj imię.'
   if (!local.value.lastName?.trim())    errors.lastName    = 'Podaj nazwisko.'
+
   if (pesel.value.length !== 11) {
     errors.pesel = 'PESEL musi mieć 11 cyfr.'
   } else if (!validatePesel(pesel.value)) {
     errors.pesel = 'PESEL ma nieprawidłową sumę kontrolną.'
   }
+
   if (!local.value.email?.trim()) {
     errors.email = 'Podaj adres e-mail.'
   } else if (!validateEmail(local.value.email)) {
     errors.email = 'Podaj prawidłowy adres e-mail.'
   }
+
   if (!validatePhone(local.value.phone)) {
     errors.phone = 'Podaj prawidłowy numer telefonu (9 cyfr).'
   }
@@ -308,6 +332,7 @@ function validate() {
     if (!validatePhone(local.value.guardianPhone)) {
       errors.guardianPhone = 'Podaj prawidłowy numer telefonu opiekuna (9 cyfr).'
     }
+    if (!local.value.parentNames?.trim())       errors.parentNames       = 'Podaj imiona i nazwiska rodziców.'
   }
 
   if (isAdult.value && pesel.value.length === 11) {
