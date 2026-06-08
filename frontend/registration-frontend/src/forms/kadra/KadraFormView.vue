@@ -90,6 +90,7 @@ const emptyForm = () => ({
   guardianRelation: '',
   guardianEmail: '',
   guardianPhone: '',
+  parentNames: '',
 
   iceFirstName: '',
   iceLastName: '',

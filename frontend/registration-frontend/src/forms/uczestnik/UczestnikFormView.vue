@@ -9,8 +9,8 @@
       <div class="flex justify-between mb-8" v-if="currentStep <= 4">
         <div v-for="step in 4" :key="step" class="flex-1 text-center">
           <div
-            class="w-8 h-8 rounded-full mx-auto flex items-center justify-center text-sm font-bold"
-            :class="currentStep >= step ? 'bg-gray-800 text-white' : 'bg-gray-200 text-gray-500'"
+              class="w-8 h-8 rounded-full mx-auto flex items-center justify-center text-sm font-bold"
+              :class="currentStep >= step ? 'bg-gray-800 text-white' : 'bg-gray-200 text-gray-500'"
           >
             {{ step }}
           </div>
@@ -19,40 +19,40 @@
       </div>
 
       <Step1PersonalData
-        v-if="currentStep === 1"
-        v-model:formData="formData"
-        @next="currentStep = 2"
+          v-if="currentStep === 1"
+          v-model:formData="formData"
+          @next="currentStep = 2"
       />
       <Step2Address
-        v-else-if="currentStep === 2"
-        v-model:formData="formData"
-        :isAdult="formData.isAdult"
-        @prev="currentStep = 1"
-        @next="currentStep = 3"
+          v-else-if="currentStep === 2"
+          v-model:formData="formData"
+          :isAdult="formData.isAdult"
+          @prev="currentStep = 1"
+          @next="currentStep = 3"
       />
       <Step3Health
-        v-else-if="currentStep === 3"
-        v-model:formData="formData"
-        :gender="formData.gender"
-        @prev="currentStep = 2"
-        @next="currentStep = 4"
+          v-else-if="currentStep === 3"
+          v-model:formData="formData"
+          :gender="formData.gender"
+          @prev="currentStep = 2"
+          @next="currentStep = 4"
       />
       <Step4Consents
-        v-else-if="currentStep === 4"
-        v-model:formData="formData"
-        :isAdult="formData.isAdult"
-        @prev="currentStep = 3"
-        @submit="handleSubmit"
+          v-else-if="currentStep === 4"
+          v-model:formData="formData"
+          :isAdult="formData.isAdult"
+          @prev="currentStep = 3"
+          @submit="handleSubmit"
       />
       <SuccessPage
-        v-else-if="currentStep === 5"
-        :registrationCode="registrationCode"
-        @reset="resetForm"
+          v-else-if="currentStep === 5"
+          :registrationCode="registrationCode"
+          @reset="resetForm"
       />
       <ErrorPage
-        v-else-if="currentStep === 6"
-        :message="errorMessage"
-        @back="currentStep = 4"
+          v-else-if="currentStep === 6"
+          :message="errorMessage"
+          @back="currentStep = 4"
       />
     </div>
   </div>
@@ -106,10 +106,11 @@ const emptyForm = () => ({
     q2: { answer: '', detail: '' },
     q3: { answer: '', detail: '' },
   },
-  healthDeclaration: false,
+
   consent1: false,
   consent2: false,
   consent3: false,
+  truthDeclaration: false,
 })
 
 const formData = ref(emptyForm())
