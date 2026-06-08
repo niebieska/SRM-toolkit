@@ -97,18 +97,19 @@ public class RegistrationNotificationService {
                                              String registrationCode,
                                              String turnusCode) {
         String to = recipient.path("contact").path("email").asText("").trim();
+        Map<String, String> variables = new java.util.HashMap<>();
+
+        variables.put("recipientName", recipientName);
+        variables.put("registeredName", registeredName);
+        variables.put("registrationCode", registrationCode);
+        variables.put("registrationType", RegistrationType.PARTICIPANT.name());
+        variables.put("status", RegistrationStatus.NEW.name());
+        variables.putAll(turnusVariables(turnusCode));
 
         emailServiceClient.sendEmail(
                 to,
                 PARTICIPANT_TEMPLATE,
-                Map.of(
-                        "recipientName", recipientName,
-                        "registeredName", registeredName,
-                        "registrationCode", registrationCode,
-                        "registrationType", RegistrationType.PARTICIPANT.name(),
-                        "turnusCode", turnusCode,
-                        "status", RegistrationStatus.NEW.name()
-                )
+                variables
         );
     }
 
@@ -119,6 +120,15 @@ public class RegistrationNotificationService {
                                        String registrationCode,
                                        String turnusCode) {
         String to = recipient.path("contact").path("email").asText("").trim();
+        Map<String, String> variables = new java.util.HashMap<>();
+
+        variables.put("recipientName", recipientName);
+        variables.put("registeredName", registeredName);
+        variables.put("registrationCode", registrationCode);
+        variables.put("staffRole", staffRole);
+        variables.put("registrationType", RegistrationType.STAFF.name());
+        variables.put("status", RegistrationStatus.NEW.name());
+        variables.putAll(turnusVariables(turnusCode));
 
         emailServiceClient.sendEmail(
                 to,
@@ -166,5 +176,30 @@ public class RegistrationNotificationService {
         return role;
     }
 
+    private Map<String, String> turnusVariables(String turnusCode) {
+        return switch (turnusCode) {
+            case "ZAGLE26T1" -> Map.of(
+                    "turnusCode", turnusCode,
+                    "turnusName", "Rekolekcje pod żaglami 2026 - Turnus I",
+                    "turnusStartDate", "01.08.2026",
+                    "turnusEndDate", "11.08.2026",
+                    "turnusDescription", "Turnus żeglarski dla młodzieży 14+ nad Jeziorem Rajgrodzkim."
+            );
+            case "ZAGLE26T2" -> Map.of(
+                    "turnusCode", turnusCode,
+                    "turnusName", "Rekolekcje pod żaglami 2026 - Turnus II",
+                    "turnusStartDate", "11.08.2026",
+                    "turnusEndDate", "21.08.2026",
+                    "turnusDescription", "Turnus żeglarski dla młodzieży 16+ nad Jeziorem Rajgrodzkim"
+            );
+            default -> Map.of(
+                    "turnusCode", turnusCode,
+                    "turnusName", turnusCode,
+                    "turnusStartDate", "",
+                    "turnusEndDate", "",
+                    "turnusDescription", ""
+            );
+        };
+    }
 
 }
