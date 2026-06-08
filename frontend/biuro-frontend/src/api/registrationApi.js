@@ -48,3 +48,17 @@ export async function fetchRegistrationDetail(token, code) {
 
   return response.json()
 }
+
+export async function fetchTurnusStats(token, turnusCode) {
+  const response = await fetch(`http://localhost:8081/api/biuro/registrations/stats/${turnusCode}`, {
+    headers: {
+      Authorization: `Bearer ${token}`,
+    },
+  })
+
+  if (!response.ok) {
+    throw new Error(`HTTP error! status: ${response.status}`)
+  }
+
+  return response.json()
+}

@@ -1,11 +1,14 @@
 <script setup>
-import {reactive, ref, computed} from 'vue'
-import {useRouter} from 'vue-router'
-import {useAuthStore} from '../stores/auth'
+import { reactive, ref, watch } from 'vue'
+import { useRouter } from 'vue-router'
+import { useAuthStore } from '../stores/auth'
 import RegistrationTable from '../components/RegistrationTable.vue'
+import { fetchTurnusStats } from '../api/registrationApi'
 
 const authStore = useAuthStore()
 const router = useRouter()
+
+const stats = ref(null)
 
 const filters = reactive({
   status: '',
@@ -13,7 +16,29 @@ const filters = reactive({
   turnusCode: '',
   search: '',
 })
+
 const turnusOptions = ['ZAGLE26T1', 'ZAGLE26T2']
+
+watch(
+    () => filters.turnusCode,
+    async (turnusCode) => {
+      console.log('turnus changed:', turnusCode)
+
+      if (!turnusCode) {
+        stats.value = null
+        return
+      }
+
+      try {
+        const result = await fetchTurnusStats(authStore.token, turnusCode)
+        console.log('stats result:', result)
+        stats.value = result
+      } catch (e) {
+        console.error('stats error:', e)
+        stats.value = null
+      }
+    }
+)
 
 async function logout() {
   authStore.logout()
@@ -54,7 +79,42 @@ async function logout() {
              placeholder="Wyszukaj"
          />
       </section>
+      <section
+          v-if="stats"
+          class="bg-white rounded-xl shadow p-4"
+      >
+        <h2 class="font-semibold mb-3">
+          Statystyki {{ stats.turnusCode }}
+        </h2>
 
+        <div class="grid grid-cols-3 gap-4 text-sm">
+          <div>
+            <div class="text-slate-500">Miejsca</div>
+            <div class="font-semibold">
+              {{ stats.occupiedPlaces }} / {{ stats.occupiedPlaces + stats.availablePlaces }}
+            </div>
+            <div class="text-xs text-slate-500">
+              Wolne: {{ stats.availablePlaces }}
+            </div>
+          </div>
+
+          <div>
+            <div class="text-slate-500">Przyjęci</div>
+            <div>
+              ♀ {{ stats.acceptedFemale }}
+              | ♂ {{ stats.acceptedMale }}
+            </div>
+          </div>
+
+          <div>
+            <div class="text-slate-500">Lista rezerwowa</div>
+            <div>
+              ♀ {{ stats.waitlistFemale }}
+              | ♂ {{ stats.waitlistMale }}
+            </div>
+          </div>
+        </div>
+      </section>
       <RegistrationTable :filters="filters"/>
     </div>
   </main>
