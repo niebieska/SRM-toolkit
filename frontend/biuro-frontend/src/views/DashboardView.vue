@@ -17,7 +17,18 @@ const filters = reactive({
   search: '',
 })
 
-const turnusOptions = ['ZAGLE26T1', 'ZAGLE26T2']
+const turnusOptions = [
+  {
+    code: 'ZAGLE26T1',
+    name: 'Żagle 2026 - Turnus I',
+    dates: '01.08.2026 - 11.08.2026',
+  },
+  {
+    code: 'ZAGLE26T2',
+    name: 'Żagle 2026 - Turnus II',
+    dates: '11.08.2026 - 21.08.2026',
+  },
+]
 
 watch(
     () => filters.turnusCode,
@@ -69,8 +80,12 @@ async function logout() {
         </select>
         <select v-model="filters.turnusCode" class="rounded border border-slate-300 px-3 py-2">
           <option value="">Wszystkie turnusy</option>
-          <option v-for="code in turnusOptions" :key="code" :value="code" >
-            {{ code }}
+          <option
+              v-for="turnus in turnusOptions"
+              :key="turnus.code"
+              :value="turnus.code"
+          >
+            {{ turnus.name }}
           </option>
         </select>
          <input
@@ -79,40 +94,37 @@ async function logout() {
              placeholder="Wyszukaj"
          />
       </section>
-      <section
-          v-if="stats"
-          class="bg-white rounded-xl shadow p-4"
-      >
-        <h2 class="font-semibold mb-3">
-          Statystyki {{ stats.turnusCode }}
-        </h2>
+      <section  v-if="stats" class="bg-white rounded-xl shadow p-3">
+        <div class="flex flex-wrap items-center gap-6 text-sm">
 
-        <div class="grid grid-cols-3 gap-4 text-sm">
           <div>
-            <div class="text-slate-500">Miejsca</div>
-            <div class="font-semibold">
-              {{ stats.occupiedPlaces }} / {{ stats.occupiedPlaces + stats.availablePlaces }}
-            </div>
-            <div class="text-xs text-slate-500">
-              Wolne: {{ stats.availablePlaces }}
-            </div>
+            <span class="text-slate-500">Turnus:</span>
+            <span class="font-medium ml-1">{{ stats.turnusCode }}</span>
           </div>
 
           <div>
-            <div class="text-slate-500">Przyjęci</div>
-            <div>
-              ♀ {{ stats.acceptedFemale }}
-              | ♂ {{ stats.acceptedMale }}
-            </div>
+            <span class="text-slate-500">Zajęte miejsca:</span>
+            <span class="font-medium ml-1">
+        {{ stats.occupiedPlaces }}/{{ stats.occupiedPlaces + stats.availablePlaces }}
+      </span>
           </div>
 
           <div>
-            <div class="text-slate-500">Lista rezerwowa</div>
-            <div>
-              ♀ {{ stats.waitlistFemale }}
-              | ♂ {{ stats.waitlistMale }}
-            </div>
+            <span class="text-slate-500">Przyjęci uczestnicy:</span>
+            <span class="font-medium ml-1">{{ stats.accepted }}</span>
+            <span class="text-slate-400 ml-1">
+        (Kobiety: {{ stats.acceptedFemale }}, Mężczyźni: {{ stats.acceptedMale }})
+      </span>
           </div>
+
+          <div>
+            <span class="text-slate-500">Lista rezerwowa:</span>
+            <span class="font-medium ml-1">{{ stats.waitlist }}</span>
+            <span class="text-slate-400 ml-1">
+        (Kobiety: {{ stats.waitlistFemale }}, Mężczyźni: {{ stats.waitlistMale }})
+      </span>
+          </div>
+
         </div>
       </section>
       <RegistrationTable :filters="filters"/>
