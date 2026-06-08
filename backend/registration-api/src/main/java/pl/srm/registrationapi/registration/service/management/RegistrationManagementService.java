@@ -15,6 +15,7 @@ import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Set;
 import org.springframework.data.domain.Sort;
+import pl.srm.registrationapi.registration.service.submission.RegistrationService;
 import pl.srm.registrationapi.registration.util.PeselHelper;
 
 @Service
@@ -25,13 +26,15 @@ public class RegistrationManagementService {
     private final RegistrationRepository repository;
     private final ObjectMapper objectMapper;
     private final PeselHelper peselHelper;
+    private final RegistrationStatusService  statusService;
 
     public RegistrationManagementService(RegistrationRepository repository,
                                          ObjectMapper objectMapper,
-                                         PeselHelper peselHelper) {
+                                         PeselHelper peselHelper, RegistrationStatusService statusService) {
         this.repository = repository;
         this.objectMapper = objectMapper;
         this.peselHelper = peselHelper;
+        this.statusService = statusService;
     }
 
     public RegistrationSummaryResponse getByCode(String code) {
@@ -64,16 +67,8 @@ public class RegistrationManagementService {
     }
 
     public RegistrationSummaryResponse updateStatus(String code, StatusUpdateRequest request) {
-        Registration registration = findByCode(code);
-        String status = request.status() == null ? "" : request.status().trim();
-        if (!ALLOWED_STATUSES.contains(status)) {
-            throw new RegistrationException("INVALID_STATUS", "Nieprawidłowy status zgłoszenia.");
-        }
-
-        registration.setStatus(status);
-        registration.setRejectionReason("REJECTED".equals(status) ? trimToNull(request.rejectionReason()) : null);
-        registration.setUpdatedAt(LocalDateTime.now());
-        return toSummary(repository.save(registration));
+        Registration updated = statusService.updateStatus(code, request);
+        return toSummary(updated);
     }
 
     private Registration findByCode(String code) {
