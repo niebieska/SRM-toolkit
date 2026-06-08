@@ -133,15 +133,7 @@ public class RegistrationNotificationService {
         emailServiceClient.sendEmail(
                 to,
                 STAFF_TEMPLATE,
-                Map.of(
-                        "recipientName", recipientName,
-                        "registeredName", registeredName,
-                        "staffRole", staffRole,
-                        "registrationCode", registrationCode,
-                        "registrationType", RegistrationType.STAFF.name(),
-                        "turnusCode", turnusCode,
-                        "status", RegistrationStatus.NEW.name()
-                )
+                variables
         );
     }
 
@@ -190,7 +182,7 @@ public class RegistrationNotificationService {
                     "turnusName", "Rekolekcje pod żaglami 2026 - Turnus II",
                     "turnusStartDate", "11.08.2026",
                     "turnusEndDate", "21.08.2026",
-                    "turnusDescription", "Turnus żeglarski dla młodzieży 16+ nad Jeziorem Rajgrodzkim"
+                    "turnusDescription", "Turnus żeglarski dla młodzieży 16+ nad Jeziorem Rajgrodzkim."
             );
             default -> Map.of(
                     "turnusCode", turnusCode,
