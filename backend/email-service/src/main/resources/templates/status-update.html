@@ -6,10 +6,17 @@
 </head>
 <body style="font-family: Arial, sans-serif; color: #1d1d1d; line-height: 1.5;">
 <div style="max-width: 640px; margin: 0 auto; padding: 24px; border: 1px solid #e5e5e5; border-radius: 8px;">
-    <p>Drogi/Droga <strong th:text="${recipientName}">Uczestniku</strong>,</p>
-    <p>Informujemy o zmianie statusu Twojego zgłoszenia.</p>
+    <p>Dzień dobry, </p>
+    <p>Informujemy o zmianie statusu zgłoszenia : <strong th:text="${recipientName}"></strong>,</p></p>
 
-    <p>Kod zgłoszenia: <strong th:text="${registrationCode}">UCZ-2026-00042</strong></p>
+    <div style="margin: 20px 0; padding: 16px; background: #f5f7ff; border-radius: 6px;">
+        <p style="margin: 0 0 8px 0;">Kod zgłoszenia:</p>
+
+        <p style="margin: 0; font-size: 16px; font-weight: bold; letter-spacing: 1px;"
+           th:text="${registrationCode}">
+            UCZ-2026-00042
+        </p>
+    </div>
     <p>
         Aktualny status:
         <strong th:text="${status == 'ACCEPTED' ? 'Zaakceptowane' : (status == 'REJECTED' ? 'Odrzucone' : status)}">Zaakceptowane</strong>
@@ -21,10 +28,88 @@
         <p style="margin: 0;" th:text="${rejectionReason}">Brak wymaganych dokumentów.</p>
     </div>
 
-    <hr style="border: none; border-top: 1px solid #ececec; margin: 24px 0;" />
-    <p style="font-size: 12px; color: #6b6b6b; margin: 0;">
-        Kontakt: [tu wstaw dane kontaktowe organizatora]
+    <div th:if="${status == 'ACCEPTED'}"
+         style="margin: 20px 0; padding: 14px; border-left: 4px solid #2e7d32; background: #f4fff5;">
+
+
+        <p style="margin: 0 0 12px 0;">
+            Twoje zgłoszenie zostało zaakceptowane.
+            Aby potwierdzić udział w turnusie, prosimy o wpłatę zaliczki zgodnie z poniższymi danymi.
+        </p>
+
+        <div style="margin-top: 12px; padding: 12px; background: #ffffff; border: 1px solid #d9e8d9; border-radius: 4px;">
+            <p style="margin: 0 0 8px 0;"><strong>Dane do przelewu</strong></p>
+
+            <p style="margin: 0; line-height: 1.7;">
+                <strong>Odbiorca:</strong> Sercańskie Rekolekcje Młodzieżowe<br/>
+                <strong>Numer rachunku:</strong> XX XXXX XXXX XXXX XXXX XXXX XXXX<br/>
+                <strong>Kwota zaliczki:</strong> 500zł<br/>
+                <strong>Tytuł przelewu:</strong>
+                <span th:text="${registrationCode}">UCZ-2026-00042</span>
+                Zaliczka – <span th:text="${recipientName}">Jan Kowalski</span>
+            </p>
+    </div>
+    </div>
+
+    <!-- Closing -->
+    <p style="margin: 20px 0 4px 0;">
+        Pozdrawiamy,
     </p>
+
+    <p style="margin: 0;">
+        Zespół Sercańskich Rekolekcji Młodzieżowych
+    </p>
+
+
+    <!-- Footer -->
+    <hr style="border: none; border-top: 1px solid #ececec; margin: 32px 0;"/>
+
+    <table width="100%"
+           cellspacing="0"
+           cellpadding="0"
+           style="font-size: 13px; color: #6b6b6b; line-height: 1.6;">
+        <tr>
+
+            <!-- Contact -->
+            <td width="60%" style="vertical-align: top; padding-right: 16px;">
+
+                <p style="margin: 0 0 6px 0; font-weight: bold; color: #1d1d1d;">
+                    Biuro Rekolekcji
+                </p>
+
+                <p style="margin: 0 0 12px 0;">
+                    📧
+                    <a href="mailto:zgloszenia.rek@scj.pl"
+                       style="color: #2a5bd7; text-decoration: none;">
+                        zgloszenia.rek@scj.pl
+                    </a><br/>
+                    📞 <span>+48 602 439 696</span>
+                    <br/>
+
+                </p>
+
+                <p style="margin: 0 0 6px 0; font-weight: bold; color: #1d1d1d;">
+                    ks. Franciszek Wielgut SCJ
+                </p>
+
+                <p style="margin: 0;">
+                    📞 +48 510 797 569
+                </p>
+
+            </td>
+
+            <!-- Logo -->
+            <td width="30%"
+                style="vertical-align: middle; text-align: right;">
+
+                <img src="https://rekolekcje.scj.pl/beta/wp-content/uploads/logo3.png"
+                     alt="Logo"
+                     style="height: 100px; width: auto;" />
+
+            </td>
+
+        </tr>
+    </table>
 </div>
 </body>
 </html>

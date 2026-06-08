@@ -20,28 +20,28 @@
         Wybrany turnus:
     </p>
 
+    <!-- Turnus info -->
     <div style="margin: 16px 0;">
         <p style="margin: 4px 0;">
             Nazwa:
-            <strong th:text="${turnusName}">Rekolekcje pod żaglami - Turnus I</strong>
+            <strong th:text="${turnusName}">Rekolekcje pod żaglami</strong>
         </p>
 
         <p style="margin: 4px 0;">
             Termin:
             <strong>
-                <span th:text="${turnusStartDate}">01.08.2026</span>
+                <span th:text="${turnusStartDate}">01.07.2026</span>
                 –
-                <span th:text="${turnusEndDate}">11.08.2026</span>
+                <span th:text="${turnusEndDate}">10.07.2026</span>
             </strong>
         </p>
 
         <p style="margin: 4px 0;">
             Opis:
             <strong th:text="${turnusDescription}">
-                Letni turnus rekolekcyjno-wypoczynkowy.
+                Letni turnus wypoczynkowy.
             </strong>
         </p>
-    </div>
     </div>
 
     <hr style="border: none; border-top: 1px solid #ececec; margin: 24px 0;" />
@@ -86,12 +86,18 @@
         Zespół Sercańskich Rekolekcji Młodzieżowych
     </p>
 
-    <hr style="border: none; border-top: 1px solid #ececec; margin: 32px 0;" />
+    <!-- Footer -->
+    <hr style="border: none; border-top: 1px solid #ececec; margin: 32px 0;"/>
 
-    <table width="100%" cellspacing="0" cellpadding="0"
+    <table width="100%"
+           cellspacing="0"
+           cellpadding="0"
            style="font-size: 13px; color: #6b6b6b; line-height: 1.6;">
         <tr>
+
+            <!-- Contact -->
             <td width="60%" style="vertical-align: top; padding-right: 16px;">
+
                 <p style="margin: 0 0 6px 0; font-weight: bold; color: #1d1d1d;">
                     Biuro Rekolekcji
                 </p>
@@ -103,6 +109,8 @@
                         zgloszenia.rek@scj.pl
                     </a><br/>
                     📞 <span>+48 602 439 696</span>
+                    <br/>
+
                 </p>
 
                 <p style="margin: 0 0 6px 0; font-weight: bold; color: #1d1d1d;">
@@ -112,15 +120,22 @@
                 <p style="margin: 0;">
                     📞 +48 510 797 569
                 </p>
+
             </td>
 
-            <td width="30%" style="vertical-align: middle; text-align: right;">
+            <!-- Logo -->
+            <td width="30%"
+                style="vertical-align: middle; text-align: right;">
+
                 <img src="https://rekolekcje.scj.pl/beta/wp-content/uploads/logo3.png"
-                      alt="Logo"
-                      style="height: 100px; width: auto;" />
+                     alt="Logo"
+                     style="height: 100px; width: auto;" />
+
             </td>
+
         </tr>
     </table>
+
 </div>
 </body>
 </html>
