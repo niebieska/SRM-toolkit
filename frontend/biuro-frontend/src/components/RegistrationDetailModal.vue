@@ -21,6 +21,7 @@ const errorMessage = ref('')
 
 const FIELD_LABELS = {
   turnusCode: 'Turnus',
+
   'person.firstName': 'Imię',
   'person.lastName': 'Nazwisko',
   'person.pesel': 'PESEL',
@@ -28,6 +29,7 @@ const FIELD_LABELS = {
   'person.isAdult': 'Osoba pełnoletnia',
   'person.contact.email': 'E-mail',
   'person.contact.phone': 'Telefon',
+
   'address.street': 'Ulica',
   'address.houseNumber': 'Nr domu',
   'address.postalCode': 'Kod pocztowy',
@@ -37,21 +39,37 @@ const FIELD_LABELS = {
   'address.guardianAddress.houseNumber': 'Nr domu (opiekun)',
   'address.guardianAddress.postalCode': 'Kod pocztowy (opiekun)',
   'address.guardianAddress.city': 'Miasto (opiekun)',
+
   'guardian.firstName': 'Imię opiekuna',
   'guardian.lastName': 'Nazwisko opiekuna',
   'guardian.relation': 'Relacja',
-  'guardian.names': 'Imiona rodziców',
+  'guardian.names': 'Imiona i nazwiska rodziców/opiekunów',
   'guardian.contact.email': 'E-mail opiekuna',
   'guardian.contact.phone': 'Telefon opiekuna',
+
   'ice.firstName': 'Imię osoby kontaktowej',
   'ice.lastName': 'Nazwisko osoby kontaktowej',
   'ice.relation': 'Relacja (kontakt awaryjny)',
   'ice.phone': 'Telefon (kontakt awaryjny)',
+
   role: 'Rola',
+  subrole: 'Funkcja',
+
   'consents.dataProcessing': 'Zgoda na przetwarzanie danych',
   'consents.imageUsage': 'Zgoda na wykorzystanie wizerunku',
   'consents.regulations': 'Akceptacja regulaminu',
-  'health.declaration': 'Oświadczenie zdrowotne',
+  'consents.truthDeclaration': 'Oświadczenie o prawdziwości danych',
+
+  'health.q1.question': 'Pytanie',
+  'health.q1.answer': 'Odpowiedź',
+  'health.q1.detail': 'Szczegóły',
+  'health.q2.question': 'Pytanie',
+  'health.q2.answer': 'Odpowiedź',
+  'health.q2.detail': 'Szczegóły',
+  'health.q3.question': 'Pytanie',
+  'health.q3.answer': 'Odpowiedź',
+  'health.q3.detail': 'Szczegóły',
+  'health.additionalInfo': 'Dodatkowe informacje',
 }
 
 const SECTION_LABELS = {
@@ -62,7 +80,7 @@ const SECTION_LABELS = {
   role: 'Rola',
   certificates: 'Uprawnienia',
   certificateDetails: 'Szczegóły uprawnień',
-  health: 'Zdrowie',
+  health: 'Kwestionariusz',
   consents: 'Zgody',
   turnusCode: 'Turnus',
 }
@@ -163,8 +181,11 @@ function payloadSections(payload) {
   return sections
 }
 
-function formatFieldValue(value) {
-  if (value === null || value === undefined || value === '') return '—'
+function formatFieldValue(value,path = '') {
+  if (value === null || value === undefined || value === '') return "-----"
+  if (path === 'person.gender') {
+    return value === 'male' ? 'Mężczyzna' : 'Kobieta'
+  }
   if (typeof value === 'boolean') return value ? 'Tak' : 'Nie'
   if (Array.isArray(value)) {
     if (value.every((entry) => ['string', 'number', 'boolean'].includes(typeof entry))) {
@@ -227,7 +248,7 @@ function formatFieldValue(value) {
               <dl class="grid grid-cols-2 gap-x-4 gap-y-1 text-sm">
                 <template v-for="field in section.fields" :key="field.path">
                   <dt class="text-slate-500">{{ field.label }}</dt>
-                  <dd>{{ formatFieldValue(field.value) }}</dd>
+                  <dd>{{ formatFieldValue(field.value, field.path) }}</dd>
                 </template>
               </dl>
             </div>
