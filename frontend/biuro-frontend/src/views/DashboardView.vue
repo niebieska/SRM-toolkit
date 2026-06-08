@@ -11,6 +11,7 @@ const filters = reactive({
   status: '',
   registrationType: '',
   turnusCode: '',
+  search: '',
 })
 const turnusOptions = ['ZAGLE26T1', 'ZAGLE26T2']
 
@@ -28,7 +29,7 @@ async function logout() {
         <button class="rounded bg-slate-700 text-white px-4 py-2 hover:bg-slate-800" @click="logout">Wyloguj</button>
       </header>
 
-      <section class="bg-white rounded-xl shadow p-4 grid grid-cols-1 md:grid-cols-3 gap-3">
+       <section class="bg-white rounded-xl shadow p-4 grid grid-cols-1 md:grid-cols-4 gap-3">
         <select v-model="filters.status" class="rounded border border-slate-300 px-3 py-2">
           <option value="">Wszystkie statusy</option>
           <option value="NEW">Nowe</option>
@@ -47,6 +48,11 @@ async function logout() {
             {{ code }}
           </option>
         </select>
+         <input
+             v-model="filters.search"
+             class="rounded border border-slate-300 px-3 py-2"
+             placeholder="Wyszukaj"
+         />
       </section>
 
       <RegistrationTable :filters="filters"/>

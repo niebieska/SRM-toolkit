@@ -3,6 +3,7 @@ import { onMounted, ref } from 'vue'
 import { useAuthStore } from '../stores/auth'
 import { fetchRegistrationDetail } from '../api/registrationApi'
 import StatusBadge from './StatusBadge.vue'
+import { formatDateTime } from '../utils/dateUtils'
 
 const props = defineProps({
   code: {
@@ -207,7 +208,7 @@ function formatFieldValue(value) {
               <dd>{{ detail.rejectionReason }}</dd>
             </template>
             <dt class="text-slate-500">Data zgłoszenia</dt>
-            <dd>{{ detail.createdAt }}</dd>
+            <dd>{{ formatDateTime(detail.createdAt) }}</dd>
           </dl>
         </section>
 
