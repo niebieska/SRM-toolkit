@@ -41,6 +41,7 @@
           v-else-if="currentStep === 4"
           v-model:formData="formData"
           :isAdult="formData.isAdult"
+          :gender="formData.gender"
           @prev="currentStep = 3"
           @submit="handleSubmit"
       />
