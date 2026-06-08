@@ -2,17 +2,13 @@ package pl.srm.biuroapi.registration.api;
 
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.PatchMapping;
-import org.springframework.web.bind.annotation.PathVariable;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
 import pl.srm.biuroapi.registration.client.RegistrationApiClient;
 import pl.srm.biuroapi.registration.model.RegistrationDetail;
 import pl.srm.biuroapi.registration.model.RegistrationSummary;
+import pl.srm.biuroapi.registration.model.TurnusRegistrationStats;
+import pl.srm.biuroapi.registration.service.RegistrationStatisticsService;
 
 import java.util.List;
 import java.util.Locale;
@@ -22,9 +18,11 @@ import java.util.Locale;
 public class BiuroRegistrationController {
 
     private final RegistrationApiClient registrationApiClient;
+    private final RegistrationStatisticsService statisticsService;
 
-    public BiuroRegistrationController(RegistrationApiClient registrationApiClient) {
+    public BiuroRegistrationController(RegistrationApiClient registrationApiClient,RegistrationStatisticsService statisticsService) {
         this.registrationApiClient = registrationApiClient;
+        this.statisticsService = statisticsService;
     }
 
     @GetMapping
@@ -38,6 +36,14 @@ public class BiuroRegistrationController {
                 .toList();
     }
 
+    @GetMapping("/stats/{turnusCode}")
+    public TurnusRegistrationStats getStatsByTurnus(@PathVariable String turnusCode) {
+        return statisticsService.calculateForTurnus(
+                turnusCode,
+                registrationApiClient.fetchRegistrations()
+        );
+    }
+
     @GetMapping("/{code}")
     public RegistrationDetail getRegistration(@PathVariable String code) {
         return registrationApiClient.fetchRegistration(code);
@@ -49,6 +55,8 @@ public class BiuroRegistrationController {
         validateRequest(request);
         return registrationApiClient.updateStatus(code, request);
     }
+
+
 
     private void validateRequest(StatusUpdateRequest request) {
         String status = request.status() == null ? "" : request.status().trim().toUpperCase(Locale.ROOT);

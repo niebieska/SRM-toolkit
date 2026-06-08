@@ -12,6 +12,7 @@ public record RegistrationSummaryResponse(
         LocalDateTime createdAt,
         String firstName,
         String lastName,
-        Integer age
+        Integer age,
+        String gender
 ) {
 }

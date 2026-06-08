@@ -85,11 +85,13 @@ public class RegistrationManagementService {
         String firstName = null;
         String lastName = null;
         Integer age = null;
+        String gender =null;
         try {
             JsonNode root = objectMapper.readTree(registration.getPayload());
             JsonNode person = root.path("person");
             firstName = person.path("firstName").textValue();
             lastName = person.path("lastName").textValue();
+            gender = person.path("gender").textValue();
             String pesel = person.path("pesel").textValue();
             if (pesel != null && !pesel.isBlank()) {
                 age = peselHelper.calculateAge(pesel);
@@ -107,7 +109,8 @@ public class RegistrationManagementService {
                 registration.getCreatedAt(),
                 firstName,
                 lastName,
-                age
+                age,
+                gender
         );
     }
 
