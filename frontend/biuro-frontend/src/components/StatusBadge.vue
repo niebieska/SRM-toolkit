@@ -12,6 +12,9 @@ const view = computed(() => {
   if (props.status === 'ACCEPTED') {
     return { label: 'Zaakceptowane', classes: 'bg-green-100 text-green-700' }
   }
+  if (props.status === 'WAITLIST') {
+    return { label: 'Lista rezerwowa', classes: 'bg-amber-100 text-amber-700' }
+  }
   if (props.status === 'REJECTED') {
     return { label: 'Odrzucone', classes: 'bg-red-100 text-red-700' }
   }

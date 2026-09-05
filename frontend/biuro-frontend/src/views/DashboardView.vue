@@ -1,5 +1,5 @@
 <script setup>
-import { reactive, ref, watch } from 'vue'
+import { computed, reactive, ref, watch } from 'vue'
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '../stores/auth'
 import RegistrationTable from '../components/RegistrationTable.vue'
@@ -30,25 +30,34 @@ const turnusOptions = [
   },
 ]
 
+const hasActiveFilters = computed(() =>
+  Boolean(filters.status || filters.registrationType || filters.turnusCode || filters.search)
+)
+
+function clearFilters() {
+  filters.status = ''
+  filters.registrationType = ''
+  filters.turnusCode = ''
+  filters.search = ''
+}
+
+async function loadTurnusStats(turnusCode = filters.turnusCode) {
+  if (!turnusCode) {
+    stats.value = null
+    return
+  }
+
+  try {
+    stats.value = await fetchTurnusStats(authStore.token, turnusCode)
+  } catch (e) {
+    console.error('stats error:', e)
+    stats.value = null
+  }
+}
+
 watch(
     () => filters.turnusCode,
-    async (turnusCode) => {
-      console.log('turnus changed:', turnusCode)
-
-      if (!turnusCode) {
-        stats.value = null
-        return
-      }
-
-      try {
-        const result = await fetchTurnusStats(authStore.token, turnusCode)
-        console.log('stats result:', result)
-        stats.value = result
-      } catch (e) {
-        console.error('stats error:', e)
-        stats.value = null
-      }
-    }
+    (turnusCode) => loadTurnusStats(turnusCode)
 )
 
 async function logout() {
@@ -70,6 +79,7 @@ async function logout() {
           <option value="">Wszystkie statusy</option>
           <option value="NEW">Nowe</option>
           <option value="ACCEPTED">Zaakceptowane</option>
+          <option value="WAITLIST">Lista rezerwowa</option>
           <option value="REJECTED">Odrzucone</option>
         </select>
 
@@ -88,11 +98,32 @@ async function logout() {
             {{ turnus.name }}
           </option>
         </select>
-         <input
-             v-model="filters.search"
-             class="rounded border border-slate-300 px-3 py-2"
-             placeholder="Wyszukaj"
-         />
+         <div class="relative">
+           <input
+               v-model="filters.search"
+               class="w-full rounded border border-slate-300 px-3 py-2 pr-9"
+               placeholder="Wyszukaj"
+           />
+           <button
+               v-if="filters.search"
+               type="button"
+               class="absolute inset-y-0 right-2 my-auto h-6 w-6 rounded-full text-slate-500 hover:bg-slate-100 hover:text-slate-800"
+               aria-label="Wyczyść wyszukiwanie"
+               @click="filters.search = ''"
+           >
+             ×
+           </button>
+         </div>
+         <div class="md:col-span-4 flex justify-end">
+           <button
+               type="button"
+               class="rounded border border-slate-300 px-4 py-2 text-sm hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
+               :disabled="!hasActiveFilters"
+               @click="clearFilters"
+           >
+             Wyczyść filtry
+           </button>
+         </div>
       </section>
       <section  v-if="stats" class="bg-white rounded-xl shadow p-3">
         <div class="flex flex-wrap items-center gap-6 text-sm">
@@ -127,7 +158,7 @@ async function logout() {
 
         </div>
       </section>
-      <RegistrationTable :filters="filters"/>
+      <RegistrationTable :filters="filters" @status-updated="loadTurnusStats"/>
     </div>
   </main>
 </template>

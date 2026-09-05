@@ -6,7 +6,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import pl.srm.registrationapi.email.client.EmailServiceClient;
-import pl.srm.registrationapi.registration.model.Registration;
 import pl.srm.registrationapi.registration.model.RegistrationStatus;
 import pl.srm.registrationapi.registration.model.RegistrationType;
 import pl.srm.registrationapi.registration.parser.RegistrationContext;
@@ -195,40 +194,4 @@ public class RegistrationNotificationService {
         };
     }
 
-    public void sendStatusUpdate(Registration registration) {
-        try {
-            JsonNode root = objectMapper.readTree(registration.getPayload());
-
-            JsonNode recipient = registration.isMinor()
-                    ? root.path("guardian")
-                    : root.path("person");
-
-            String recipientName = fullName(recipient, "Uczestniku");
-            String email = recipient.path("contact")
-                    .path("email")
-                    .asText("")
-                    .trim();
-
-            emailServiceClient.sendEmail(
-                    email,
-                    "status-update",
-                    Map.of(
-                            "recipientName", recipientName,
-                            "registrationCode", registration.getRegistrationCode(),
-                            "status", registration.getStatus(),
-                            "rejectionReason",
-                            registration.getRejectionReason() == null
-                                    ? ""
-                                    : registration.getRejectionReason()
-                    )
-            );
-
-        } catch (Exception e) {
-            LOGGER.error(
-                    "Failed to send status update email for {}",
-                    registration.getRegistrationCode(),
-                    e
-            );
-        }
-    }
-    }
+}

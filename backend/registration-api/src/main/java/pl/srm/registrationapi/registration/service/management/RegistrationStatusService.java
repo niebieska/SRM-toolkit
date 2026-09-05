@@ -4,8 +4,8 @@ import org.springframework.stereotype.Service;
 import pl.srm.registrationapi.registration.dto.request.StatusUpdateRequest;
 import pl.srm.registrationapi.registration.exception.RegistrationException;
 import pl.srm.registrationapi.registration.model.Registration;
+import pl.srm.registrationapi.registration.model.RegistrationStatus;
 import pl.srm.registrationapi.registration.repository.RegistrationRepository;
-import pl.srm.registrationapi.registration.service.submission.RegistrationNotificationService;
 
 import java.time.LocalDateTime;
 import java.util.Set;
@@ -14,13 +14,17 @@ import java.util.Set;
 public class RegistrationStatusService {
 
     private static final Set<String> ALLOWED_STATUSES =
-            Set.of("ACCEPTED", "REJECTED");
+            Set.of(
+                    RegistrationStatus.ACCEPTED.name(),
+                    RegistrationStatus.WAITLIST.name(),
+                    RegistrationStatus.REJECTED.name()
+            );
 
     private final RegistrationRepository repository;
-    private final RegistrationNotificationService notificationService;
+    private final StatusNotificationService notificationService;
 
     public RegistrationStatusService(RegistrationRepository repository,
-                                     RegistrationNotificationService notificationService) {
+                                     StatusNotificationService notificationService) {
         this.repository = repository;
         this.notificationService = notificationService;
     }
@@ -32,7 +36,7 @@ public class RegistrationStatusService {
                         "Nie znaleziono zgłoszenia o podanym kodzie."
                 ));
 
-        String status = request.status() == null ? "" : request.status().trim();
+        String status = request.status() == null ? "" : request.status().trim().toUpperCase();
 
         if (!ALLOWED_STATUSES.contains(status)) {
             throw new RegistrationException("INVALID_STATUS", "Nieprawidłowy status zgłoszenia.");
