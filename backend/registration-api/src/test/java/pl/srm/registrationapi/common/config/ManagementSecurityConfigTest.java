@@ -4,6 +4,9 @@ import jakarta.servlet.Filter;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpHeaders;
@@ -14,6 +17,8 @@ import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import org.springframework.web.context.support.AnnotationConfigWebApplicationContext;
 import org.springframework.web.servlet.config.annotation.EnableWebMvc;
+import pl.srm.registrationapi.common.exception.GlobalExceptionHandler;
+import pl.srm.registrationapi.registration.exception.RegistrationException;
 import pl.srm.registrationapi.registration.controller.RegistrationController;
 import pl.srm.registrationapi.registration.service.management.RegistrationManagementService;
 import pl.srm.registrationapi.registration.service.submission.ParticipantRegistrationService;
@@ -22,6 +27,7 @@ import pl.srm.registrationapi.turnus.controller.TurnusController;
 import pl.srm.registrationapi.turnus.service.TurnusProvider;
 
 import java.util.List;
+import java.util.stream.Stream;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
@@ -70,6 +76,57 @@ class ManagementSecurityConfigTest {
         mvc.perform(get("/api/registrations").header(HttpHeaders.AUTHORIZATION,
                 "Basic " + HttpHeaders.encodeBasicAuth("biuro-service", "wrong-password", null)))
                 .andExpect(status().isUnauthorized());
+        verifyNoInteractions(management);
+    }
+
+    @ParameterizedTest
+    @MethodSource("invalidAuthenticationHeaders")
+    void rejectsMalformedOrUnsupportedAuthenticationWithoutInvokingManagement(String header) throws Exception {
+        mvc.perform(patch("/api/registrations/ABC/status")
+                .header(HttpHeaders.AUTHORIZATION, header)
+                .contentType(MediaType.APPLICATION_JSON).content("{\"status\":\"WAITLIST\"}"))
+                .andExpect(status().isUnauthorized())
+                .andExpect(content().string(""));
+        verifyNoInteractions(management);
+    }
+
+    static Stream<String> invalidAuthenticationHeaders() {
+        return Stream.of(
+                "Basic",
+                "Basic ",
+                "Basic not-valid-base64!",
+                "Basic " + java.util.Base64.getEncoder().encodeToString(
+                        "no-colon".getBytes(java.nio.charset.StandardCharsets.UTF_8)),
+                "Basic " + HttpHeaders.encodeBasicAuth("unknown-service", "test-password", null),
+                "Bearer not-a-service-credential"
+        );
+    }
+
+    @ParameterizedTest
+    @CsvSource({
+            "participant, INVALID_PESEL, 400",
+            "participant, MISSING_GUARDIAN, 400",
+            "participant, ALREADY_REGISTERED, 409",
+            "staff, INVALID_PESEL, 400",
+            "staff, MISSING_CONSENTS, 400",
+            "staff, ALREADY_REGISTERED, 409"
+    })
+    void preservesPublicValidationErrorsThroughSecurity(String type, String code, int expectedStatus)
+            throws Exception {
+        String message = "Registration validation failed";
+        RegistrationException failure = new RegistrationException(code, message);
+        if ("participant".equals(type)) {
+            when(context.getBean(ParticipantRegistrationService.class).register(any())).thenThrow(failure);
+        } else {
+            when(context.getBean(StaffRegistrationService.class).register(any())).thenThrow(failure);
+        }
+        mvc.perform(post("/api/registrations/" + type)
+                .header(HttpHeaders.ORIGIN, "http://localhost:5173")
+                .contentType(MediaType.APPLICATION_JSON).content("{}"))
+                .andExpect(status().is(expectedStatus))
+                .andExpect(jsonPath("$.code").value(code))
+                .andExpect(jsonPath("$.message").value(message))
+                .andExpect(header().string(HttpHeaders.ACCESS_CONTROL_ALLOW_ORIGIN, "http://localhost:5173"));
         verifyNoInteractions(management);
     }
 
@@ -132,6 +189,7 @@ class ManagementSecurityConfigTest {
     @Configuration
     @EnableWebMvc
     static class TestMvcConfig {
+        @Bean GlobalExceptionHandler exceptionHandler() { return new GlobalExceptionHandler(); }
         @Bean ParticipantRegistrationService participantService() { return mock(ParticipantRegistrationService.class); }
         @Bean StaffRegistrationService staffService() { return mock(StaffRegistrationService.class); }
         @Bean RegistrationManagementService managementService() { return mock(RegistrationManagementService.class); }
