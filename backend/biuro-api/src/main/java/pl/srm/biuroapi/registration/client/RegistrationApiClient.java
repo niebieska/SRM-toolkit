@@ -4,8 +4,10 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.ParameterizedTypeReference;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Component;
+import org.springframework.util.Assert;
 import org.springframework.web.client.RestClient;
 import org.springframework.web.server.ResponseStatusException;
 import pl.srm.biuroapi.registration.api.StatusUpdateRequest;
@@ -23,8 +25,15 @@ public class RegistrationApiClient {
     private final String registrationApiUrl;
 
     public RegistrationApiClient(RestClient.Builder restClientBuilder,
-                                 @Value("${registration.api.url:http://localhost:8080}") String registrationApiUrl) {
-        this.restClient = restClientBuilder.build();
+                                 @Value("${registration.api.url:http://localhost:8080}") String registrationApiUrl,
+                                 @Value("${registration.api.username}") String serviceUsername,
+                                 @Value("${registration.api.password}") String servicePassword) {
+        Assert.hasText(serviceUsername, "Registration service username must not be blank");
+        Assert.hasText(servicePassword, "Registration service password must not be blank");
+        this.restClient = restClientBuilder.clone()
+                .defaultHeader(HttpHeaders.AUTHORIZATION,
+                        "Basic " + HttpHeaders.encodeBasicAuth(serviceUsername, servicePassword, null))
+                .build();
         this.registrationApiUrl = registrationApiUrl;
     }
 
@@ -38,7 +47,7 @@ public class RegistrationApiClient {
             return body == null ? List.of() : body;
         } catch (Exception exception) {
             log.error("Nie udało się pobrać zgłoszeń z registration-api", exception);
-            return List.of();
+            throw new ResponseStatusException(HttpStatus.BAD_GATEWAY, "Błąd komunikacji z registration-api");
         }
     }
 

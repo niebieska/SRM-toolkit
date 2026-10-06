@@ -18,13 +18,19 @@ management:
   endpoints:
     web:
       exposure:
-        include: health,info,metrics,env
+        include: health
   endpoint:
     health:
-      show-details: always
+      show-details: never
+      show-components: never
 
 email:
   service:
     url: ${EMAIL_SERVICE_URL:http://localhost:8082}
   organizer:
     email: ${ORGANIZER_EMAIL:}
+
+registration:
+  service:
+    username: ${REGISTRATION_SERVICE_USERNAME:biuro-service}
+    password: ${REGISTRATION_SERVICE_PASSWORD}
