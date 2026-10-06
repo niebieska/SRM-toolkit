@@ -12,6 +12,8 @@ biuro:
 registration:
   api:
     url: ${REGISTRATION_API_URL:http://localhost:8080}
+    username: ${REGISTRATION_SERVICE_USERNAME:biuro-service}
+    password: ${REGISTRATION_SERVICE_PASSWORD}
 
 logging:
   level:
