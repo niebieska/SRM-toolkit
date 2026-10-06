@@ -9,6 +9,7 @@ import pl.srm.registrationapi.registration.exception.RegistrationException;
 import pl.srm.registrationapi.registration.repository.RegistrationRepository;
 import org.springframework.data.domain.Sort;
 import pl.srm.registrationapi.registration.service.management.RegistrationManagementService;
+import pl.srm.registrationapi.registration.service.management.RegistrationStatusService;
 import pl.srm.registrationapi.registration.util.PeselHelper;
 
 import java.time.LocalDateTime;
@@ -21,9 +22,14 @@ import static org.mockito.Mockito.*;
 class RegistrationManagementServiceTest {
 
     private final RegistrationRepository repository = mock(RegistrationRepository.class);
-    private final RegistrationManagementService service = new RegistrationManagementService(
-            repository, new ObjectMapper(), new PeselHelper());
+    private final RegistrationStatusService statusService = mock(RegistrationStatusService.class);
 
+    private final RegistrationManagementService service = new RegistrationManagementService(
+            repository,
+            new ObjectMapper(),
+            new PeselHelper(),
+            statusService
+    );
     @Test
     void returnsAllRegistrationsOrderedByCreatedAtDesc() {
         Registration newer = new Registration(
@@ -60,54 +66,52 @@ class RegistrationManagementServiceTest {
     }
 
     @Test
-    void updatesStatusAndTimestamp() {
+    void delegatesStatusUpdateToStatusService() {
         Registration registration = new Registration(
                 "REG-P-ZAGLE26T1-1",
                 "PARTICIPANT",
                 "ZAGLE26T1",
                 "hash",
                 true,
-                "NEW",
-                null,
+                "REJECTED",
+                "Brak miejsc",
                 "{}",
                 LocalDateTime.of(2026, 5, 1, 10, 0),
-                null
+                LocalDateTime.now()
         );
-        when(repository.findByRegistrationCode("REG-P-ZAGLE26T1-1")).thenReturn(Optional.of(registration));
-        when(repository.save(registration)).thenReturn(registration);
+
+        StatusUpdateRequest request = new StatusUpdateRequest("REJECTED", "Brak miejsc");
+
+        when(statusService.updateStatus("REG-P-ZAGLE26T1-1", request))
+                .thenReturn(registration);
 
         RegistrationSummaryResponse response = service.updateStatus(
                 "REG-P-ZAGLE26T1-1",
-                new StatusUpdateRequest("REJECTED", "Brak miejsc")
+                request
         );
 
         assertEquals("REJECTED", response.status());
         assertEquals("Brak miejsc", response.rejectionReason());
-        assertNotNull(registration.getUpdatedAt());
-        verify(repository).save(registration);
-    }
 
+        verify(statusService).updateStatus("REG-P-ZAGLE26T1-1", request);
+        verify(repository, never()).save(any());
+    }
     @Test
     void rejectsUnknownStatus() {
-        Registration registration = new Registration(
-                "REG-P-ZAGLE26T1-1",
-                "PARTICIPANT",
-                "ZAGLE26T1",
-                "hash",
-                false,
-                "NEW",
-                null,
-                "{}",
-                LocalDateTime.now(),
-                null
-        );
-        when(repository.findByRegistrationCode("REG-P-ZAGLE26T1-1")).thenReturn(Optional.of(registration));
+        StatusUpdateRequest request = new StatusUpdateRequest("PENDING", null);
+
+        when(statusService.updateStatus("REG-P-ZAGLE26T1-1", request))
+                .thenThrow(new RegistrationException(
+                        "INVALID_STATUS",
+                        "Nieprawidłowy status zgłoszenia."
+                ));
 
         RegistrationException exception = assertThrows(
                 RegistrationException.class,
-                () -> service.updateStatus("REG-P-ZAGLE26T1-1", new StatusUpdateRequest("PENDING", null))
+                () -> service.updateStatus("REG-P-ZAGLE26T1-1", request)
         );
 
         assertEquals("INVALID_STATUS", exception.getCode());
+        verify(statusService).updateStatus("REG-P-ZAGLE26T1-1", request);
     }
 }

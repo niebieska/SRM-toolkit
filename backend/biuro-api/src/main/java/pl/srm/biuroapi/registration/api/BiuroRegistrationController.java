@@ -60,8 +60,8 @@ public class BiuroRegistrationController {
 
     private void validateRequest(StatusUpdateRequest request) {
         String status = request.status() == null ? "" : request.status().trim().toUpperCase(Locale.ROOT);
-        if (!"ACCEPTED".equals(status) && !"REJECTED".equals(status)) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Status musi mieć wartość ACCEPTED albo REJECTED");
+        if (!"ACCEPTED".equals(status) && !"WAITLIST".equals(status) && !"REJECTED".equals(status)) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Status musi mieć wartość ACCEPTED, WAITLIST albo REJECTED");
         }
 
         if ("REJECTED".equals(status) && (request.rejectionReason() == null || request.rejectionReason().trim().isEmpty())) {

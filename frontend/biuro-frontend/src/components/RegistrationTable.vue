@@ -13,6 +13,8 @@ const props = defineProps({
   },
 })
 
+const emit = defineEmits(['status-updated'])
+
 const authStore = useAuthStore()
 const registrations = ref([])
 const loading = ref(false)
@@ -69,6 +71,16 @@ function closeDetail() {
   detailCode.value = null
 }
 
+function handleDetailStatusAction(registration, action) {
+  closeDetail()
+  openModal(registration, action)
+}
+
+async function handleStatusUpdated() {
+  await loadRegistrations()
+  emit('status-updated')
+}
+
 onMounted(loadRegistrations)
 
 watch(
@@ -123,6 +135,13 @@ watch(
             Zaakceptuj
           </button>
           <button
+              v-if="registration.status !== 'WAITLIST'"
+              class="rounded bg-amber-600 text-white px-3 py-1 hover:bg-amber-700"
+              @click="openModal(registration, 'WAITLIST')"
+          >
+            Rezerwa
+          </button>
+          <button
               v-if="registration.status !== 'REJECTED'"
               class="rounded bg-red-600 text-white px-3 py-1 hover:bg-red-700"
               @click="openModal(registration, 'REJECT')"
@@ -139,13 +158,14 @@ watch(
         :registration="selectedRegistration"
         :action="modalAction"
         @close="closeModal"
-        @updated="loadRegistrations"
+        @updated="handleStatusUpdated"
     />
 
     <RegistrationDetailModal
         v-if="detailCode"
         :code="detailCode"
         @close="closeDetail"
+        @status-action="handleDetailStatusAction"
     />
   </section>
 </template>

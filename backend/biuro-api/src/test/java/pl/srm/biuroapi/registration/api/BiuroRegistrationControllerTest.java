@@ -9,6 +9,7 @@ import pl.srm.biuroapi.registration.service.RegistrationStatisticsService;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
 
 class BiuroRegistrationControllerTest {
 
@@ -35,5 +36,14 @@ class BiuroRegistrationControllerTest {
         );
 
         assertEquals(HttpStatus.BAD_REQUEST.value(), exception.getStatusCode().value());
+    }
+
+    @Test
+    void shouldAllowWaitlistStatus() {
+        StatusUpdateRequest request = new StatusUpdateRequest("WAITLIST", null);
+
+        controller.updateStatus("REG-1", request);
+
+        verify(registrationApiClient).updateStatus("REG-1", request);
     }
 }

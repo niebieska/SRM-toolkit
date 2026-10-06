@@ -12,7 +12,7 @@ const props = defineProps({
   },
 })
 
-const emit = defineEmits(['close'])
+const emit = defineEmits(['close', 'status-action'])
 
 const authStore = useAuthStore()
 const detail = ref(null)
@@ -196,6 +196,10 @@ function formatFieldValue(value,path = '') {
   if (typeof value === 'object') return JSON.stringify(value)
   return String(value)
 }
+
+function requestStatusAction(action) {
+  emit('status-action', detail.value, action)
+}
 </script>
 
 <template>
@@ -258,7 +262,28 @@ function formatFieldValue(value,path = '') {
 
       </template>
 
-      <div class="flex justify-end pt-2">
+      <div class="flex flex-wrap justify-end gap-2 pt-2">
+        <button
+          v-if="detail && detail.status !== 'ACCEPTED'"
+          class="rounded bg-green-600 text-white px-4 py-2 hover:bg-green-700"
+          @click="requestStatusAction('ACCEPT')"
+        >
+          Zaakceptuj
+        </button>
+        <button
+          v-if="detail && detail.status !== 'WAITLIST'"
+          class="rounded bg-amber-600 text-white px-4 py-2 hover:bg-amber-700"
+          @click="requestStatusAction('WAITLIST')"
+        >
+          Lista rezerwowa
+        </button>
+        <button
+          v-if="detail && detail.status !== 'REJECTED'"
+          class="rounded bg-red-600 text-white px-4 py-2 hover:bg-red-700"
+          @click="requestStatusAction('REJECT')"
+        >
+          Odrzuć
+        </button>
         <button class="rounded border border-slate-300 px-4 py-2 hover:bg-slate-50" @click="emit('close')">
           Zamknij
         </button>

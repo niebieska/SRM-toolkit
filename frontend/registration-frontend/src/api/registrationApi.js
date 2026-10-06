@@ -60,7 +60,7 @@ function buildParticipantHealthBlock(f) {
     return {
         q1: withQuestion(
             f.health.q1,
-            PARTICIPANT_HEALTH_QUESTIONSS.q1),
+            PARTICIPANT_HEALTH_QUESTIONS.q1),
         q2: withQuestion(
             f.health.q2, PARTICIPANT_HEALTH_QUESTIONS.q2),
         q3: withQuestion(
