@@ -6,6 +6,7 @@ import StatusBadge from './StatusBadge.vue'
 import AcceptRejectModal from './AcceptRejectModal.vue'
 import RegistrationDetailModal from './RegistrationDetailModal.vue'
 import { formatDateTime } from '../utils/dateUtils'
+import { sortRegistrations } from '../utils/registrationSorting'
 const props = defineProps({
   filters: {
     type: Object,
@@ -22,20 +23,41 @@ const errorMessage = ref('')
 const selectedRegistration = ref(null)
 const modalAction = ref('ACCEPT')
 const detailCode = ref(null)
+const sortKey = ref('createdAt')
+const sortDirection = ref('asc')
+const columns = [
+  { key: 'registrationCode', label: 'Kod zgłoszenia' },
+  { key: 'registrationType', label: 'Typ' },
+  { key: 'turnusCode', label: 'Turnus' },
+  { key: 'name', label: 'Imię i nazwisko' },
+  { key: 'age', label: 'Wiek' },
+  { key: 'status', label: 'Status' },
+  { key: 'createdAt', label: 'Data zgłoszenia' },
+]
+
+function toggleSort(key) {
+  if (sortKey.value === key) {
+    sortDirection.value = sortDirection.value === 'asc' ? 'desc' : 'asc'
+  } else {
+    sortKey.value = key
+    sortDirection.value = 'asc'
+  }
+}
+
+function ariaSort(key) {
+  return sortKey.value === key ? (sortDirection.value === 'asc' ? 'ascending' : 'descending') : 'none'
+}
 
 const visibleRegistrations = computed(() => {
   const q = props.filters.search?.trim().toLowerCase()
 
-  if (!q) {
-    return registrations.value
-  }
-
-  return registrations.value.filter(r =>
+  const filtered = !q ? registrations.value : registrations.value.filter(r =>
       r.registrationCode?.toLowerCase().includes(q) ||
       r.firstName?.toLowerCase().includes(q) ||
       r.lastName?.toLowerCase().includes(q) ||
       `${r.firstName || ''} ${r.lastName || ''}`.toLowerCase().includes(q)
   )
+  return sortRegistrations(filtered, sortKey.value, sortDirection.value)
 })
 
 async function loadRegistrations() {
@@ -98,14 +120,19 @@ watch(
     <table v-else class="w-full min-w-[1050px] text-sm">
       <thead>
       <tr class="text-left border-b border-slate-200">
-        <th class="py-2 pr-3">Kod zgłoszenia</th>
-        <th class="py-2 pr-3">Typ</th>
-        <th class="py-2 pr-3">Turnus</th>
-        <th class="py-2 pr-3">Imię i nazwisko</th>
-        <th class="py-2 pr-3">Wiek</th>
-        <th class="py-2 pr-3">Status</th>
-        <th class="py-2 pr-3">Data zgłoszenia</th>
-        <th class="py-2">Akcje</th>
+        <th v-for="column in columns" :key="column.key" scope="col"
+            :aria-sort="ariaSort(column.key)" class="py-2 pr-3">
+          <button type="button" class="inline-flex items-center gap-1.5 rounded hover:text-blue-700 focus-visible:outline focus-visible:outline-2 focus-visible:outline-blue-700"
+                  
+                  :title="`Sortuj: ${column.label} — ${sortKey === column.key && sortDirection === 'asc' ? 'malejąco' : 'rosnąco'}`"
+                  @click="toggleSort(column.key)">
+            {{ column.label }}
+            <span aria-hidden="true" class="inline-block w-3 text-xs text-slate-500">
+              {{ sortKey === column.key ? (sortDirection === 'asc' ? '↑' : '↓') : '' }}
+            </span>
+          </button>
+        </th>
+        <th scope="col" class="py-2">Akcje</th>
       </tr>
       </thead>
       <tbody>
