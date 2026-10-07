@@ -74,6 +74,10 @@ async function logout() {
         <button class="rounded bg-slate-700 text-white px-4 py-2 hover:bg-slate-800" @click="logout">Wyloguj</button>
       </header>
 
+      <nav class="flex gap-2" aria-label="Sekcje Biura">
+        <span class="rounded-lg bg-slate-800 px-4 py-2 text-sm text-white">Zgłoszenia</span>
+        <router-link to="/turnusy-demo" class="rounded-lg bg-white px-4 py-2 text-sm hover:bg-slate-50">Turnusy · podgląd</router-link>
+      </nav>
        <section class="bg-white rounded-xl shadow p-4 grid grid-cols-1 md:grid-cols-4 gap-3">
         <select v-model="filters.status" class="rounded border border-slate-300 px-3 py-2">
           <option value="">Wszystkie statusy</option>

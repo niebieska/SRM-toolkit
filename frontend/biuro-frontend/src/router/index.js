@@ -9,6 +9,7 @@ const router = createRouter({
     { path: '/', redirect: '/login' },
     { path: '/login', component: LoginView },
     { path: '/dashboard', component: DashboardView },
+    { path: '/turnusy-demo', component: () => import('../views/TurnusyDemoView.vue') },
   ],
 })
 
