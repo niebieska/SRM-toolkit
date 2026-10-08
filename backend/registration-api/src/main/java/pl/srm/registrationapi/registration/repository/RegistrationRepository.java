@@ -12,7 +12,6 @@ public interface RegistrationRepository extends JpaRepository<Registration, Long
 
     boolean existsByTurnusCodeAndPeselHash(String turnusCode, String peselHash);
 
-    int countByTurnusCode(String turnusCode);
 
     List<Registration> findByRegistrationType(String type);
 }
