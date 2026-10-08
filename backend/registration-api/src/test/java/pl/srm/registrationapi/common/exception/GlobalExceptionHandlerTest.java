@@ -13,6 +13,14 @@ class GlobalExceptionHandlerTest {
     private final GlobalExceptionHandler handler = new GlobalExceptionHandler();
 
     @Test
+    void mapsDuplicateToConflict() {
+        var response = handler.handleRegistrationException(
+                new RegistrationException("ALREADY_REGISTERED", "Duplicate"));
+        assertEquals(HttpStatus.CONFLICT, response.getStatusCode());
+        assertEquals("ALREADY_REGISTERED", response.getBody().code());
+    }
+
+    @Test
     void mapsAgeTooLowToUnprocessableEntity() {
         ResponseEntity<ApiError> response = handler.handleRegistrationException(
                 new RegistrationException("AGE_TOO_LOW", "Za młody uczestnik.")

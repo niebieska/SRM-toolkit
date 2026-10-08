@@ -7,11 +7,13 @@ import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
+import jakarta.persistence.UniqueConstraint;
 
 import java.time.LocalDateTime;
 
 @Entity
-@Table(name = "registration")
+@Table(name = "registration", uniqueConstraints = @UniqueConstraint(
+        name = "uk_registration_turnus_pesel", columnNames = {"turnus_code", "pesel_hash"}))
 public class Registration {
 
     @Id
