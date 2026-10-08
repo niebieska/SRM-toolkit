@@ -22,7 +22,7 @@ import static org.junit.jupiter.api.Assertions.*;
 
 // Run against a disposable MariaDB with TEST_DB_URL, TEST_DB_USER, TEST_DB_PASSWORD.
 // Never point these variables at an application database: fixtures are cleared per test.
-@EnabledIfEnvironmentVariable(named = "TEST_DB_URL", matches = ".+")
+@EnabledIfEnvironmentVariable(named = "TEST_DB_URL", matches = ".+/integrity_test")
 @SpringBootTest(properties = {
         "spring.datasource.url=${TEST_DB_URL}", "spring.datasource.username=${TEST_DB_USER}",
         "spring.datasource.password=${TEST_DB_PASSWORD}", "registration.service.password=integration-only",
