@@ -44,6 +44,7 @@ function buildIceBlock(f) {
         firstName: f.iceFirstName,
         lastName: f.iceLastName,
         relation: f.iceRelation,
+        relationOther: f.iceRelation === 'inna' ? f.iceRelationOther : null,
         phone: f.icePhone,
     }
 }
@@ -148,7 +149,13 @@ export async function submitParticipantRegistration(formData) {
         headers: {'Content-Type': 'application/json'},
         body: JSON.stringify(payload),
     })
-    if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`)
+    if (!response.ok) {
+        const body = (await response.json().catch(() => null)) || {}
+        const error = new Error(body.message || `Nie udało się wysłać zgłoszenia (HTTP ${response.status}).`)
+        error.code = body.code
+        error.status = response.status
+        throw error
+    }
     return response.json()
 }
 
@@ -159,6 +166,12 @@ export async function submitStaffRegistration(formData) {
         headers: {'Content-Type': 'application/json'},
         body: JSON.stringify(payload),
     })
-    if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`)
+    if (!response.ok) {
+        const body = (await response.json().catch(() => null)) || {}
+        const error = new Error(body.message || `Nie udało się wysłać zgłoszenia (HTTP ${response.status}).`)
+        error.code = body.code
+        error.status = response.status
+        throw error
+    }
     return response.json()
 }
