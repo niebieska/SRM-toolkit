@@ -147,7 +147,8 @@ watch(
           <StatusBadge :status="registration.status"/>
         </td>
         <td class="py-2 pr-3">{{ formatDateTime(registration.createdAt) }}</td>
-        <td class="py-2 space-x-2">
+I        <td class="py-2">
+          <div class="flex items-center gap-2 whitespace-nowrap">
           <button
               class="rounded bg-slate-600 text-white px-3 py-1 hover:bg-slate-700"
               @click="openDetail(registration.registrationCode)"
@@ -175,6 +176,7 @@ watch(
           >
             Odrzuć
           </button>
+          </div>
         </td>
       </tr>
       </tbody>
