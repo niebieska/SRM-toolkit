@@ -69,6 +69,7 @@
       </div>
     </div>
 
+    <p v-if="roleError" role="alert" class="text-sm text-red-600">{{ roleError }}</p>
     <div class="flex justify-between">
       <button @click="goPrev"
               class="border border-gray-300 text-gray-700 px-8 py-3 rounded-xl font-semibold hover:bg-gray-50 transition">
@@ -84,7 +85,7 @@
 
 <script setup>
 import {ref, computed, watch} from 'vue'
-import {staffRoles as allRoles, certificatesByRole} from '../../../config/staffRoles.js'
+import {staffRoles as allRoles, certificatesByRole, resolveCertificateSource} from '../../../config/staffRoles.js'
 
 const props = defineProps({
   formData: {type: Object, required: true},
@@ -96,6 +97,7 @@ const local = ref({
   subrole: props.formData.subrole || '',
   certificateDetails: {...(props.formData.certificateDetails || {})},
 })
+const roleError = ref('')
 const availableRoles = computed(() => {
   return allRoles.filter(role => {
     if (props.isAdult) {
@@ -109,13 +111,7 @@ const currentRole = computed(() => {
 })
 
 const selectedCertificates = ref(Object.keys(props.formData.certificates || {}).filter(k => props.formData.certificates[k]))
-const certificateSource = computed(() => {
-  const subrole = local.value.subrole
-  if (subrole && certificatesByRole[subrole]) {
-    return subrole
-  }
-  return local.value.role
-})
+const certificateSource = computed(() => resolveCertificateSource(local.value.role, local.value.subrole))
 // Reset certificates when role changes
 const currentCertificates = computed(() => {
   const roleStillAvailable = availableRoles.value.some(
@@ -178,6 +174,19 @@ function goPrev() {
 }
 
 function goNext() {
+  roleError.value = ''
+  if (!availableRoles.value.some(role => role.value === local.value.role)) {
+    roleError.value = 'Wybierz rolę w kadrze.'
+    return
+  }
+  if (currentRole.value?.subroles?.length && !currentRole.value.subroles.some(role => role.value === local.value.subrole)) {
+    roleError.value = 'Wybierz funkcję.'
+    return
+  }
+  if (selectedCertificates.value.includes('inne') && !local.value.certificateDetails.inne?.trim()) {
+    roleError.value = 'Opisz inne uprawnienia.'
+    return
+  }
   const certificates = {}
   selectedCertificates.value.forEach(id => {
     certificates[id] = true

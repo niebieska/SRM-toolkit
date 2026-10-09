@@ -91,7 +91,7 @@
     <p v-if="submitError" class="text-red-600 text-sm text-center">{{ submitError }}</p>
 
     <div class="flex justify-between">
-      <button @click="goPrev" class="border border-gray-300 text-gray-700 px-8 py-3 rounded-xl font-semibold hover:bg-gray-50 transition">
+      <button :disabled="submitting" @click="goPrev" class="border border-gray-300 text-gray-700 px-8 py-3 rounded-xl font-semibold hover:bg-gray-50 transition">
         ← Wstecz
       </button>
       <button
@@ -113,13 +113,13 @@ const rodoUrl = 'https://rekolekcje.scj.pl/polityka-prywatnosci/'  // ← bug fi
 const props = defineProps({
   formData: { type: Object, required: true },
   isAdult: { type: Boolean, default: false },
+  submitting: { type: Boolean, default: false },
   gender: { type: String, default: null },
 })
 const emit = defineEmits(['update:formData', 'prev', 'submit'])
 
 const local = ref({ ...props.formData })
 const errors = reactive({})
-const submitting = ref(false)
 const submitError = ref(null)
 
 const musial = computed(() => {
@@ -137,19 +137,15 @@ function validate() {
 }
 
 function goPrev() {
+  if (props.submitting) return
   emit('update:formData', { ...local.value })
   emit('prev')
 }
 
-async function goSubmit() {
+function goSubmit() {
+  if (props.submitting) return
   if (!validate()) return
-  submitting.value = true
-  submitError.value = null
-  try {
-    emit('update:formData', { ...local.value })
-    emit('submit')
-  } finally {
-    submitting.value = false
-  }
+  emit('update:formData', { ...local.value })
+  emit('submit')
 }
 </script>

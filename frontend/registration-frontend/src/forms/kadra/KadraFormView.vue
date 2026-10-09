@@ -43,6 +43,7 @@
           :isAdult="formData.isAdult"
           :gender="formData.gender"
           @prev="currentStep = 3"
+          :submitting="submitting"
           @submit="handleSubmit"
       />
       <SuccessPage
@@ -71,6 +72,7 @@ import { submitStaffRegistration } from '../../api/registrationApi.js'
 
 const currentStep = ref(1)
 const stepLabels = ['Dane osobowe', 'Rola', 'Kwestionariusz', 'Zgody']
+const submitting = ref(false)
 const registrationCode = ref('')
 const errorMessage = ref('')
 
@@ -124,18 +126,27 @@ const emptyForm = () => ({
 const formData = ref(emptyForm())
 
 async function handleSubmit() {
+  if (submitting.value) return
+  submitting.value = true
   try {
     const result = await submitStaffRegistration(formData.value)
     registrationCode.value = result.registrationCode
     currentStep.value = 5
   } catch (e) {
-    errorMessage.value = friendlyError(e.message)
+    errorMessage.value = friendlyError(e.code || String(e.status || '')) + (e.code === 'INVALID_REQUEST' ? ` ${e.message}` : '')
     currentStep.value = 6
+  } finally {
+    submitting.value = false
   }
 }
 
 function friendlyError(msg) {
   if (msg.includes('409') || msg.includes('ALREADY_REGISTERED')) return 'Ta osoba jest już zarejestrowana na ten turnus.'
+  if (msg.includes('TURNUS_NOT_FOUND')) return 'Wybrany turnus nie istnieje.'
+  if (msg.includes('INVALID_PESEL')) return 'Podany numer PESEL jest nieprawidłowy.'
+  if (msg.includes('MISSING_CONSENTS')) return 'Uzupełnij wymagane zgody i oświadczenia.'
+  if (msg.includes('MISSING_GUARDIAN')) return 'Uzupełnij dane rodzica lub opiekuna.'
+  if (msg.includes('INVALID_REQUEST')) return 'Sprawdź dane zgłoszenia.'
   if (msg.includes('AGE_TOO_LOW'))    return 'Uczestnik nie spełnia wymogu minimalnego wieku dla tego turnusu.'
   if (msg.includes('TURNUS_INACTIVE'))   return 'Wybrany turnus nie jest aktywny.'
   if (msg.includes('REGISTRATION_CLOSED')) return 'Rejestracja na ten turnus jest zamknięta.'

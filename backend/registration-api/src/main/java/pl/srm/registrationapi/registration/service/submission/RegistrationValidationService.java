@@ -10,10 +10,13 @@ import pl.srm.registrationapi.turnus.model.Turnus;
 @Service
 public class RegistrationValidationService {
 
+   private final pl.srm.registrationapi.registration.validator.SubmissionPayloadValidator payloadValidator;
    private final PeselHelper peselHelper;
    private final RegistrationRepository repository;
 
-    public RegistrationValidationService(PeselHelper peselHelper, RegistrationRepository repository) {
+    public RegistrationValidationService(PeselHelper peselHelper, RegistrationRepository repository,
+                                         pl.srm.registrationapi.registration.validator.SubmissionPayloadValidator payloadValidator) {
+        this.payloadValidator = payloadValidator;
         this.peselHelper = peselHelper;
         this.repository = repository;
     }
@@ -24,6 +27,11 @@ public class RegistrationValidationService {
         validateConsents(data);
         validateAge(data, turnus);
         validateDuplicate(data);
+    }
+
+    public void validatePayload(String payload, RegistrationContext context,
+                                pl.srm.registrationapi.registration.model.RegistrationType type) {
+        payloadValidator.validate(payload, context, type);
     }
 
     private void validatePesel(RegistrationContext data) {

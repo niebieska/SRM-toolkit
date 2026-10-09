@@ -49,6 +49,7 @@ const FIELD_LABELS = {
 
   'ice.firstName': 'Imię osoby kontaktowej',
   'ice.lastName': 'Nazwisko osoby kontaktowej',
+  'ice.relationOther': 'Relacja (inne)',
   'ice.relation': 'Relacja (kontakt awaryjny)',
   'ice.phone': 'Telefon (kontakt awaryjny)',
 

@@ -48,6 +48,8 @@ public class StaffRegistrationService implements RegistrationService {
 
         turnusValidator.validate(turnus);
         validationService.validateEligibility(data, turnus);
+        validationService.validatePayload(payload, data,
+                pl.srm.registrationapi.registration.model.RegistrationType.STAFF);
 
         String code = persistenceService.saveStaff(data, payload);
         LOGGER.info(

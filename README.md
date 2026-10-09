@@ -1,5 +1,7 @@
 # SRM-toolkit
 
+Project plans, progress notes, reviews and deployment guidance are in [docs/](docs/README.md).
+
 
 ## Registration management security
 

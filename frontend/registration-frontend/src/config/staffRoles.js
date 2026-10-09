@@ -84,3 +84,10 @@ export const certificatesByRole = {
         {id: 'inne', label: 'Inne (jakie?)', hasDetails: true},
     ],
 }
+
+export function resolveCertificateSource(role, subrole) {
+    const combined = `${role}_${subrole}`
+    if (subrole && certificatesByRole[combined]) return combined
+    if (subrole && certificatesByRole[subrole]) return subrole
+    return role
+}
