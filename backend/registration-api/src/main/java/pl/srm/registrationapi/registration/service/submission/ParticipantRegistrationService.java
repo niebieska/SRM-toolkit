@@ -46,6 +46,8 @@ public class ParticipantRegistrationService implements RegistrationService {
 
         turnusValidator.validate(turnus);
         validationService.validateEligibility(data, turnus);
+        validationService.validatePayload(payload, data,
+                pl.srm.registrationapi.registration.model.RegistrationType.PARTICIPANT);
 
         String code = persistenceService.saveParticipant(data, payload);
 
