@@ -705,3 +705,25 @@ Moved project plans, progress notes and assessments into `docs/`. The root READM
 - Inspected the supplied screenshot: inline action buttons wrap, leaving the reject action below the first row with horizontal margin and no vertical gap. Replaced `space-x-2` on the table cell with an inner flex row using `gap-2` and `whitespace-nowrap`; the existing table container supports horizontal scrolling.
 - The user confirms the layout now looks correct. This identifies a layout weakness; it does not prove a dependency update caused it. Frontend lockfiles changed again during the session and are kept separate from this component fix.
 - Biuro tests and production build passed. No commits created.
+
+
+## 2026-10-10 — Turnus catalogue foundation
+
+- Created `feat/turnus-catalogue`. Implemented Biuro-owned MariaDB catalogue with JDBC/Flyway, authenticated list/detail/create/edit endpoints, immutable codes and optimistic edit versions. V1 creates the table; V2 imports the existing two Turnusy exactly from JSON. Registration data/counters are not modified.
+- Biuro startup now requires its separate schema and `BIURO_DB_URL`, `BIURO_DB_USER`, `BIURO_DB_PASSWORD` configuration. Never reuse registration_db for this migration history. Startup/migration and endpoint details are in [Turnus catalogue implementation](Turnus-catalogue-implementation.md).
+- Full backend suite passed: 98 executed tests, nine existing registration database tests skipped. Biuro's 24 tests include eight new catalogue tests. Those eight also passed against disposable MariaDB 11, including concurrent edits, HTTP validation and authentication; the test container was removed.
+- Registration remains on JSON until the authenticated internal lookup and consumer migration are implemented. No editor, capacity enforcement, season-file source or exports yet. Manual versus scheduled availability and warning versus blocking acceptance at capacity were asked; no answer is recorded at this point. Existing availability switches are preserved in the catalogue without changing workflow behavior.
+- Whitespace checks pass. Nothing committed. The unrelated screenshot is preserved.
+
+
+### Turnus browser authentication investigation
+
+- User reports repeated 403 from the new GET endpoint. Cause remains unconfirmed; do not treat the catalogue as manually accepted.
+- Added an integration regression through the real login handler, issued JWT, browser-origin CORS preflight and GET list. All nine catalogue tests pass on H2. This covers the code path but not the user's running server/browser state; no production authentication rule was relaxed.
+- Need registration-table status and restart confirmation to distinguish a stale/invalid session, running backend mismatch and endpoint-specific failure. Tokens/passwords must not be shared in diagnostic output.
+
+
+### 2026-10-10 — Registration table layout correction
+
+- Inspected the 21:08 screenshot. Removed a stray `I` text node preceding the action cell and applied `whitespace-nowrap` to the table so codes/dates/headings are not compressed onto multiple lines by the fixed action row. The existing overflow container provides horizontal scrolling when necessary.
+- Biuro test command and production build pass; browser visual confirmation of this latest adjustment remains pending. This small frontend fix is separate from the Turnus catalogue backend work.
