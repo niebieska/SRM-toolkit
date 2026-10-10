@@ -58,3 +58,8 @@ Automated verification: `mvn -pl backend/biuro-api test`. Tests exercise a real
 embedded HTTP server, the credential boundaries, complete catalogue flags, and
 startup with missing, blank, and configured lookup credentials. Existing tests
 continue to verify operator CRUD and browser CORS/preflight behavior.
+
+Additional HTTP regressions verify an empty catalogue returns `200` with `[]`
+and a real catalogue SQL failure returns `500` with a generic JSON error, without
+SQL details. The failure test restores the table and confirms GET recovers to
+`200`. Both scenarios use only the isolated in-memory H2 test database.

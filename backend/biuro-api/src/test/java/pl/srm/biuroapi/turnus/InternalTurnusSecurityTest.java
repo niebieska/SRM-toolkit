@@ -80,6 +80,38 @@ class InternalTurnusSecurityTest {
         assertEquals(403, request("POST", "/api/turnuses", auth).statusCode());
     }
 
+    @Test void emptyCatalogueReturnsSuccessfulEmptyJsonArray() throws Exception {
+        // Preserve fixtures in this isolated H2 database for subsequent tests.
+        jdbc.execute("CREATE TABLE turnus_test_backup AS SELECT * FROM turnus");
+        try {
+            jdbc.update("DELETE FROM turnus");
+            var response = request("GET", "/internal/turnuses", basic("test-reader-password"));
+            assertEquals(200, response.statusCode());
+            assertTrue(response.headers().firstValue("Content-Type").orElse("").startsWith("application/json"));
+            assertEquals("[]", response.body().trim());
+        } finally {
+            jdbc.update("INSERT INTO turnus SELECT * FROM turnus_test_backup");
+            jdbc.execute("DROP TABLE turnus_test_backup");
+        }
+    }
+
+    @Test void databaseFailureReturnsServerErrorInsteadOfEmptyCatalogue() throws Exception {
+        // Break the real query without mocking the controller/service/error handler.
+        jdbc.execute("ALTER TABLE turnus RENAME TO turnus_unavailable");
+        try {
+            var response = request("GET", "/internal/turnuses", basic("test-reader-password"));
+            assertEquals(500, response.statusCode());
+            assertTrue(response.headers().firstValue("Content-Type").orElse("").startsWith("application/json"));
+            assertNotEquals("[]", response.body().trim());
+            assertEquals("Wystąpił nieoczekiwany błąd", JsonPath.read(response.body(), "$.message"));
+            assertFalse(response.body().contains("SELECT"));
+            assertFalse(response.body().contains("turnus_unavailable"));
+        } finally {
+            jdbc.execute("ALTER TABLE turnus_unavailable RENAME TO turnus");
+        }
+        assertEquals(200, request("GET", "/internal/turnuses", basic("test-reader-password")).statusCode());
+    }
+
     @Test void operatorLoginAndJwtCatalogueAccessStillWork() throws Exception {
         var login = HttpRequest.newBuilder(URI.create("http://localhost:"
                 + context.getWebServer().getPort() + "/api/auth/login"))

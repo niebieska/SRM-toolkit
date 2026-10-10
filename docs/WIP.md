@@ -745,3 +745,8 @@ Moved project plans, progress notes and assessments into `docs/`. The root READM
 - Registration-api still uses JSON. Next phase: dedicated HTTP client and atomic hourly in-memory catalogue refresh with last-successful fallback. No changes to submission eligibility rules in this phase.
 - Setup and manual verification: [Internal Turnus lookup](Turnus-internal-lookup.md).
 - Verification: root `mvn test` passed, 109 tests executed successfully and nine optional registration MariaDB integration tests skipped. Biuro: 35 passing tests, including ten new lookup/security/startup cases. `git diff --check` passed. No live database or frontend changes were made.
+
+### 2026-10-11 — Internal lookup failure/empty catalogue coverage
+
+- Added real HTTP regression tests: empty catalogue returns `200` and `[]`; a real SQL failure returns generic JSON `500` without SQL details, then GET recovers after table restoration. Fixtures and table changes are confined to the isolated H2 test database.
+- `mvn -pl backend/biuro-api test`: all 37 tests passed, no skips. `git diff --check` passed. Production code and live data unchanged.
