@@ -9,6 +9,7 @@ Start with the registration workflow release plan for functional scope and the d
 - [Progress and discovered issues](WIP.md)
 - [Turnus management plan](Turnus-management-plan.md)
 - [Turnus catalogue implementation and startup](Turnus-catalogue-implementation.md)
+- [Internal Turnus lookup: credentials and verification](Turnus-internal-lookup.md)
 - [Registration validation contract](Registration-validation-contract.md)
 - [Registration validation test scenarios and verification results](Registration-validation-test-scenarios.md)
 - [Form field capacity review — deferred decisions](Form-field-capacity-review.md)
