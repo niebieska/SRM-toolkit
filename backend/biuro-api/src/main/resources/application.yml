@@ -1,6 +1,11 @@
 server:
   port: ${BIURO_PORT:8081}
 
+turnus:
+  lookup:
+    username: ${TURNUS_LOOKUP_USERNAME:registration-turnus-reader}
+    password: ${TURNUS_LOOKUP_PASSWORD}
+
 biuro:
   auth:
     username: ${BIURO_USERNAME:biuro}
