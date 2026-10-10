@@ -727,3 +727,21 @@ Moved project plans, progress notes and assessments into `docs/`. The root READM
 
 - Inspected the 21:08 screenshot. Removed a stray `I` text node preceding the action cell and applied `whitespace-nowrap` to the table so codes/dates/headings are not compressed onto multiple lines by the fixed action row. The existing overflow container provides horizontal scrolling when necessary.
 - Biuro test command and production build pass; browser visual confirmation of this latest adjustment remains pending. This small frontend fix is separate from the Turnus catalogue backend work.
+
+
+## 2026-10-10 — Deferred registration error navigation
+
+- Agreed to polish error-page navigation later, alongside the user's UI notes. Current behavior stays unchanged: return from error to the consent/submission step, with form data retained in memory.
+- For TURNUS_NOT_FOUND, TURNUS_INACTIVE or REGISTRATION_CLOSED, provide “Choose another Turnus” leading to step 1, refresh available options, and preserve other entered data. Do not reset the entire form.
+- For connection/server failures, return to the submission step for retry. For field validation failures, route to the relevant step where the error contract provides enough information; avoid guessing from arbitrary messages.
+- Deferred task only: no frontend implementation or browser verification claimed. Data persistence across page refresh is not included.
+
+## 2026-10-11 — Internal Turnus lookup, phase 1
+
+- Implemented `GET /internal/turnuses` in Biuro with a dedicated HTTP Basic lookup account. Returns the full catalogue, including closed/inactive Turnusy, for the future cache consumer.
+- Lookup credentials authorize only this GET endpoint. Operator JWT routes retain their existing authentication; JWT servlet auto-registration is disabled so it runs only in the operator security chain.
+- Biuro now requires `TURNUS_LOOKUP_PASSWORD`; missing/blank password or blank username prevents startup. Default username: `registration-turnus-reader`. Compose forwards the new variables; broader deployment fixes remain pending.
+- Added real HTTP tests for credential isolation, wrong/malformed authentication, blocked writes, catalogue flags, and operator login/JWT regression, plus isolated startup configuration tests.
+- Registration-api still uses JSON. Next phase: dedicated HTTP client and atomic hourly in-memory catalogue refresh with last-successful fallback. No changes to submission eligibility rules in this phase.
+- Setup and manual verification: [Internal Turnus lookup](Turnus-internal-lookup.md).
+- Verification: root `mvn test` passed, 109 tests executed successfully and nine optional registration MariaDB integration tests skipped. Biuro: 35 passing tests, including ten new lookup/security/startup cases. `git diff --check` passed. No live database or frontend changes were made.
