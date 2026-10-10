@@ -673,3 +673,35 @@ Moved project plans, progress notes and assessments into `docs/`. The root READM
 - The user reports testing most manual cases and plans repeat verification in a few days. Individual outcomes remain to be recorded in [the scenario document](Registration-validation-test-scenarios.md); do not infer complete browser or deployed email acceptance.
 - Updated the functional plan to distinguish completed implementation from pending acceptance. Removed the stale aggregate payload-limit requirement: that addition was rejected and removed. Free-text bounds and phone compatibility still need agreement; shared season roles remain future work.
 - Earlier entries describe earlier iterations and their test counts. This entry records the latest verification, without marking the complete release workflow accepted.
+
+
+## 2026-10-09 — Frontend dependency maintenance
+
+- Branch `fix/forntend-packages`: retained existing npm audit lockfile updates and added a `postcss-selector-parser: ^7.1.6` override to both frontend manifests. This resolves the moderate selector-parser advisory across Tailwind and postcss-nested. It forces a major transitive dependency update; both current CSS builds passed, but future Tailwind dependency updates should reassess whether the override is needed.
+- Retained Tailwind 3.4.19 and each application's existing Vite major (Biuro 8, registration 6). No application source or CSS configuration changed.
+- Clean installs with `npm ci --ignore-scripts`, all 14 frontend logic tests, both production builds and `git diff --check` passed on Node 22.22.2 / npm 10.9.7. Registration generated the same asset filenames as the preceding verification; no browser visual verification was performed.
+- Each full dependency audit decreased from seven findings (five high, two moderate) to five high. Both `npm audit --omit=dev` checks report zero vulnerabilities; this is a dependency classification check, not a guarantee of browser or build-tool security.
+- Remaining findings share the braces dependency: braces, micromatch, fast-glob, chokidar and Tailwind. The [braces advisory](https://github.com/advisories/GHSA-vfj7-8cjw-p6xm) lists no patched version; npm registry latest was 3.0.3. It affects processing of deeply nested brace patterns in tooling. Keep content glob configuration trusted; revisit when a patch is available or undertake a separately verified Tailwind 4 migration. Do not describe this branch as clearing all audit findings.
+- [Selector-parser advisory](https://github.com/advisories/GHSA-rj75-hqrm-r3gf). Nothing staged or committed by this maintenance work.
+
+
+## 2026-10-09 — Withdraw selector-parser override after UI report
+
+- The user reports affected button alignment after the dependency update. Build and logic-test success did not establish visual compatibility.
+- Removed the forced selector-parser 7 override from both manifests and regenerated dependencies using Tailwind's declared ranges. The earlier audit reduction is superseded: full audits return to seven findings per app (five high, two moderate).
+- Retained pre-existing lockfile updates. No application or CSS source was edited. The override is withdrawn as a conservative first rollback; the alignment issue's cause and visual recovery are not yet confirmed. If it persists, compare the remaining lockfile updates against the committed dependencies and inspect the affected page.
+
+
+### Dependency regression isolation — complete baseline rollback
+
+- The user reports alignment still broken after withdrawing the override. Backed up the updated lockfiles in `/tmp/srm-frontend-package-rollback/`, restored both lockfiles from HEAD, and ran clean installs, all 14 frontend tests and both builds successfully.
+- Both frontend manifests/lockfiles now match HEAD; installed dependencies and production bundles use committed versions. Generated CSS filenames are identical before and after the full package rollback, while JavaScript bundles differ. No visual recovery or specific root cause is claimed.
+- Baseline installs report 14 audit findings per app (12 high, two moderate), so this is a diagnostic baseline, not the completed dependency-hardening solution. Earlier audit-reduction entries describe withdrawn changes.
+- Need the affected screen/buttons and viewport to reproduce the remaining alignment issue. Restart existing dev/preview servers to ensure they load the restored dependencies before comparing.
+
+
+### Registration table action alignment
+
+- Inspected the supplied screenshot: inline action buttons wrap, leaving the reject action below the first row with horizontal margin and no vertical gap. Replaced `space-x-2` on the table cell with an inner flex row using `gap-2` and `whitespace-nowrap`; the existing table container supports horizontal scrolling.
+- The user confirms the layout now looks correct. This identifies a layout weakness; it does not prove a dependency update caused it. Frontend lockfiles changed again during the session and are kept separate from this component fix.
+- Biuro tests and production build passed. No commits created.
