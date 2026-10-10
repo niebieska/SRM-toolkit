@@ -18,6 +18,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 @SpringBootTest(properties = {
         "registration.api.password=test-service-password",
+        "turnus.lookup.password=test-lookup-password",
         "biuro.auth.username=test-operator", "biuro.auth.password=test-only-password",
         "spring.datasource.url=jdbc:h2:mem:turnus-tests;MODE=MariaDB;DB_CLOSE_DELAY=-1",
         "spring.datasource.driver-class-name=org.h2.Driver",
