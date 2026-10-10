@@ -117,7 +117,7 @@ watch(
     <p v-else-if="errorMessage" class="text-red-600">{{ errorMessage }}</p>
     <p v-else-if="visibleRegistrations.length === 0" class="text-slate-600">Brak zgłoszeń</p>
 
-    <table v-else class="w-full min-w-[1050px] text-sm">
+    <table v-else class="w-full min-w-[1050px] whitespace-nowrap text-sm">
       <thead>
       <tr class="text-left border-b border-slate-200">
         <th v-for="column in columns" :key="column.key" scope="col"
@@ -147,7 +147,7 @@ watch(
           <StatusBadge :status="registration.status"/>
         </td>
         <td class="py-2 pr-3">{{ formatDateTime(registration.createdAt) }}</td>
-I        <td class="py-2">
+        <td class="py-2">
           <div class="flex items-center gap-2 whitespace-nowrap">
           <button
               class="rounded bg-slate-600 text-white px-3 py-1 hover:bg-slate-700"
