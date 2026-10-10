@@ -50,6 +50,11 @@ replace browser or deployed email verification. Results and repeat scenarios:
 
 ### 2. Supply consistent Turnus and season data
 
+2026-10-10: the Biuro catalogue backend, migrations and tests are implemented on
+`feat/turnus-catalogue`. This does not close the package: internal lookup, consumer
+migration, season configuration and the editor remain pending. See
+[implementation details](Turnus-catalogue-implementation.md).
+
 - [ ] Implement the minimum database-backed Turnus management already agreed,
   including stable codes, dates, capacity, availability and season association.
 - [ ] Migrate public options, validation, statistics and email metadata to it.

@@ -1,7 +1,7 @@
 # Turnus management — agreed delivery scope
 
-Decision date: 2026-10-08. Status: planning; implementation and UI details remain
-open. This document records product decisions from the discussion, rather than
+Decision date: 2026-10-08. Updated 2026-10-10: backend catalogue foundation
+implemented on `feat/turnus-catalogue`; consumer migration and UI remain open. This document records product decisions from the discussion, rather than
 assuming that the experimental prototype defines the requirements.
 
 ## Priority
@@ -15,6 +15,9 @@ TEST/SIT deployment, accepting a modest deployment delay. Fix the capacity
 mismatch as part of migrating consumers to the shared Turnus source, rather than
 as a separate temporary patch. Security, secrets, integrity and deployment
 requirements still apply before exposing the application.
+
+See [catalogue implementation and startup](Turnus-catalogue-implementation.md) for
+current endpoints, database configuration and remaining integration work.
 
 ## Required delivery
 
