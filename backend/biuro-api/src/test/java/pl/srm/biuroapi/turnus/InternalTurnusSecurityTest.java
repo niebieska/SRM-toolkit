@@ -125,4 +125,13 @@ class InternalTurnusSecurityTest {
         assertEquals(200, request("GET", "/api/turnuses", "Bearer " + token).statusCode());
         assertEquals(401, request("GET", "/internal/turnuses", "Bearer " + token).statusCode());
     }
+
+    @Test void missingBrowserResourcesReturn404InsteadOfServerError() throws Exception {
+        for (String path : new String[]{"/", "/favicon.ico"}) {
+            var response = request("GET", path, null);
+            assertEquals(404, response.statusCode());
+            assertEquals(404, (int) JsonPath.read(response.body(), "$.status"));
+            assertEquals("Nie znaleziono zasobu.", JsonPath.read(response.body(), "$.message"));
+        }
+    }
 }

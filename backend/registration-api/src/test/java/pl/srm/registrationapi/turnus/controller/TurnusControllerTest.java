@@ -35,4 +35,17 @@ class TurnusControllerTest {
         mockMvc.perform(get("/api/turnusy"))
                 .andExpect(status().isOk());
     }
+
+    @Test
+    void unavailableCatalogueReturns503WithPublicErrorContract() throws Exception {
+        when(provider.getAvailableTurnuses()).thenThrow(new pl.srm.registrationapi.registration.exception.RegistrationException(
+                "TURNUS_CATALOGUE_UNAVAILABLE", "Lista turnusów jest chwilowo niedostępna."));
+        mockMvc = MockMvcBuilders.standaloneSetup(new TurnusController(provider))
+                .setControllerAdvice(new pl.srm.registrationapi.common.exception.GlobalExceptionHandler()).build();
+        for (String path : new String[]{"/api/turnuses", "/api/turnusy"}) {
+            mockMvc.perform(get(path)).andExpect(status().isServiceUnavailable())
+                    .andExpect(org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath("$.code")
+                            .value("TURNUS_CATALOGUE_UNAVAILABLE"));
+        }
+    }
 }
