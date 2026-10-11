@@ -750,3 +750,22 @@ Moved project plans, progress notes and assessments into `docs/`. The root READM
 
 - Added real HTTP regression tests: empty catalogue returns `200` and `[]`; a real SQL failure returns generic JSON `500` without SQL details, then GET recovers after table restoration. Fixtures and table changes are confined to the isolated H2 test database.
 - `mvn -pl backend/biuro-api test`: all 37 tests passed, no skips. `git diff --check` passed. Production code and live data unchanged.
+
+## 2026-10-11 — Registration catalogue cache, phase 2
+
+- Implemented on `feature/internal-endpoint-integration`: Registration now uses Biuro's authenticated internal GET instead of the JSON provider. Shared lookup credentials are required in both service processes.
+- Dedicated client uses configurable 15-second connect and 30-second read timeouts. Invalid, incomplete, duplicate-code or failed responses cannot replace the cache; a valid empty array can.
+- First fetch runs asynchronously after startup. Before the first success, catalogue requests and parsed submissions return `503 / TURNUS_CATALOGUE_UNAVAILABLE`; initial retries use a 30-second fixed delay. Afterwards, refresh attempts are hourly and retain the last successful snapshot without expiry on failure.
+- Cache replacement is atomic and immutable. Reads use cached data without making upstream requests. Manual active/open flags still control form visibility and normal submission rejection rules. Successful registrations remain NEW; no season switch added.
+- Added real HTTP client, cache/concurrent-read, scheduler, startup credential, public error mapping and no-persistence/no-email submission regressions.
+- Root `mvn test`: 128 passed, nine optional registration MariaDB integration tests skipped. `git diff --check` passed. No live data or frontend changes. Manual results are recorded below; editor-to-cache propagation remains deferred.
+- Setup and verification: [Registration catalogue cache](Turnus-catalogue-cache.md). Email/statistics consumers and broader Compose packaging remain separate work.
+
+- Follow-up: retained `StubTurnusProvider` in the repository as requested, without `@Component`. The cached provider remains the only runtime bean; JSON fallback remains disabled.
+
+### 2026-10-11 — Browser verification and missing-resource handling
+
+- User verified the public Registration GET returns the two active/open summer Turnusy and excludes the inactive winter Turnus. User also verified cached reads after stopping Biuro, the unavailable-catalogue response after restarting Registration with Biuro stopped, and recovery after starting Biuro without restarting Registration. The editor-to-cache propagation check is deferred until the editor is available.
+- Browser requests to Biuro `/` and `/favicon.ico` revealed existing catch-all error handling mapped missing static resources to logged 500 errors. Added a dedicated `NoResourceFoundException` handler returning generic JSON 404 without ERROR logging. Real server failures retain 500 behavior.
+- Added real HTTP regression for both missing paths; this small Biuro fix can be committed separately from catalogue cache integration.
+- Verification: all 38 Biuro tests passed, including missing-resource 404 and genuine database-failure 500; `git diff --check` passed.

@@ -1,8 +1,9 @@
 # Internal Turnus lookup — phase 1
 
-Biuro owns the Turnus catalogue. This phase exposes a read-only service endpoint;
-registration-api still uses its existing JSON provider. Hourly cache refresh and
-the registration-api HTTP client belong to the next phase.
+Biuro owns the Turnus catalogue. Phase 1 exposes a read-only service endpoint.
+Phase 2 adds the registration-api HTTP client and hourly cache: see
+[Registration catalogue cache](Turnus-catalogue-cache.md). The former JSON provider
+is no longer used at runtime once phase 2 is deployed.
 
 ## Startup configuration
 
