@@ -1,12 +1,11 @@
 <script setup>
 import { computed, reactive, ref, watch } from 'vue'
-import { useRouter } from 'vue-router'
 import { useAuthStore } from '../stores/auth'
 import RegistrationTable from '../components/RegistrationTable.vue'
+import BiuroHeader from '../components/BiuroHeader.vue'
 import { fetchTurnusStats } from '../api/registrationApi'
 
 const authStore = useAuthStore()
-const router = useRouter()
 
 const stats = ref(null)
 
@@ -60,19 +59,12 @@ watch(
     (turnusCode) => loadTurnusStats(turnusCode)
 )
 
-async function logout() {
-  authStore.logout()
-  await router.push('/login')
-}
 </script>
 
 <template>
   <main class="min-h-screen p-4 md:p-8">
     <div class="max-w-6xl mx-auto space-y-4">
-      <header class="flex items-center justify-between gap-3">
-        <h1 class="text-2xl font-semibold">Panel Biuro</h1>
-        <button class="rounded bg-slate-700 text-white px-4 py-2 hover:bg-slate-800" @click="logout">Wyloguj</button>
-      </header>
+      <BiuroHeader />
 
        <section class="bg-white rounded-xl shadow p-4 grid grid-cols-1 md:grid-cols-4 gap-3">
         <select v-model="filters.status" class="rounded border border-slate-300 px-3 py-2">

@@ -80,6 +80,13 @@ migration, season configuration and the editor remain pending. See
   on operator 401 with a Polish explanation; check expiry when restoring a session.
   Parse safe backend error details. Test missing, expired and tampered JWTs and
   public/protected routes, including session behavior in the frontend.
+  Apply this consistently to Zgłoszenia and Turnusy. The current backend may
+  return 403 for expired/missing operator credentials; distinguish authentication
+  failure from a genuine permission denial rather than logging out on every 403.
+  Make login reachable after expiry and agree how unsaved editor inputs survive
+  reauthentication. Never automatically replay a POST/PATCH after login.
+  Cover expiry on startup and during list loading/edit saving, retained inputs,
+  successful reauthentication, and permission-denied responses.
 
 ### 4. Deliver usable Turnus lists
 

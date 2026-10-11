@@ -778,3 +778,39 @@ Moved project plans, progress notes and assessments into `docs/`. The root READM
 - Manual MailHog verification pending; scenarios in [Turnus email metadata](Turnus-email-metadata.md).
 - Capacity/statistics are deferred together: separate editable participant/staff capacities and manual registration-open switches, type-specific statistics, acceptance blocked at capacity, capacity reductions blocked below accepted count, repeated acceptance consumes no additional place. Open submissions remain NEW even when full. No automatic closure or global season switch. This branch does not implement these rules.
 - Verification: root `mvn test` passed (136 executed successfully, nine optional registration MariaDB tests skipped); `git diff --check` passed. No live data, frontend, database schema or email templates changed.
+
+## 2026-10-11 — Biuro Turnus editor, first UI version
+
+- Branch `feature/turnus-editor`: added Turnusy tab, full catalogue list with search/availability filters, dedicated creation and definition pages. Existing JWT catalogue API is used; no internal lookup credentials in the frontend.
+- Shared Biuro header/navigation preserves the registrations screen. New routes require authentication. Existing Turnus code stays immutable; editing sends the backend version. Errors retain inputs; conflicts offer explicit reload. Unsaved edits warn on navigation, browser unload or logout; duplicate saves are blocked.
+- Only functional Definicja section is shown; dedicated pages leave space for later participants, staff, lists and payments. No backend/schema/dependency changes, automatic closure or acceptance-limit behavior introduced.
+- Production frontend build and Node tests pass; five API scenarios added alongside sorting tests. `git diff --check` passed. Browser visual/interaction verification remains pending; no live catalogue writes performed.
+- Manual scenarios: [Turnus editor](Turnus-editor.md). Existing hardcoded registration filter options and statistics remain separately tracked gaps.
+- UI follow-up: Szczegóły action matches registration button styling; search has a clear X, and Turnus/term/location/capacity/availability headers toggle ascending/descending sorting. Numeric/date/status/tie-breaker sorting regressions added; frontend build and all Node test files pass.
+- Checkpoint: list controls follow user feedback—filter before matching-size Wyszukaj field, clear X, Dodaj turnus on the same row, no refresh button or redundant heading. Szczegóły matches registration styling; capacity label is Liczba miejsc. Date search supports displayed/ISO/partial dates. Statistics/free spots explicitly stay deferred. Frontend build and four Node test files pass; editor interactions remain pending manual verification.
+
+## 2026-10-11 — JWT/session follow-up
+
+- Expired-session handling belongs to the existing JWT/authentication work in the
+  [registration workflow release plan](Registration-workflow-release-plan.md),
+  rather than extending the Turnus editor branch.
+- Known gap: expired tokens remain stored, so the frontend still considers the
+  operator logged in and redirects attempts to open login back to the dashboard.
+- Planned: central handling across Zgłoszenia/Turnusy, restored-session expiry
+  checks, a Polish explanation, reachable login, and an agreed way to preserve
+  unsaved edits during reauthentication. Distinguish operator authentication
+  failure (currently potentially 403) from permission denial and upstream service
+  credential failures. Do not automatically retry writes after login.
+- Implementation and targeted session regressions remain pending.
+
+## 2026-10-11 — Required staff roles in Turnus definitions
+
+- Confirmed: each Turnus should include "Wymagana kadra" with roles selected from
+  the season configuration and required headcounts per role. Season configuration
+  owns available roles and certificate requirements; Turnus owns staffing needs.
+- These counts are separate from overall staff capacity and initially serve
+  planning, without automatically blocking acceptance or closing registration.
+- Later statistics should compare required / accepted / missing per role;
+  counting people assigned multiple roles needs agreement before implementation.
+- Added to [Turnus requirements](Turnus-management-plan.md). Backend/UI
+  implementation remains pending; the current editor has no staffing section.
