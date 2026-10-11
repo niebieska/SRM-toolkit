@@ -78,8 +78,10 @@ The tests delete TEST-prefixed fixtures and must never run on application data.
 
 - Registration-api now reads Biuro through an authenticated hourly cache; see
   [Catalogue cache configuration and verification](Turnus-catalogue-cache.md).
-  Public options and submission eligibility use that snapshot. Statistics and
-  email metadata migration remain a separate phase.
+  Public options and submission eligibility use that snapshot. Confirmation email
+  metadata uses the same Turnus selected during validation; see
+  [Email metadata and verification](Turnus-email-metadata.md). Statistics migration
+  remains deferred with the combined participant/staff capacity feature.
 - Add the simple editor and file-based season roles/subroles/certificate source.
   The existing seasonType/year fields preserve current season identity; a shared
   season-file identifier/contract remains future scope; a global season switch is deferred.
