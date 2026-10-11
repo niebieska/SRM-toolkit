@@ -778,3 +778,13 @@ Moved project plans, progress notes and assessments into `docs/`. The root READM
 - Manual MailHog verification pending; scenarios in [Turnus email metadata](Turnus-email-metadata.md).
 - Capacity/statistics are deferred together: separate editable participant/staff capacities and manual registration-open switches, type-specific statistics, acceptance blocked at capacity, capacity reductions blocked below accepted count, repeated acceptance consumes no additional place. Open submissions remain NEW even when full. No automatic closure or global season switch. This branch does not implement these rules.
 - Verification: root `mvn test` passed (136 executed successfully, nine optional registration MariaDB tests skipped); `git diff --check` passed. No live data, frontend, database schema or email templates changed.
+
+## 2026-10-11 — Biuro Turnus editor, first UI version
+
+- Branch `feature/turnus-editor`: added Turnusy tab, full catalogue list with search/availability filters, dedicated creation and definition pages. Existing JWT catalogue API is used; no internal lookup credentials in the frontend.
+- Shared Biuro header/navigation preserves the registrations screen. New routes require authentication. Existing Turnus code stays immutable; editing sends the backend version. Errors retain inputs; conflicts offer explicit reload. Unsaved edits warn on navigation, browser unload or logout; duplicate saves are blocked.
+- Only functional Definicja section is shown; dedicated pages leave space for later participants, staff, lists and payments. No backend/schema/dependency changes, automatic closure or acceptance-limit behavior introduced.
+- Production frontend build and Node tests pass; five API scenarios added alongside sorting tests. `git diff --check` passed. Browser visual/interaction verification remains pending; no live catalogue writes performed.
+- Manual scenarios: [Turnus editor](Turnus-editor.md). Existing hardcoded registration filter options and statistics remain separately tracked gaps.
+- UI follow-up: Szczegóły action matches registration button styling; search has a clear X, and Turnus/term/location/capacity/availability headers toggle ascending/descending sorting. Numeric/date/status/tie-breaker sorting regressions added; frontend build and all Node test files pass.
+- Checkpoint: list controls follow user feedback—filter before matching-size Wyszukaj field, clear X, Dodaj turnus on the same row, no refresh button or redundant heading. Szczegóły matches registration styling; capacity label is Liczba miejsc. Date search supports displayed/ISO/partial dates. Statistics/free spots explicitly stay deferred. Frontend build and four Node test files pass; editor interactions remain pending manual verification.
