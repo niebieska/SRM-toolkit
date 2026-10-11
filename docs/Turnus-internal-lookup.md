@@ -1,8 +1,9 @@
 # Internal Turnus lookup — phase 1
 
-Biuro owns the Turnus catalogue. This phase exposes a read-only service endpoint;
-registration-api still uses its existing JSON provider. Hourly cache refresh and
-the registration-api HTTP client belong to the next phase.
+Biuro owns the Turnus catalogue. Phase 1 exposes a read-only service endpoint.
+Phase 2 adds the registration-api HTTP client and hourly cache: see
+[Registration catalogue cache](Turnus-catalogue-cache.md). The former JSON provider
+is no longer used at runtime once phase 2 is deployed.
 
 ## Startup configuration
 
@@ -58,3 +59,8 @@ Automated verification: `mvn -pl backend/biuro-api test`. Tests exercise a real
 embedded HTTP server, the credential boundaries, complete catalogue flags, and
 startup with missing, blank, and configured lookup credentials. Existing tests
 continue to verify operator CRUD and browser CORS/preflight behavior.
+
+Additional HTTP regressions verify an empty catalogue returns `200` with `[]`
+and a real catalogue SQL failure returns `500` with a generic JSON error, without
+SQL details. The failure test restores the table and confirms GET recovers to
+`200`. Both scenarios use only the isolated in-memory H2 test database.

@@ -76,16 +76,16 @@ The tests delete TEST-prefixed fixtures and must never run on application data.
 
 ## Next stages and decisions
 
-- Registration-api still reads JSON. Editing Biuro's catalogue does not yet change
-  registration availability, public options, statistics or email metadata.
-- Add authenticated internal lookup and migrate consumers together; define timeout
-  and unavailable-service behavior without a circular proxy dependency.
+- Registration-api now reads Biuro through an authenticated hourly cache; see
+  [Catalogue cache configuration and verification](Turnus-catalogue-cache.md).
+  Public options and submission eligibility use that snapshot. Statistics and
+  email metadata migration remain a separate phase.
 - Add the simple editor and file-based season roles/subroles/certificate source.
   The existing seasonType/year fields preserve current season identity; a shared
-  season-file identifier/contract still needs to be settled before consumer migration.
+  season-file identifier/contract remains future scope; a global season switch is deferred.
 - Confirm manual availability versus scheduled dates and warning versus blocking
   acceptance at capacity. No new capacity enforcement or status restrictions added.
-- Date/capacity changes affect only the catalogue for now. They do not rewrite,
+- Date/capacity changes reach the registration cache after refresh. They do not rewrite,
   reject or delete existing registrations. Revalidation of existing registrations
   and capacity reduction behavior must be agreed before integration.
 - Accepted-person views, insurance export and printable on-site lists remain later

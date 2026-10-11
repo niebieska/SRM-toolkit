@@ -120,4 +120,18 @@ class StaffRegistrationServiceTest {
                 true
         );
     }
+    @Test
+    void unavailableCatalogueDoesNotPersistOrSendEmail() {
+        var data = new RegistrationContext("ZAGLE26T1", "90010112349", "hash", false, true, true);
+        when(parser.parse("payload")).thenReturn(data);
+        when(turnusProvider.getByCode("ZAGLE26T1")).thenThrow(
+                new pl.srm.registrationapi.registration.exception.RegistrationException(
+                        "TURNUS_CATALOGUE_UNAVAILABLE", "Catalogue unavailable"));
+        var error = org.junit.jupiter.api.Assertions.assertThrows(
+                pl.srm.registrationapi.registration.exception.RegistrationException.class,
+                () -> service.register("payload"));
+        assertEquals("TURNUS_CATALOGUE_UNAVAILABLE", error.getCode());
+        org.mockito.Mockito.verifyNoInteractions(persistenceService, notificationService);
+    }
+
 }

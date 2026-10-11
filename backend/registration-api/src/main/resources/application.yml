@@ -34,3 +34,13 @@ registration:
   service:
     username: ${REGISTRATION_SERVICE_USERNAME:biuro-service}
     password: ${REGISTRATION_SERVICE_PASSWORD}
+
+turnus:
+  catalogue:
+    url: ${BIURO_TURNUS_URL:http://localhost:8081}
+    username: ${TURNUS_LOOKUP_USERNAME:registration-turnus-reader}
+    password: ${TURNUS_LOOKUP_PASSWORD}
+    connect-timeout: ${TURNUS_CONNECT_TIMEOUT:PT15S}
+    read-timeout: ${TURNUS_READ_TIMEOUT:PT30S}
+    retry-interval: ${TURNUS_RETRY_INTERVAL:PT30S}
+    refresh-interval: ${TURNUS_REFRESH_INTERVAL:PT1H}
