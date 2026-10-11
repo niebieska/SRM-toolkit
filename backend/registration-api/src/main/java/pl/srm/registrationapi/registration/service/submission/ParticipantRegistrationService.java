@@ -51,7 +51,7 @@ public class ParticipantRegistrationService implements RegistrationService {
 
         String code = persistenceService.saveParticipant(data, payload);
 
-        notificationService.sendParticipantRegistrationConfirmation(payload, data, code);
+        notificationService.sendParticipantRegistrationConfirmation(payload, data, code, turnus);
 
         LOGGER.info(
                 "Participant registration {} created for turnus {}",
