@@ -31,6 +31,14 @@ current endpoints, database configuration and remaining integration work.
   emails and Biuro statistics consume the same Turnus definition. Remove the
   hardcoded statistics capacity and retire turnuses.json after consumers migrate.
 - [ ] In Biuro, show accepted participants and accepted staff for each Turnus.
+- [ ] Include required staff roles in each Turnus definition ("Wymagana kadra"):
+  select a role from the season's configured staff roles and enter the required
+  number of people for that role. Staffing needs can differ between Turnusy.
+  Keep these requirements separate from overall staff capacity. Initially they
+  support planning, without automatically blocking acceptance or closing registration.
+- [ ] In subsequent staffing statistics, show required / accepted / missing
+  counts for each required role. Agree how staff with multiple roles are counted
+  before implementing those statistics.
 - [ ] Generate an insurance list/export. Agree fields and output format using the
   insurer's requirements before implementation.
 - [ ] Generate a printable on-site registration list for staff. Agree columns
@@ -57,7 +65,9 @@ outside this deliverable.
 - [ ] Associate Turnusy with their season. Turnus-specific dates, capacity and
   availability remain in the Turnus model rather than duplicated season files.
 - Changes take effect on restart initially. A season configuration editor,
-  runtime switching and Turnus-specific role overrides are outside this first scope.
+  runtime switching and Turnus-specific changes to available role definitions are
+  outside this first scope. Per-Turnus required headcounts for configured roles
+  belong to the Turnus definition, as specified above.
 - Historical season browsing and which seasons appear publicly remain decisions
   to clarify; selecting one active season does not settle archival behavior.
 

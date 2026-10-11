@@ -788,3 +788,29 @@ Moved project plans, progress notes and assessments into `docs/`. The root READM
 - Manual scenarios: [Turnus editor](Turnus-editor.md). Existing hardcoded registration filter options and statistics remain separately tracked gaps.
 - UI follow-up: Szczegóły action matches registration button styling; search has a clear X, and Turnus/term/location/capacity/availability headers toggle ascending/descending sorting. Numeric/date/status/tie-breaker sorting regressions added; frontend build and all Node test files pass.
 - Checkpoint: list controls follow user feedback—filter before matching-size Wyszukaj field, clear X, Dodaj turnus on the same row, no refresh button or redundant heading. Szczegóły matches registration styling; capacity label is Liczba miejsc. Date search supports displayed/ISO/partial dates. Statistics/free spots explicitly stay deferred. Frontend build and four Node test files pass; editor interactions remain pending manual verification.
+
+## 2026-10-11 — JWT/session follow-up
+
+- Expired-session handling belongs to the existing JWT/authentication work in the
+  [registration workflow release plan](Registration-workflow-release-plan.md),
+  rather than extending the Turnus editor branch.
+- Known gap: expired tokens remain stored, so the frontend still considers the
+  operator logged in and redirects attempts to open login back to the dashboard.
+- Planned: central handling across Zgłoszenia/Turnusy, restored-session expiry
+  checks, a Polish explanation, reachable login, and an agreed way to preserve
+  unsaved edits during reauthentication. Distinguish operator authentication
+  failure (currently potentially 403) from permission denial and upstream service
+  credential failures. Do not automatically retry writes after login.
+- Implementation and targeted session regressions remain pending.
+
+## 2026-10-11 — Required staff roles in Turnus definitions
+
+- Confirmed: each Turnus should include "Wymagana kadra" with roles selected from
+  the season configuration and required headcounts per role. Season configuration
+  owns available roles and certificate requirements; Turnus owns staffing needs.
+- These counts are separate from overall staff capacity and initially serve
+  planning, without automatically blocking acceptance or closing registration.
+- Later statistics should compare required / accepted / missing per role;
+  counting people assigned multiple roles needs agreement before implementation.
+- Added to [Turnus requirements](Turnus-management-plan.md). Backend/UI
+  implementation remains pending; the current editor has no staffing section.
