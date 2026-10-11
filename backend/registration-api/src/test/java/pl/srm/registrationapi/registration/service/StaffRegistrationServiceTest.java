@@ -73,7 +73,8 @@ class StaffRegistrationServiceTest {
         );
 
         when(parser.parse(anyString())).thenReturn(context);
-        when(turnusProvider.getByCode("ZAGLE26T1")).thenReturn(turnus());
+        Turnus selectedTurnus = turnus();
+        when(turnusProvider.getByCode("ZAGLE26T1")).thenReturn(selectedTurnus);
         when(persistenceService.saveStaff(context, "{\"payload\":true}"))
                 .thenReturn("REG-S-ZAGLE26T1-2");
 
@@ -88,7 +89,8 @@ class StaffRegistrationServiceTest {
         verify(notificationService).sendStaffRegistrationConfirmation(
                 eq("{\"payload\":true}"),
                 same(context),
-                eq("REG-S-ZAGLE26T1-2")
+                eq("REG-S-ZAGLE26T1-2"),
+                same(selectedTurnus)
         );
     }
 
@@ -96,7 +98,8 @@ class StaffRegistrationServiceTest {
     void invalidPayloadNeverPersistsOrSendsNotification() {
         RegistrationContext context = new RegistrationContext("ZAGLE26T1", "90010112349", "hash", false, false, true);
         when(parser.parse(anyString())).thenReturn(context);
-        when(turnusProvider.getByCode("ZAGLE26T1")).thenReturn(turnus());
+        Turnus selectedTurnus = turnus();
+        when(turnusProvider.getByCode("ZAGLE26T1")).thenReturn(selectedTurnus);
         org.mockito.Mockito.doThrow(new pl.srm.registrationapi.registration.exception.RegistrationException("INVALID_REQUEST", "Missing contact"))
                 .when(validationService).validatePayload(eq("{}"), eq(context), eq(pl.srm.registrationapi.registration.model.RegistrationType.STAFF));
         org.junit.jupiter.api.Assertions.assertThrows(pl.srm.registrationapi.registration.exception.RegistrationException.class,

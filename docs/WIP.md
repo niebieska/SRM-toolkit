@@ -769,3 +769,12 @@ Moved project plans, progress notes and assessments into `docs/`. The root READM
 - Browser requests to Biuro `/` and `/favicon.ico` revealed existing catch-all error handling mapped missing static resources to logged 500 errors. Added a dedicated `NoResourceFoundException` handler returning generic JSON 404 without ERROR logging. Real server failures retain 500 behavior.
 - Added real HTTP regression for both missing paths; this small Biuro fix can be committed separately from catalogue cache integration.
 - Verification: all 38 Biuro tests passed, including missing-resource 404 and genuine database-failure 500; `git diff --check` passed.
+
+## 2026-10-11 — Catalogue-backed confirmation email metadata
+
+- Branch `feature/turnus-email-metadata`: replaced fixed Turnus-code/name/date/description switch with metadata from the Turnus already selected and validated during submission. Participant/staff notification methods receive that exact immutable object; no additional lookup occurs.
+- Preserved existing date format, templates, recipient/greeting rules, codes and NEW status. Null description becomes empty text. New Turnus codes work without a Java mapping. ZAGLE26T2 email end date follows catalogue 22.08.2026 instead of former fixed 21.08.2026.
+- Added participant/staff/guardian metadata regressions and real-notification service tests proving an email client failure does not fail an already-saved registration.
+- Manual MailHog verification pending; scenarios in [Turnus email metadata](Turnus-email-metadata.md).
+- Capacity/statistics are deferred together: separate editable participant/staff capacities and manual registration-open switches, type-specific statistics, acceptance blocked at capacity, capacity reductions blocked below accepted count, repeated acceptance consumes no additional place. Open submissions remain NEW even when full. No automatic closure or global season switch. This branch does not implement these rules.
+- Verification: root `mvn test` passed (136 executed successfully, nine optional registration MariaDB tests skipped); `git diff --check` passed. No live data, frontend, database schema or email templates changed.

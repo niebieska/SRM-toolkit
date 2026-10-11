@@ -9,7 +9,9 @@ import pl.srm.registrationapi.email.client.EmailServiceClient;
 import pl.srm.registrationapi.registration.model.RegistrationStatus;
 import pl.srm.registrationapi.registration.model.RegistrationType;
 import pl.srm.registrationapi.registration.parser.RegistrationContext;
+import pl.srm.registrationapi.turnus.model.Turnus;
 
+import java.time.format.DateTimeFormatter;
 import java.util.Map;
 
 @Service
@@ -18,6 +20,7 @@ public class RegistrationNotificationService {
     private static final Logger LOGGER = LoggerFactory.getLogger(RegistrationNotificationService.class);
     private static final String PARTICIPANT_TEMPLATE = "registration-confirmation-participant";
     private static final String STAFF_TEMPLATE = "registration-confirmation-staff";
+    private static final DateTimeFormatter EMAIL_DATE_FORMAT = DateTimeFormatter.ofPattern("dd.MM.yyyy");
 
     private final EmailServiceClient emailServiceClient;
     private final ObjectMapper objectMapper;
@@ -30,7 +33,8 @@ public class RegistrationNotificationService {
 
     public void sendParticipantRegistrationConfirmation(String payload,
                                                         RegistrationContext data,
-                                                        String registrationCode) {
+                                                        String registrationCode,
+                                                        Turnus turnus) {
         try {
             JsonNode root = objectMapper.readTree(payload);
             JsonNode participant = root.path("person");
@@ -47,7 +51,7 @@ public class RegistrationNotificationService {
                     recipientName,
                     registeredName,
                     registrationCode,
-                    data.turnusCode()
+                    turnus
             );
         } catch (Exception exception) {
             LOGGER.error("Failed to prepare participant registration confirmation email for {}", registrationCode, exception);
@@ -56,7 +60,8 @@ public class RegistrationNotificationService {
 
     public void sendStaffRegistrationConfirmation(String payload,
                                                   RegistrationContext data,
-                                                  String registrationCode) {
+                                                  String registrationCode,
+                                                  Turnus turnus) {
         try {
             JsonNode root = objectMapper.readTree(payload);
             JsonNode staff = root.path("person");
@@ -70,7 +75,7 @@ public class RegistrationNotificationService {
                     staffName,
                     staffRole,
                     registrationCode,
-                    data.turnusCode()
+                    turnus
             );
 
             if (data.isMinor()) {
@@ -83,7 +88,7 @@ public class RegistrationNotificationService {
                         staffName,
                         staffRole,
                         registrationCode,
-                        data.turnusCode()
+                        turnus
                 );
             }
         } catch (Exception exception) {
@@ -95,7 +100,7 @@ public class RegistrationNotificationService {
                                              String recipientName,
                                              String registeredName,
                                              String registrationCode,
-                                             String turnusCode) {
+                                             Turnus turnus) {
         String to = recipient.path("contact").path("email").asText("").trim();
         Map<String, String> variables = new java.util.HashMap<>();
 
@@ -104,7 +109,7 @@ public class RegistrationNotificationService {
         variables.put("registrationCode", registrationCode);
         variables.put("registrationType", RegistrationType.PARTICIPANT.name());
         variables.put("status", RegistrationStatus.NEW.name());
-        variables.putAll(turnusVariables(turnusCode));
+        variables.putAll(turnusVariables(turnus));
 
         emailServiceClient.sendEmail(
                 to,
@@ -118,7 +123,7 @@ public class RegistrationNotificationService {
                                        String registeredName,
                                        String staffRole,
                                        String registrationCode,
-                                       String turnusCode) {
+                                       Turnus turnus) {
         String to = recipient.path("contact").path("email").asText("").trim();
         Map<String, String> variables = new java.util.HashMap<>();
 
@@ -128,7 +133,7 @@ public class RegistrationNotificationService {
         variables.put("staffRole", staffRole);
         variables.put("registrationType", RegistrationType.STAFF.name());
         variables.put("status", RegistrationStatus.NEW.name());
-        variables.putAll(turnusVariables(turnusCode));
+        variables.putAll(turnusVariables(turnus));
 
         emailServiceClient.sendEmail(
                 to,
@@ -168,30 +173,14 @@ public class RegistrationNotificationService {
         return role;
     }
 
-    private Map<String, String> turnusVariables(String turnusCode) {
-        return switch (turnusCode) {
-            case "ZAGLE26T1" -> Map.of(
-                    "turnusCode", turnusCode,
-                    "turnusName", "Rekolekcje pod żaglami 2026 - Turnus I",
-                    "turnusStartDate", "01.08.2026",
-                    "turnusEndDate", "11.08.2026",
-                    "turnusDescription", "Turnus żeglarski dla młodzieży 14+ nad Jeziorem Rajgrodzkim."
-            );
-            case "ZAGLE26T2" -> Map.of(
-                    "turnusCode", turnusCode,
-                    "turnusName", "Rekolekcje pod żaglami 2026 - Turnus II",
-                    "turnusStartDate", "11.08.2026",
-                    "turnusEndDate", "21.08.2026",
-                    "turnusDescription", "Turnus żeglarski dla młodzieży 16+ nad Jeziorem Rajgrodzkim."
-            );
-            default -> Map.of(
-                    "turnusCode", turnusCode,
-                    "turnusName", turnusCode,
-                    "turnusStartDate", "",
-                    "turnusEndDate", "",
-                    "turnusDescription", ""
-            );
-        };
+    private Map<String, String> turnusVariables(Turnus turnus) {
+        return Map.of(
+                "turnusCode", turnus.turnusCode(),
+                "turnusName", turnus.turnusName(),
+                "turnusStartDate", turnus.startDate().format(EMAIL_DATE_FORMAT),
+                "turnusEndDate", turnus.endDate().format(EMAIL_DATE_FORMAT),
+                "turnusDescription", turnus.turnusDescription() == null ? "" : turnus.turnusDescription()
+        );
     }
 
 }

@@ -70,7 +70,8 @@ class ParticipantRegistrationServiceTest {
         );
 
         when(parser.parse(anyString())).thenReturn(context);
-        when(turnusProvider.getByCode("ZAGLE26T1")).thenReturn(turnus());
+        Turnus selectedTurnus = turnus();
+        when(turnusProvider.getByCode("ZAGLE26T1")).thenReturn(selectedTurnus);
 
         doThrow(new RegistrationException(
                 "MISSING_GUARDIAN",
@@ -101,7 +102,8 @@ class ParticipantRegistrationServiceTest {
         );
 
         when(parser.parse(anyString())).thenReturn(context);
-        when(turnusProvider.getByCode("ZAGLE26T1")).thenReturn(turnus());
+        Turnus selectedTurnus = turnus();
+        when(turnusProvider.getByCode("ZAGLE26T1")).thenReturn(selectedTurnus);
         when(persistenceService.saveParticipant(context, "{\"payload\":true}"))
                 .thenReturn("REG-P-ZAGLE26T1-3");
 
@@ -113,9 +115,10 @@ class ParticipantRegistrationServiceTest {
         verify(validationService).validateEligibility(eq(context), any());
         verify(persistenceService).saveParticipant(context, "{\"payload\":true}");
         verify(notificationService).sendParticipantRegistrationConfirmation(
-                "{\"payload\":true}",
-                context,
-                "REG-P-ZAGLE26T1-3"
+                eq("{\"payload\":true}"),
+                eq(context),
+                eq("REG-P-ZAGLE26T1-3"),
+                org.mockito.ArgumentMatchers.same(selectedTurnus)
         );
     }
 
@@ -131,7 +134,8 @@ class ParticipantRegistrationServiceTest {
         );
 
         when(parser.parse(anyString())).thenReturn(context);
-        when(turnusProvider.getByCode("ZAGLE26T1")).thenReturn(turnus());
+        Turnus selectedTurnus = turnus();
+        when(turnusProvider.getByCode("ZAGLE26T1")).thenReturn(selectedTurnus);
         when(persistenceService.saveParticipant(context, "{\"payload\":true}"))
                 .thenReturn("REG-P-ZAGLE26T1-5");
 
@@ -142,9 +146,10 @@ class ParticipantRegistrationServiceTest {
         verify(validationService).validateEligibility(eq(context), any());
         verify(persistenceService).saveParticipant(context, "{\"payload\":true}");
         verify(notificationService).sendParticipantRegistrationConfirmation(
-                "{\"payload\":true}",
-                context,
-                "REG-P-ZAGLE26T1-5"
+                eq("{\"payload\":true}"),
+                eq(context),
+                eq("REG-P-ZAGLE26T1-5"),
+                org.mockito.ArgumentMatchers.same(selectedTurnus)
         );
     }
 
@@ -152,7 +157,8 @@ class ParticipantRegistrationServiceTest {
     void invalidPayloadNeverPersistsOrSendsNotification() {
         RegistrationContext context = new RegistrationContext("ZAGLE26T1", "90010112349", "hash", false, false, true);
         when(parser.parse(anyString())).thenReturn(context);
-        when(turnusProvider.getByCode("ZAGLE26T1")).thenReturn(turnus());
+        Turnus selectedTurnus = turnus();
+        when(turnusProvider.getByCode("ZAGLE26T1")).thenReturn(selectedTurnus);
         org.mockito.Mockito.doThrow(new pl.srm.registrationapi.registration.exception.RegistrationException("INVALID_REQUEST", "Missing contact"))
                 .when(validationService).validatePayload(eq("{}"), eq(context), eq(pl.srm.registrationapi.registration.model.RegistrationType.PARTICIPANT));
         org.junit.jupiter.api.Assertions.assertThrows(pl.srm.registrationapi.registration.exception.RegistrationException.class,
