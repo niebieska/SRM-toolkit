@@ -10,6 +10,7 @@ const form = reactive({})
 const original = ref(''), error = ref(''), success = ref('')
 const loading = ref(false), loaded = ref(false), saving = ref(false), conflict = ref(false)
 let loadSequence = 0
+let createdTurnusCode = null
 const dirty = computed(() => loaded.value && JSON.stringify(form) !== original.value)
 const status = computed(() => !form.active ? 'Nieaktywny' : form.registrationOpen ? 'Zapisy otwarte' : 'Zapisy zamknięte')
 function defaults() {
@@ -44,7 +45,14 @@ onMounted(() => window.addEventListener('beforeunload', beforeUnload))
 onBeforeUnmount(() => window.removeEventListener('beforeunload', beforeUnload))
 onBeforeRouteLeave(canLeave)
 onBeforeRouteUpdate(canLeave)
-watch(() => route.fullPath, load, { immediate: true })
+watch(() => route.fullPath, () => {
+  // The POST response already contains the saved definition and its version.
+  const reuseCreatedTurnus = createdTurnusCode !== null
+    && route.name === 'turnus-detail'
+    && route.params.code === createdTurnusCode
+  createdTurnusCode = null
+  if (!reuseCreatedTurnus) load()
+}, { immediate: true })
 async function reload() {
   if (saving.value || (dirty.value && !window.confirm('Wczytanie aktualnej wersji usunie niezapisane zmiany. Kontynuować?'))) return
   await load()
@@ -58,8 +66,17 @@ async function save() {
     const payload = { ...form, turnusDescription: form.turnusDescription.trim() || null }
     const created = isNew.value
     const value = created ? await createTurnus(auth.token, payload) : await updateTurnus(auth.token, route.params.code, payload)
-    apply(value); conflict.value = false; saving.value = false
-    if (created) await router.replace({ name: 'turnus-detail', params: { code: value.turnusCode } })
+    apply(value)
+    conflict.value = false
+    saving.value = false
+    if (created) {
+      createdTurnusCode = value.turnusCode
+      try {
+        await router.replace({ name: 'turnus-detail', params: { code: value.turnusCode } })
+      } finally {
+        createdTurnusCode = null
+      }
+    }
     success.value = created ? 'Turnus został utworzony.' : 'Zmiany zostały zapisane.'
   } catch (e) { error.value = e.message; conflict.value = e.status === 409 && !isNew.value }
   finally { saving.value = false }

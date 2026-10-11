@@ -19,7 +19,9 @@ converts empty descriptions to null, blocks double submission and displays API
 errors without clearing inputs. An edit conflict offers an explicit reload;
 reloading or leaving with changes requires confirmation. Browser refresh/close
 uses a native unsaved-change warning. Successful creation redirects to that
-Turnus's dedicated URL. All new routes use the existing authentication guard.
+Turnus's dedicated URL and reuses the POST response without an additional GET.
+Opening another Turnus or explicitly reloading still fetches its current definition.
+All new routes use the existing authentication guard.
 
 Changes to public registration options may take approximately an hour to reach
 Registration's cache; during a Biuro outage the delay may be longer. Manual
@@ -47,6 +49,8 @@ Manual review:
 3. Create a synthetic TEST-prefixed Turnus. Verify safe default flags, validation,
    success navigation and persistence after reload. Duplicate codes should display
    a conflict and retain the entered form.
+   In browser Network tools, verify creation sends one POST and no immediate
+   detail GET. Then reload or open another Turnus and verify its GET still occurs.
 4. Edit a definition and save. Verify immutable code, incremented version and
    confirmation. Empty optional descriptions should save successfully.
 5. Open one Turnus in two tabs. Save in the first, then save the stale second tab.
