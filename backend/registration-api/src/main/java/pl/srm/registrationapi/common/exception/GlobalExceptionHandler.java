@@ -13,6 +13,7 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(RegistrationException.class)
     public ResponseEntity<ApiError> handleRegistrationException(RegistrationException ex) {
         HttpStatus status = switch (ex.getCode()) {
+            case "TURNUS_CATALOGUE_UNAVAILABLE" -> HttpStatus.SERVICE_UNAVAILABLE;
             case "ALREADY_REGISTERED" -> HttpStatus.CONFLICT;
             case "AGE_TOO_LOW" -> HttpStatus.UNPROCESSABLE_ENTITY;
             case "TURNUS_NOT_FOUND", "REGISTRATION_NOT_FOUND" -> HttpStatus.NOT_FOUND;

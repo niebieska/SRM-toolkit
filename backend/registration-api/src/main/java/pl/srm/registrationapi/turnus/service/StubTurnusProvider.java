@@ -3,14 +3,14 @@ package pl.srm.registrationapi.turnus.service;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.annotation.PostConstruct;
 import org.springframework.core.io.ClassPathResource;
-import org.springframework.stereotype.Component;
 import pl.srm.registrationapi.registration.exception.RegistrationException;
 import pl.srm.registrationapi.turnus.model.Turnus;
 
 import java.io.InputStream;
 import java.util.List;
 
-@Component
+// Retained JSON implementation for reference/manual use; not a Spring component.
+// CachedTurnusProvider is the runtime provider. This is not an outage fallback.
 public class StubTurnusProvider implements TurnusProvider {
 
     private final ObjectMapper objectMapper;
