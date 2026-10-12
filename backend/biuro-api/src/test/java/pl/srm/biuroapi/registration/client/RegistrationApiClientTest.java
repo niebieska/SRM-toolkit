@@ -61,6 +61,25 @@ class RegistrationApiClientTest {
         server.verify();
     }
 
+    @ParameterizedTest
+    @ValueSource(strings = {"", "null", "not-json", "{}"})
+    void missingOrMalformedRegistrationListIsReportedAsUpstreamFailure(String body) {
+        server.expect(requestTo("http://registration-api:8080/api/registrations"))
+                .andRespond(withSuccess(body, MediaType.APPLICATION_JSON));
+        assertEquals(HttpStatus.BAD_GATEWAY,
+                assertThrows(ResponseStatusException.class, client::fetchRegistrations).getStatusCode());
+        server.verify();
+    }
+
+    @Test
+    void noContentRegistrationResponseIsAnUpstreamFailure() {
+        server.expect(requestTo("http://registration-api:8080/api/registrations"))
+                .andRespond(withStatus(HttpStatus.NO_CONTENT));
+        assertEquals(HttpStatus.BAD_GATEWAY,
+                assertThrows(ResponseStatusException.class, client::fetchRegistrations).getStatusCode());
+        server.verify();
+    }
+
     @Test
     void authenticatesListDetailAndStatusRequests() {
         server.expect(requestTo("http://registration-api:8080/api/registrations"))

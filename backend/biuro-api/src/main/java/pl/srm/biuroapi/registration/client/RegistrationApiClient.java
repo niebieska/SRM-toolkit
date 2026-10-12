@@ -61,7 +61,8 @@ public class RegistrationApiClient {
                     .retrieve()
                     .body(new ParameterizedTypeReference<>() {
                     });
-            return body == null ? List.of() : body;
+            if (body == null) throw new IllegalStateException("Missing registration list response");
+            return body;
         } catch (Exception exception) {
             log.error("Nie udało się pobrać zgłoszeń z registration-api", exception);
             throw new ResponseStatusException(HttpStatus.BAD_GATEWAY, "Błąd komunikacji z registration-api");
