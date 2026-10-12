@@ -860,3 +860,34 @@ Moved project plans, progress notes and assessments into `docs/`. The root READM
   free places, NEW and REJECTED counts are not displayed. Backend statistics still
   supply those values; accepted/capacity, gender breakdowns, waitlist and excess
   warnings remain visible for the selected type(s).
+
+## 2026-10-12 — Post-commit transport regression review
+
+- Found a release-blocking regression in the timeout change: Biuro's configured
+  `SimpleClientHttpRequestFactory` rejects PATCH, so administrative status updates
+  returned 502 before reaching Registration. Previous client tests mocked the
+  transport and did not detect this.
+- Reproduced the failure against a real local HTTP server using the production
+  RestClient builder. Replaced the transport with `JdkClientHttpRequestFactory`,
+  preserving 15-second connect and 30-second read timeouts.
+- All 55 Biuro tests pass, including the real authenticated PATCH regression.
+  Correction/test are uncommitted pending review; no additional commit was made.
+- Remaining review notes: the list availability filter has a nested ternary worth
+  simplifying. Browser verification remains pending. Capacity reductions retain
+  the documented single-operator assumption, not atomic coordination with
+  simultaneous acceptance in Registration's separate database.
+
+## 2026-10-12 — Request/response failure handling follow-up
+
+- Missing or blank `turnusCode` on the protected accepted-count endpoint now
+  returns 400 / INVALID_REQUEST without querying the database. Missing required
+  query parameters are handled explicitly instead of falling through to 500.
+- Biuro no longer treats null/empty upstream registration responses as an empty
+  list. Empty bodies, JSON null, malformed/non-array JSON and 204 responses yield
+  an upstream error; a valid [] is still supported. This prevents misleading
+  zero statistics during response-contract failures.
+- Added HTTP/security and client regressions. Full backend suite passed:
+  193 executed successfully, ten optional MariaDB cases skipped; no failures.
+  The uncommitted PATCH transport correction and real HTTP regression are included.
+- No new commit made. Browser/deployed acceptance and previously recorded
+  follow-ups remain pending.
