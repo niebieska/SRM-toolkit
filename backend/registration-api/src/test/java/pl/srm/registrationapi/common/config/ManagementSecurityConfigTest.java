@@ -62,7 +62,7 @@ class ManagementSecurityConfigTest {
     @Test
     void rejectsAnonymousManagementAccessIncludingTypeLists() throws Exception {
         for (String path : List.of("/api/registrations", "/api/registrations/ABC",
-                "/api/registrations/participant", "/api/registrations/staff")) {
+                "/api/registrations/participant", "/api/registrations/staff", "/api/registrations/accepted-counts?turnusCode=T1")) {
             mvc.perform(get(path)).andExpect(status().isUnauthorized());
         }
         mvc.perform(patch("/api/registrations/ABC/status")
@@ -133,7 +133,7 @@ class ManagementSecurityConfigTest {
     @Test
     void allowsAuthenticatedManagementCallsWithoutCreatingSession() throws Exception {
         for (String path : List.of("/api/registrations", "/api/registrations/ABC",
-                "/api/registrations/participant", "/api/registrations/staff")) {
+                "/api/registrations/participant", "/api/registrations/staff", "/api/registrations/accepted-counts?turnusCode=T1")) {
             mvc.perform(get(path).header(HttpHeaders.AUTHORIZATION, credentials))
                     .andExpect(status().isOk()).andExpect(cookie().doesNotExist("JSESSIONID"));
         }
@@ -186,9 +186,26 @@ class ManagementSecurityConfigTest {
                 () -> new ManagementSecurityConfig().serviceUsers("biuro-service", " "));
     }
 
+    @Test
+    void acceptedCountsRequireServiceCredentialsAndUseTypeSpecificDatabaseCounts() throws Exception {
+        var repository = context.getBean(pl.srm.registrationapi.registration.repository.RegistrationRepository.class);
+        when(repository.countByTurnusCodeAndRegistrationTypeAndStatus("T1", "PARTICIPANT", "ACCEPTED")).thenReturn(42L);
+        when(repository.countByTurnusCodeAndRegistrationTypeAndStatus("T1", "STAFF", "ACCEPTED")).thenReturn(8L);
+        mvc.perform(get("/api/registrations/accepted-counts").param("turnusCode", "T1")
+                .header(HttpHeaders.AUTHORIZATION, credentials)).andExpect(status().isOk())
+                .andExpect(jsonPath("$.participants").value(42)).andExpect(jsonPath("$.staff").value(8));
+    }
+
     @Configuration
     @EnableWebMvc
     static class TestMvcConfig {
+        @Bean pl.srm.registrationapi.registration.repository.RegistrationRepository repository() {
+            return mock(pl.srm.registrationapi.registration.repository.RegistrationRepository.class);
+        }
+        @Bean pl.srm.registrationapi.registration.controller.AcceptedCountsController counts(
+                pl.srm.registrationapi.registration.repository.RegistrationRepository repository) {
+            return new pl.srm.registrationapi.registration.controller.AcceptedCountsController(repository);
+        }
         @Bean GlobalExceptionHandler exceptionHandler() { return new GlobalExceptionHandler(); }
         @Bean ParticipantRegistrationService participantService() { return mock(ParticipantRegistrationService.class); }
         @Bean StaffRegistrationService staffService() { return mock(StaffRegistrationService.class); }
