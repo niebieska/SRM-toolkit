@@ -34,3 +34,5 @@ These record findings at the time of review; check the active plans and WIP for 
 - [Database integration tests and legacy migration instructions](../backend/registration-api/src/test/INTEGRATION_TESTS.md)
 
 Source paths mentioned in these documents are relative to the repository root unless stated otherwise.
+
+- [Season staff roles — configuration and verification](Season-staff-roles.md)

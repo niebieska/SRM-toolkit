@@ -16,7 +16,7 @@
 External review reconciliation: accepted corrections and outstanding decisions
 are incorporated into the existing workflow/deployment plans, not a separate roadmap.
 
-Last updated: 2026-10-08
+Last updated: 2026-10-12
 
 ## Agreed direction
 
@@ -891,3 +891,45 @@ Moved project plans, progress notes and assessments into `docs/`. The root READM
   The uncommitted PATCH transport correction and real HTTP regression are included.
 - No new commit made. Browser/deployed acceptance and previously recorded
   follow-ups remain pending.
+
+
+## 2026-10-12 — Capacity feature merged; season staff roles phase 1
+
+- PR #33 merged into development at 60c5032, including the earlier PATCH and
+  request/response handling corrections. Previous "uncommitted" notes above
+  describe their review-time state; those capacity changes are now committed.
+- Branch `feature/season-staff-roles`: Biuro-owned Summer/Winter JSON catalogues,
+  loaded/validated at startup; optional external file location supports direct
+  edits followed by restart. Default classpath edits require rebuild/restart.
+- Summer options/codes preserved. Winter candidate is Animator's optional
+  function for adults and mandatory function for minors; other Winter roles
+  are adult-only. Instructor requires one discipline. Priest permits at most
+  one additional function. Certificates are optional declarations; Winter starts
+  with Other, editable in configuration.
+- Enriched internal lookup is cached with Turnus definitions in the same hourly
+  refresh. Public options and backend submission validation share that snapshot;
+  no hardcoded frontend role list or additional Biuro call per submission.
+- Phase 2 staffing requirements and phase 3 statistics are deferred. Agreed
+  counting: leading priest separately; all other priest functions as Ksiądz.
+- Configuration/update details and manual matrix:
+  [Season staff roles](Season-staff-roles.md). Automated verification completed:
+  219 backend tests passed, ten optional MariaDB cases skipped; both frontend
+  suites and production builds passed. Browser/deployed verification pending.
+  No commits made; sth.java untouched.
+- Deferred certificate-description UI cleanup to
+  [Form field capacity review](Form-field-capacity-review.md): the 2,000-character
+  UI/backend mismatch predates this branch; hidden descriptions after deselection
+  also predate it, with catalogue changes adding another path to the same gap.
+  These were incorrectly presented as two wholly new regressions during review.
+- Preserved the Vue form-state checks in `staffRoleStep.test.js`, run by the
+  existing Node test command: Back/remount/Next retains certificates and details;
+  Turnus switching preserves personal data and removes unavailable selections;
+  Winter minor candidate and instructor discipline/age rules are exercised.
+  All five Registration frontend test files and its production build pass.
+  This harness executes component setup/watchers and navigation events without
+  a DOM; it does not replace browser layout/interaction verification.
+- User confirmed catalogue-defined certificates load in the form and a Winter
+  registration was created. Remaining browser checks (Summer submission, Winter
+  age/function rules, Back/Next, Turnus switching and Biuro details) are recorded
+  in [Season staff roles](Season-staff-roles.md) for final verification after all
+  three phases, as requested; they are not phase 1 commit blockers.

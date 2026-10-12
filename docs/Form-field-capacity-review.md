@@ -36,3 +36,19 @@ The fixed PESEL/postal-code formats and rejection-reason database limit have cle
 existing foundations. Free-text limits and international phone/address support
 need explicit agreement. This review does not change the current country/address
 scope or claim browser testing.
+
+## Deferred UI cleanup — 2026-10-12
+
+- Align certificate-description input validation with the existing backend
+  2,000-character limit. This mismatch predates the season-role branch: the
+  previous payload validator already enforced this limit for `inne`, while the
+  previous form had no maximum. Test the boundary and show feedback at the field.
+- Omit descriptions for unselected or unavailable certificates from the submitted
+  payload. Retaining a description after unchecking its certificate already existed
+  in the previous form. The new season-catalogue normalization also removes
+  unavailable selections without pruning their descriptions, extending that
+  existing cleanup gap to catalogue/Turnus changes. Test both cases and preserve
+  descriptions for certificates that remain selected and available.
+
+These are deferred UI cleanup tasks, not blockers for the season-role feature.
+No UI behavior is changed by this note.
