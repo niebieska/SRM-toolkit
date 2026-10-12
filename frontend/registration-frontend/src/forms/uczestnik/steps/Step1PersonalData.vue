@@ -243,7 +243,7 @@ const turnusError = ref(null)
 
 onMounted(async () => {
   try {
-    turnusy.value = await fetchTurnusy()
+    turnusy.value = await fetchTurnusy('PARTICIPANT')
   } catch (e) {
     turnusError.value = 'Nie udało się załadować listy turnusów. Spróbuj odświeżyć stronę.'
   } finally {
