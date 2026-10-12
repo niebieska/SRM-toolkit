@@ -101,7 +101,7 @@ class StaffRegistrationServiceTest {
         Turnus selectedTurnus = turnus();
         when(turnusProvider.getByCode("ZAGLE26T1")).thenReturn(selectedTurnus);
         org.mockito.Mockito.doThrow(new pl.srm.registrationapi.registration.exception.RegistrationException("INVALID_REQUEST", "Missing contact"))
-                .when(validationService).validatePayload(eq("{}"), eq(context), eq(pl.srm.registrationapi.registration.model.RegistrationType.STAFF));
+                .when(validationService).validatePayload(eq("{}"), eq(context), eq(pl.srm.registrationapi.registration.model.RegistrationType.STAFF), any());
         org.junit.jupiter.api.Assertions.assertThrows(pl.srm.registrationapi.registration.exception.RegistrationException.class,
                 () -> service.register("{}"));
         org.mockito.Mockito.verifyNoInteractions(persistenceService, notificationService);
