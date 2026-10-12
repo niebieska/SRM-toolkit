@@ -933,3 +933,30 @@ Moved project plans, progress notes and assessments into `docs/`. The root READM
   age/function rules, Back/Next, Turnus switching and Biuro details) are recorded
   in [Season staff roles](Season-staff-roles.md) for final verification after all
   three phases, as requested; they are not phase 1 commit blockers.
+
+## 2026-10-12 — Winter Turnus staffing requirements, phase 2
+
+- Season staff roles phase 1 merged as PR #34 (`d7225c1`), including import cleanup.
+- Branch `feature/turnus-staff-requirements`: targets stored as a JSON list in the
+  existing Biuro Turnus row; Flyway V4 initializes existing rows with `[]`.
+- Winter categories are file-defined. Animator combines regular animators and
+  candidates; leading priest is separate; other priest functions stay in Ksiądz.
+  Separate ski/snowboard instructor targets. Summer requirements remain deferred.
+- Definition editor adds “Wymagana kadra”; targets save with the existing version
+  and transaction. Zero removes a target. No acceptance restrictions, capacity
+  coupling or automatic switch changes. Registration does not receive targets.
+- Following UI feedback, staffing targets use a compact vertical list in a
+  right-column panel matching Parameters, with a total in the heading. The
+  collapsing variant was rejected and removed. Biuro tests/build pass.
+- Details, configuration requirements and final manual checklist:
+  [Turnus staffing requirements](Turnus-staff-requirements.md).
+- Automated verification passed: 228 backend tests executed successfully, ten
+  optional MariaDB cases skipped; seven Biuro and five Registration frontend
+  test files pass, both production builds pass, and diff checks are clean.
+  Saved Vue editor checks cover target edits, initial category load, preserving
+  switches/capacity and retry after lookup failure. Browser/MariaDB acceptance pending;
+  phase 3 staffing statistics not implemented. sth.java untouched.
+- Current phase 2 state is being committed as a checkpoint at the user's request.
+  The right-column staffing panel layout is not yet accepted and is parked for
+  later refinement. Separate Definition/Kadra sections were suggested but are
+  not agreed or implemented. Browser/MariaDB acceptance remains pending.

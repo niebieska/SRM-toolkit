@@ -36,3 +36,4 @@ These record findings at the time of review; check the active plans and WIP for 
 Source paths mentioned in these documents are relative to the repository root unless stated otherwise.
 
 - [Season staff roles — configuration and verification](Season-staff-roles.md)
+- [Turnus staffing requirements](Turnus-staff-requirements.md) — phase 2 JSON targets, Winter grouping and final acceptance.
