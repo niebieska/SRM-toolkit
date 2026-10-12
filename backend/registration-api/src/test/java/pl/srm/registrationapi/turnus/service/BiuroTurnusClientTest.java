@@ -1,15 +1,27 @@
 package pl.srm.registrationapi.turnus.service;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import com.sun.net.httpserver.HttpServer;
+import jakarta.validation.Validation;
+import jakarta.validation.Validator;
+import jakarta.validation.ValidatorFactory;
+import java.net.InetSocketAddress;
+import java.nio.charset.StandardCharsets;
+import java.time.Duration;
+import java.util.Base64;
+import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.atomic.AtomicReference;
+import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import java.net.InetSocketAddress;
-import java.time.Duration;
-import java.util.Base64;
-import java.nio.charset.StandardCharsets;
-import java.util.concurrent.atomic.AtomicReference;
+import org.springframework.web.client.ResourceAccessException;
+import org.springframework.web.client.RestClientResponseException;
+import pl.srm.registrationapi.season.StaffCatalogueValidator;
+import pl.srm.registrationapi.season.TestStaffCatalogues;
+import pl.srm.registrationapi.turnus.validator.TurnusCatalogueValidator;
+
 import static org.junit.jupiter.api.Assertions.*;
 
 class BiuroTurnusClientTest {
@@ -23,14 +35,14 @@ class BiuroTurnusClientTest {
         try {
             var mapper = new ObjectMapper();
             var tree = mapper.readTree(json);
-            ((com.fasterxml.jackson.databind.node.ObjectNode) tree.get(0)).set("staffCatalogue",
-                    mapper.valueToTree(pl.srm.registrationapi.season.TestStaffCatalogues.load("summer")));
+            ((ObjectNode) tree.get(0)).set("staffCatalogue",
+                    mapper.valueToTree(TestStaffCatalogues.load("summer")));
             return mapper.writeValueAsString(tree);
         } catch (Exception exception) { throw new IllegalStateException(exception); }
     }
-    static final jakarta.validation.ValidatorFactory VALIDATORS = jakarta.validation.Validation.buildDefaultValidatorFactory();
-    final jakarta.validation.Validator validator = VALIDATORS.getValidator();
-    @org.junit.jupiter.api.AfterAll static void closeValidators() { VALIDATORS.close(); }
+    static final ValidatorFactory VALIDATORS = Validation.buildDefaultValidatorFactory();
+    final Validator validator = VALIDATORS.getValidator();
+    @AfterAll static void closeValidators() { VALIDATORS.close(); }
     HttpServer server;
     String body = VALID;
     int status = 200;
@@ -57,8 +69,8 @@ class BiuroTurnusClientTest {
 
     BiuroTurnusClient client(Duration timeout) {
         return new BiuroTurnusClient(new ObjectMapper().findAndRegisterModules(),
-                new pl.srm.registrationapi.turnus.validator.TurnusCatalogueValidator(),
-                new pl.srm.registrationapi.season.StaffCatalogueValidator(validator),
+                new TurnusCatalogueValidator(),
+                new StaffCatalogueValidator(validator),
                 "http://127.0.0.1:" + server.getAddress().getPort(), "reader", "test-secret",
                 Duration.ofSeconds(15), timeout);
     }
@@ -93,12 +105,12 @@ class BiuroTurnusClientTest {
 
     @Test void invalidStaffOptionsKeepThePreviousWholeCachedCatalogue() throws Exception {
         var mapper = new ObjectMapper();
-        var time = new java.util.concurrent.atomic.AtomicLong();
+        var time = new AtomicLong();
         var provider = new CachedTurnusProvider(client(Duration.ofSeconds(30)), Duration.ofHours(1), time::get);
         provider.refreshIfDue();
         var original = provider.getByCode("T1").staffCatalogue();
         var tree = mapper.readTree(VALID);
-        ((com.fasterxml.jackson.databind.node.ObjectNode) tree.get(0).path("staffCatalogue")).put("seasonType", "WINTER");
+        ((ObjectNode) tree.get(0).path("staffCatalogue")).put("seasonType", "WINTER");
         body = tree.toString();
         time.addAndGet(Duration.ofHours(1).toNanos());
         provider.refreshIfDue();
@@ -110,11 +122,11 @@ class BiuroTurnusClientTest {
         var mapper = new ObjectMapper();
         var client = client(Duration.ofSeconds(30));
         var tree = mapper.readTree(VALID);
-        ((com.fasterxml.jackson.databind.node.ObjectNode) tree.get(0)).remove("staffCatalogue");
+        ((ObjectNode) tree.get(0)).remove("staffCatalogue");
         body = tree.toString();
         assertThrows(IllegalArgumentException.class, client::fetch);
         tree = mapper.readTree(VALID);
-        ((com.fasterxml.jackson.databind.node.ObjectNode) tree.get(0).path("staffCatalogue").path("roles").get(0)).putNull("minorOnly");
+        ((ObjectNode) tree.get(0).path("staffCatalogue").path("roles").get(0)).putNull("minorOnly");
         body = tree.toString();
         assertThrows(IllegalArgumentException.class, client::fetch);
     }
@@ -124,15 +136,15 @@ class BiuroTurnusClientTest {
         for (int error : new int[]{401, 403, 500, 503}) {
             status = error;
             body = "[]";
-            assertThrows(org.springframework.web.client.RestClientResponseException.class, client::fetch);
+            assertThrows(RestClientResponseException.class, client::fetch);
         }
     }
 
     @Test void configuredReadTimeoutAndConnectionFailureAreSurfaced() {
         delay = 500;
         var client = client(Duration.ofMillis(50));
-        assertThrows(org.springframework.web.client.ResourceAccessException.class, client::fetch);
+        assertThrows(ResourceAccessException.class, client::fetch);
         server.stop(0);
-        assertThrows(org.springframework.web.client.ResourceAccessException.class, client::fetch);
+        assertThrows(ResourceAccessException.class, client::fetch);
     }
 }

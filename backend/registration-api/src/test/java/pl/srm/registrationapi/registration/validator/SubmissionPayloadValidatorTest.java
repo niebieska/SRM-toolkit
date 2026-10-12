@@ -8,16 +8,19 @@ import org.junit.jupiter.params.provider.ValueSource;
 import pl.srm.registrationapi.registration.exception.RegistrationException;
 import pl.srm.registrationapi.registration.model.RegistrationType;
 import pl.srm.registrationapi.registration.parser.RegistrationContext;
+import pl.srm.registrationapi.season.StaffCatalogue;
+import pl.srm.registrationapi.season.StaffRoleValidator;
+import pl.srm.registrationapi.season.TestStaffCatalogues;
 
 import static org.junit.jupiter.api.Assertions.*;
 
 class SubmissionPayloadValidatorTest {
     private final ObjectMapper mapper = new ObjectMapper();
-    private final SubmissionPayloadValidator validator = new SubmissionPayloadValidator(mapper, new pl.srm.registrationapi.season.StaffRoleValidator());
+    private final SubmissionPayloadValidator validator = new SubmissionPayloadValidator(mapper, new StaffRoleValidator());
     private final RegistrationContext adult = new RegistrationContext("T", "90010112349", "hash", false, false, true);
     private final RegistrationContext minor = new RegistrationContext("T", "10210112312", "hash", true, true, true);
 
-    private final pl.srm.registrationapi.season.StaffCatalogue summer = pl.srm.registrationapi.season.TestStaffCatalogues.load("summer");
+    private final StaffCatalogue summer = TestStaffCatalogues.load("summer");
 
     private ObjectNode payload(boolean isMinor) throws Exception {
         ObjectNode root = (ObjectNode) mapper.readTree("""

@@ -1,17 +1,23 @@
 package pl.srm.biuroapi.season;
 
+import jakarta.validation.Validation;
+import jakarta.validation.ValidatorFactory;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.io.TempDir;
 import org.springframework.core.io.DefaultResourceLoader;
 import pl.srm.biuroapi.turnus.TurnusDefinition.SeasonType;
 import tools.jackson.databind.ObjectMapper;
-import java.nio.file.Files;
-import java.nio.file.Path;
+import tools.jackson.databind.node.ArrayNode;
+import tools.jackson.databind.node.ObjectNode;
+
 import static org.junit.jupiter.api.Assertions.*;
 
 class SeasonStaffCatalogueTest {
-    static final jakarta.validation.ValidatorFactory FACTORY = jakarta.validation.Validation.buildDefaultValidatorFactory();
-    @org.junit.jupiter.api.AfterAll static void close() { FACTORY.close(); }
+    static final ValidatorFactory FACTORY = Validation.buildDefaultValidatorFactory();
+    @AfterAll static void close() { FACTORY.close(); }
     final ObjectMapper mapper = new ObjectMapper();
     final StaffCatalogueValidator validator = new StaffCatalogueValidator(FACTORY.getValidator());
     @TempDir Path directory;
@@ -60,8 +66,8 @@ class SeasonStaffCatalogueTest {
     @Test void incompleteOrContradictoryAgeRulesAreRejected() throws Exception {
         copyFiles();
         var path = directory.resolve("winter.json");
-        var root = (tools.jackson.databind.node.ObjectNode) mapper.readTree(Files.readString(path));
-        var role = (tools.jackson.databind.node.ObjectNode) root.path("roles").get(0);
+        var root = (ObjectNode) mapper.readTree(Files.readString(path));
+        var role = (ObjectNode) root.path("roles").get(0);
         role.put("minorOnly", true);
         Files.writeString(path, mapper.writeValueAsString(root));
         assertThrows(IllegalStateException.class, () -> load(directory.toUri().toString()));
@@ -73,8 +79,8 @@ class SeasonStaffCatalogueTest {
     @Test void duplicateRoleCodesAreRejected() throws Exception {
         copyFiles();
         var path = directory.resolve("winter.json");
-        var root = (tools.jackson.databind.node.ObjectNode) mapper.readTree(Files.readString(path));
-        var roles = (tools.jackson.databind.node.ArrayNode) root.path("roles");
+        var root = (ObjectNode) mapper.readTree(Files.readString(path));
+        var roles = (ArrayNode) root.path("roles");
         roles.add(roles.get(0).deepCopy());
         Files.writeString(path, mapper.writeValueAsString(root));
         assertThrows(IllegalStateException.class, () -> load(directory.toUri().toString()));

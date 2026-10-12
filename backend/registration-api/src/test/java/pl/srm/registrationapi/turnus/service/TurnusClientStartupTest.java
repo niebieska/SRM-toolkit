@@ -1,8 +1,12 @@
 package pl.srm.registrationapi.turnus.service;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import java.io.IOException;
+import java.io.UncheckedIOException;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
+import org.springframework.boot.convert.ApplicationConversionService;
 import org.springframework.boot.env.YamlPropertySourceLoader;
 import org.springframework.boot.test.context.runner.WebApplicationContextRunner;
 import org.springframework.context.annotation.Bean;
@@ -11,9 +15,9 @@ import org.springframework.context.annotation.Import;
 import org.springframework.context.support.PropertySourcesPlaceholderConfigurer;
 import org.springframework.core.env.StandardEnvironment;
 import org.springframework.core.io.ClassPathResource;
-
-import java.io.IOException;
-import java.io.UncheckedIOException;
+import org.springframework.validation.beanvalidation.LocalValidatorFactoryBean;
+import pl.srm.registrationapi.season.StaffCatalogueValidator;
+import pl.srm.registrationapi.turnus.validator.TurnusCatalogueValidator;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -63,16 +67,16 @@ class TurnusClientStartupTest {
     }
 
     @Configuration
-    @Import({BiuroTurnusClient.class, pl.srm.registrationapi.turnus.validator.TurnusCatalogueValidator.class, pl.srm.registrationapi.season.StaffCatalogueValidator.class})
+    @Import({BiuroTurnusClient.class, TurnusCatalogueValidator.class, StaffCatalogueValidator.class})
     static class StartupConfiguration {
-        @Bean org.springframework.validation.beanvalidation.LocalValidatorFactoryBean validator() {
-            return new org.springframework.validation.beanvalidation.LocalValidatorFactoryBean();
+        @Bean LocalValidatorFactoryBean validator() {
+            return new LocalValidatorFactoryBean();
         }
-        @Bean com.fasterxml.jackson.databind.ObjectMapper mapper() {
-            return new com.fasterxml.jackson.databind.ObjectMapper().findAndRegisterModules();
+        @Bean ObjectMapper mapper() {
+            return new ObjectMapper().findAndRegisterModules();
         }
-        @Bean static org.springframework.boot.convert.ApplicationConversionService conversionService() {
-            return new org.springframework.boot.convert.ApplicationConversionService();
+        @Bean static ApplicationConversionService conversionService() {
+            return new ApplicationConversionService();
         }
         @Bean
         static PropertySourcesPlaceholderConfigurer placeholders() {
