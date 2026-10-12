@@ -31,3 +31,5 @@ export const fetchTurnuses = (token) => request(token)
 export const fetchTurnus = (token, code) => request(token, `/${encodeURIComponent(code)}`)
 export const createTurnus = (token, payload) => request(token, '', 'POST', payload)
 export const updateTurnus = (token, code, payload) => request(token, `/${encodeURIComponent(code)}`, 'PATCH', payload)
+
+export const fetchStaffingCategories = (token, seasonType) => request(token, `/staffing-categories?seasonType=${encodeURIComponent(seasonType)}`)
