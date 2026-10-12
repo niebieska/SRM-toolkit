@@ -17,7 +17,8 @@ const columns = [
   { key: 'turnusName', label: 'Turnus' },
   { key: 'startDate', label: 'Termin' },
   { key: 'turnusLocation', label: 'Miejsce' },
-  { key: 'capacity', label: 'Liczba miejsc' },
+  { key: 'participantCapacity', label: 'Uczestnicy' },
+  { key: 'staffCapacity', label: 'Kadra' },
   { key: 'availability', label: 'Zapisy' },
 ]
 function toggleSort(key) {
@@ -29,8 +30,8 @@ function ariaSort(key) {
 }
 const filtered = computed(() => turnuses.value.filter(t => {
   const matches = matchesTurnusSearch(t, search.value)
-  return matches && (!state.value || (state.value === 'OPEN' ? t.active && t.registrationOpen
-    : state.value === 'CLOSED' ? t.active && !t.registrationOpen : !t.active))
+  return matches && (!state.value || (state.value === 'OPEN' ? t.active && (t.participantRegistrationOpen || t.staffRegistrationOpen)
+    : state.value === 'CLOSED' ? t.active && !t.participantRegistrationOpen && !t.staffRegistrationOpen : !t.active))
 }))
 const sorted = computed(() => sortTurnuses(filtered.value, sortKey.value, sortDirection.value))
 async function load() {
@@ -73,8 +74,11 @@ onMounted(load)
               </tr></thead>
               <tbody class="divide-y divide-slate-100"><tr v-for="t in sorted" :key="t.turnusCode" class="hover:bg-slate-50">
                 <td class="px-5 py-4"><RouterLink :to="`/turnusy/${encodeURIComponent(t.turnusCode)}`" class="font-semibold text-slate-900 hover:underline">{{ t.turnusName }}</RouterLink><div class="text-xs text-slate-500 mt-1">{{ t.turnusCode }} · {{ t.seasonType === 'WINTER' ? 'Zima' : 'Lato' }} {{ t.seasonYear }}</div></td>
-                <td class="px-5 py-4 whitespace-nowrap">{{ date(t.startDate) }} – {{ date(t.endDate) }}</td><td class="px-5 py-4">{{ t.turnusLocation }}</td><td class="px-5 py-4 whitespace-nowrap">{{ t.capacity }} osób</td>
-                <td class="px-5 py-4"><span class="inline-flex whitespace-nowrap rounded-full px-3 py-1 text-xs font-medium" :class="!t.active ? 'bg-slate-100 text-slate-500' : t.registrationOpen ? 'bg-emerald-50 text-emerald-800' : 'bg-amber-50 text-amber-800'">{{ !t.active ? 'Nieaktywny' : t.registrationOpen ? 'Otwarte' : 'Zamknięte' }}</span></td>
+                <td class="px-5 py-4 whitespace-nowrap">{{ date(t.startDate) }} – {{ date(t.endDate) }}</td><td class="px-5 py-4">{{ t.turnusLocation }}</td><td class="px-5 py-4 whitespace-nowrap">{{ t.participantCapacity }} osób</td><td class="px-5 py-4 whitespace-nowrap">{{ t.staffCapacity }} osób</td>
+                <td class="px-5 py-4 text-xs whitespace-nowrap">
+                  <span v-if="!t.active" class="text-slate-500">Nieaktywny</span>
+                  <template v-else><div :class="t.participantRegistrationOpen ? 'text-emerald-800' : 'text-amber-800'">Uczestnicy: {{ t.participantRegistrationOpen ? 'Otwarte' : 'Zamknięte' }}</div><div :class="t.staffRegistrationOpen ? 'text-emerald-800' : 'text-amber-800'">Kadra: {{ t.staffRegistrationOpen ? 'Otwarte' : 'Zamknięte' }}</div></template>
+                </td>
                 <td class="px-5 py-4"><RouterLink :to="`/turnusy/${encodeURIComponent(t.turnusCode)}`" class="inline-block rounded bg-slate-600 text-white px-3 py-1 hover:bg-slate-700" :aria-label="`Szczegóły turnusu ${t.turnusName}`">Szczegóły</RouterLink></td>
               </tr></tbody>
             </table>

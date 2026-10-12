@@ -12,11 +12,11 @@ const loading = ref(false), loaded = ref(false), saving = ref(false), conflict =
 let loadSequence = 0
 let createdTurnusCode = null
 const dirty = computed(() => loaded.value && JSON.stringify(form) !== original.value)
-const status = computed(() => !form.active ? 'Nieaktywny' : form.registrationOpen ? 'Zapisy otwarte' : 'Zapisy zamknięte')
+const status = computed(() => !form.active ? 'Nieaktywny' : 'Aktywny')
 function defaults() {
   return { turnusCode: '', turnusName: '', turnusDescription: '', turnusLocation: '', seasonType: 'SUMMER',
-    seasonYear: new Date().getFullYear(), startDate: '', endDate: '', minAge: 14, capacity: 50,
-    active: false, registrationOpen: false, version: null }
+    seasonYear: new Date().getFullYear(), startDate: '', endDate: '', minAge: 14, participantCapacity: 50, staffCapacity: 10,
+    active: false, participantRegistrationOpen: false, staffRegistrationOpen: false, version: null }
 }
 function apply(value) {
   Object.assign(form, defaults(), value, { turnusDescription: value.turnusDescription ?? '' })
@@ -120,13 +120,15 @@ async function save() {
               <section class="bg-white rounded-xl border border-slate-200 shadow-sm p-5 space-y-4">
                 <h3 class="font-semibold text-lg">Parametry</h3>
                 <label class="block text-sm font-medium">Minimalny wiek<input v-model.number="form.minAge" type="number" min="0" max="120" required class="mt-1 block w-full rounded-lg border border-slate-300 px-3 py-2" /></label>
-                <label class="block text-sm font-medium">Liczba miejsc<input v-model.number="form.capacity" type="number" min="1" max="2147483647" required class="mt-1 block w-full rounded-lg border border-slate-300 px-3 py-2" /></label>
+                <label class="block text-sm font-medium">Miejsca dla uczestników<input v-model.number="form.participantCapacity" type="number" min="1" max="2147483647" required class="mt-1 block w-full rounded-lg border border-slate-300 px-3 py-2" /></label>
+                <label class="block text-sm font-medium">Miejsca dla kadry<input v-model.number="form.staffCapacity" type="number" min="1" max="2147483647" required class="mt-1 block w-full rounded-lg border border-slate-300 px-3 py-2" /></label>
               </section>
               <section class="bg-white rounded-xl border border-slate-200 shadow-sm p-5 space-y-4">
                 <h3 class="font-semibold text-lg">Dostępność zapisów</h3>
                 <label class="flex gap-3 items-start cursor-pointer"><input v-model="form.active" type="checkbox" class="mt-1 h-4 w-4 accent-slate-800" /><span class="text-sm"><strong class="block">Turnus aktywny</strong><span class="text-slate-500">Wyłącz po zakończeniu sezonu. Definicja pozostaje w Biurze.</span></span></label>
-                <label class="flex gap-3 items-start cursor-pointer"><input v-model="form.registrationOpen" type="checkbox" class="mt-1 h-4 w-4 accent-slate-800" /><span class="text-sm"><strong class="block">Rejestracja otwarta</strong><span class="text-slate-500">Ręcznie otwórz lub zamknij przyjmowanie zgłoszeń.</span></span></label>
-                <p class="text-xs text-slate-500 border-t border-slate-100 pt-3">Turnus pojawi się w formularzu, gdy obie opcje są włączone. Zmiany mogą być widoczne po maksymalnie około godzinie.</p>
+                <label class="flex gap-3 items-start cursor-pointer"><input v-model="form.participantRegistrationOpen" type="checkbox" class="mt-1 h-4 w-4 accent-slate-800" /><span class="text-sm"><strong class="block">Zapisy uczestników otwarte</strong><span class="text-slate-500">Ręcznie otwórz lub zamknij przyjmowanie zgłoszeń.</span></span></label>
+                <label class="flex gap-3 items-start cursor-pointer"><input v-model="form.staffRegistrationOpen" type="checkbox" class="mt-1 h-4 w-4 accent-slate-800" /><span class="text-sm"><strong class="block">Zapisy kadry otwarte</strong><span class="text-slate-500">Ręcznie otwórz lub zamknij przyjmowanie zgłoszeń.</span></span></label>
+                <p class="text-xs text-slate-500 border-t border-slate-100 pt-3">Turnus pojawi się w odpowiednim formularzu, gdy jest aktywny i zapisy dla tego typu są otwarte. Zmiany mogą być widoczne po maksymalnie około godzinie.</p>
               </section>
             </div>
           </fieldset>
