@@ -280,7 +280,7 @@ const turnusError = ref(null)
 
 onMounted(async () => {
   try {
-    turnusy.value = await fetchTurnusy()
+    turnusy.value = await fetchTurnusy('STAFF')
   } catch (e) {
     turnusError.value = 'Nie udało się załadować listy turnusów. Spróbuj odświeżyć stronę.'
   } finally {

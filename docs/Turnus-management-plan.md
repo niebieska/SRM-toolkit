@@ -21,9 +21,12 @@ current endpoints, database configuration and remaining integration work.
 
 ## Required delivery
 
-- [ ] Biuro users can create and edit Turnusy: name, dates, participant capacity,
-  and whether registration is available. Exact opening/closing scheduling rules
-  need agreement before implementation.
+- [ ] Biuro users can create and edit Turnusy: name, dates, separate participant/staff
+  capacities (minimum 1), shared active flag and independent manual registration
+  switches. Existing staff capacities start at 10, editable per Turnus. Capacity
+  reductions below the corresponding accepted count are blocked; acceptance at
+  or beyond capacity remains enabled. No automatic closure. Acceptance-button
+  blocking is a later decision.
 - [ ] Use a stable Turnus code that does not change when its name or dates change.
 - [ ] biuro-api owns persistent Turnus definitions. registration-api retains
   ownership of registrations and per-Turnus/type counters.

@@ -1,5 +1,7 @@
 package pl.srm.registrationapi.turnus.service;
 
+import pl.srm.registrationapi.registration.model.RegistrationType;
+
 import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.annotation.PostConstruct;
 import org.springframework.core.io.ClassPathResource;
@@ -29,10 +31,14 @@ public class StubTurnusProvider implements TurnusProvider {
 
     @Override
     public List<Turnus> getAvailableTurnuses() {
-        return cache.stream()
-                .filter(Turnus::active)
-                .filter(Turnus::registrationOpen)
-                .toList();
+        return getAvailableTurnuses(RegistrationType.PARTICIPANT);
+    }
+
+    @Override
+    public List<Turnus> getAvailableTurnuses(RegistrationType type) {
+        return cache.stream().filter(Turnus::active)
+                .filter(t -> type == RegistrationType.STAFF
+                        ? t.staffRegistrationOpen() : t.participantRegistrationOpen()).toList();
     }
 
     @Override

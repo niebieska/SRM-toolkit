@@ -31,6 +31,56 @@ class RegistrationApiClientTest {
     }
 
     @Test
+    void acceptedCountsUseServiceCredentialsAndPreserveIndependentCounts() {
+        server.expect(requestTo("http://registration-api:8080/api/registrations/accepted-counts?turnusCode=T1"))
+                .andExpect(header(HttpHeaders.AUTHORIZATION, credentials))
+                .andRespond(withSuccess("{\"participants\":42,\"staff\":8}", MediaType.APPLICATION_JSON));
+        var counts = client.fetchAcceptedCounts("T1");
+        assertEquals(42L, counts.participants());
+        assertEquals(8L, counts.staff());
+        server.verify();
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"null", "{}", "{\"participants\":42}", "{\"participants\":-1,\"staff\":2}", "not-json"})
+    void missingInvalidOrNegativeCountsCannotAuthorizeCapacityReduction(String body) {
+        server.expect(requestTo("http://registration-api:8080/api/registrations/accepted-counts?turnusCode=T1"))
+                .andRespond(withSuccess(body, MediaType.APPLICATION_JSON));
+        var error = assertThrows(ResponseStatusException.class, () -> client.fetchAcceptedCounts("T1"));
+        assertEquals(HttpStatus.BAD_GATEWAY, error.getStatusCode());
+        assertFalse(error.getReason().contains(body));
+        server.verify();
+    }
+
+    @Test
+    void unavailableCountsCannotAuthorizeCapacityReduction() {
+        server.expect(requestTo("http://registration-api:8080/api/registrations/accepted-counts?turnusCode=T1"))
+                .andRespond(withException(new java.net.SocketTimeoutException("timed out")));
+        assertEquals(HttpStatus.BAD_GATEWAY,
+                assertThrows(ResponseStatusException.class, () -> client.fetchAcceptedCounts("T1")).getStatusCode());
+        server.verify();
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"", "null", "not-json", "{}"})
+    void missingOrMalformedRegistrationListIsReportedAsUpstreamFailure(String body) {
+        server.expect(requestTo("http://registration-api:8080/api/registrations"))
+                .andRespond(withSuccess(body, MediaType.APPLICATION_JSON));
+        assertEquals(HttpStatus.BAD_GATEWAY,
+                assertThrows(ResponseStatusException.class, client::fetchRegistrations).getStatusCode());
+        server.verify();
+    }
+
+    @Test
+    void noContentRegistrationResponseIsAnUpstreamFailure() {
+        server.expect(requestTo("http://registration-api:8080/api/registrations"))
+                .andRespond(withStatus(HttpStatus.NO_CONTENT));
+        assertEquals(HttpStatus.BAD_GATEWAY,
+                assertThrows(ResponseStatusException.class, client::fetchRegistrations).getStatusCode());
+        server.verify();
+    }
+
+    @Test
     void authenticatesListDetailAndStatusRequests() {
         server.expect(requestTo("http://registration-api:8080/api/registrations"))
                 .andExpect(header(HttpHeaders.AUTHORIZATION, credentials))

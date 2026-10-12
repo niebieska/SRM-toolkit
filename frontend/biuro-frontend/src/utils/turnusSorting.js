@@ -1,6 +1,6 @@
 const collator = new Intl.Collator('pl', { numeric: true, sensitivity: 'base' })
 function value(turnus, key) {
-  if (key === 'availability') return !turnus.active ? 'Nieaktywny' : turnus.registrationOpen ? 'Otwarte' : 'Zamknięte'
+  if (key === 'availability') return !turnus.active ? 'Nieaktywny' : (turnus.participantRegistrationOpen || turnus.staffRegistrationOpen) ? 'Otwarte' : 'Zamknięte'
   return turnus[key] == null || turnus[key] === '' ? null : turnus[key]
 }
 export function sortTurnuses(turnuses, key = 'startDate', direction = 'asc') {

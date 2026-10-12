@@ -1,5 +1,7 @@
 package pl.srm.registrationapi.registration.service.submission;
 
+import pl.srm.registrationapi.registration.model.RegistrationType;
+
 import org.springframework.stereotype.Service;
 import pl.srm.registrationapi.registration.exception.RegistrationException;
 import pl.srm.registrationapi.registration.parser.RegistrationContext;
@@ -30,7 +32,7 @@ public class RegistrationValidationService {
     }
 
     public void validatePayload(String payload, RegistrationContext context,
-                                pl.srm.registrationapi.registration.model.RegistrationType type) {
+                                RegistrationType type) {
         payloadValidator.validate(payload, context, type);
     }
 

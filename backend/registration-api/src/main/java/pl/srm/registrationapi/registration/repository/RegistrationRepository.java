@@ -8,6 +8,8 @@ import java.util.Optional;
 
 public interface RegistrationRepository extends JpaRepository<Registration, Long> {
 
+    long countByTurnusCodeAndRegistrationTypeAndStatus(String turnusCode, String registrationType, String status);
+
     Optional<Registration> findByRegistrationCode(String code);
 
     boolean existsByTurnusCodeAndPeselHash(String turnusCode, String peselHash);

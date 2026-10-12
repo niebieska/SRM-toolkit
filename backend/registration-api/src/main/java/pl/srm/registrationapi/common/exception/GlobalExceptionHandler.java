@@ -24,6 +24,12 @@ public class GlobalExceptionHandler {
         return ResponseEntity.status(status).body(new ApiError(ex.getCode(), ex.getMessage()));
     }
 
+    @ExceptionHandler({org.springframework.web.method.annotation.MethodArgumentTypeMismatchException.class,
+            org.springframework.web.bind.MissingServletRequestParameterException.class})
+    public ResponseEntity<ApiError> handleInvalidParameter(Exception ex) {
+        return ResponseEntity.badRequest().body(new ApiError("INVALID_REQUEST", "Nieprawidłowy parametr żądania."));
+    }
+
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ApiError> handleGeneric(Exception ex) {
         return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)

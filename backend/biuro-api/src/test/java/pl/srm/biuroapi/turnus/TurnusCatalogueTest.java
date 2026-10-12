@@ -47,19 +47,19 @@ class TurnusCatalogueTest {
                 .addFilters(context.getBean("springSecurityFilterChain", Filter.class)).build();
         token = "Bearer " + jwt.generateToken("biuro");
     }
-    TurnusRequest request(String code, Long version, int capacity) {
+    TurnusRequest request(String code, Long version, int participantCapacity) {
         return new TurnusRequest(code, "Turnus testowy", "Opis", "Miejsce", TurnusDefinition.SeasonType.SUMMER,
-                2026, LocalDate.of(2026, 8, 1), LocalDate.of(2026, 8, 11), 14, capacity, true, true, version);
+                2026, LocalDate.of(2026, 8, 1), LocalDate.of(2026, 8, 11), 14, participantCapacity, 10, true, true, true, version);
     }
-    String payload(String code, int capacity) {
+    String payload(String code, int participantCapacity) {
         return """
                 {"turnusCode":"%s","turnusName":"Turnus testowy","turnusLocation":"Miejsce",
                  "seasonType":"SUMMER","seasonYear":2026,"startDate":"2026-08-01","endDate":"2026-08-11",
-                 "minAge":14,"capacity":%d,"active":true,"registrationOpen":true,"version":0}
-                """.formatted(code, capacity);
+                 "minAge":14,"participantCapacity":%d,"staffCapacity":10,"active":true,"participantRegistrationOpen":true,"staffRegistrationOpen":true,"version":0}
+                """.formatted(code, participantCapacity);
     }
     @Test void importsExistingCodesAndExactDatesCapacity() {
-        assertEquals(60, catalogue.get("ZAGLE26T1").capacity());
+        assertEquals(60, catalogue.get("ZAGLE26T1").participantCapacity());
         assertEquals(LocalDate.of(2026, 8, 22), catalogue.get("ZAGLE26T2").endDate());
     }
     @Test void createEditAndDuplicateCode() {
@@ -69,7 +69,7 @@ class TurnusCatalogueTest {
                 () -> catalogue.create(request("TEST1", null, 60)));
         var updated = catalogue.update("TEST1", request("TEST1", 0L, 70));
         assertEquals(1, updated.version());
-        assertEquals(70, catalogue.get("TEST1").capacity());
+        assertEquals(70, catalogue.get("TEST1").participantCapacity());
     }
     @Test void refusesCodeChangesMissingVersionAndStaleEdits() {
         catalogue.create(request("TEST1", null, 60));
@@ -79,7 +79,7 @@ class TurnusCatalogueTest {
         var error = assertThrows(org.springframework.web.server.ResponseStatusException.class,
                 () -> catalogue.update("TEST1", request("TEST1", 0L, 80)));
         assertEquals(409, error.getStatusCode().value());
-        assertEquals(70, catalogue.get("TEST1").capacity());
+        assertEquals(70, catalogue.get("TEST1").participantCapacity());
     }
     @Test void concurrentEditsCannotSilentlyOverwriteEachOther() throws Exception {
         catalogue.create(request("TEST1", null, 60));
@@ -129,10 +129,10 @@ class TurnusCatalogueTest {
                 .contentType("application/json").content(payload("TEST1", 70)))
                 .andExpect(status().isOk()).andExpect(jsonPath("$.version").value(1));
         mvc.perform(get("/api/turnuses/TEST1").header("Authorization", token))
-                .andExpect(status().isOk()).andExpect(jsonPath("$.capacity").value(70));
+                .andExpect(status().isOk()).andExpect(jsonPath("$.participantCapacity").value(70));
     }
     @Test void invalidRequestsNeverPersist() throws Exception {
-        for (String body : new String[]{payload("TEST1", 0), payload("TEST1", 60).replace("2026-08-11", "2026-07-01"),
+        for (String body : new String[]{payload("TEST1", 0), payload("TEST1", 60).replace("\"staffCapacity\":10", "\"staffCapacity\":0"), payload("TEST1", 60).replace("2026-08-11", "2026-07-01"),
                 payload("TEST1", 60).replace("SUMMER", "UNKNOWN"), "{bad json", payload("TEST1", 60).replace("true", "null")}) {
             mvc.perform(post("/api/turnuses").header("Authorization", token)
                     .contentType("application/json").content(body)).andExpect(status().isBadRequest());

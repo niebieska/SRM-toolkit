@@ -37,6 +37,23 @@ public class RegistrationApiClient {
         this.registrationApiUrl = registrationApiUrl;
     }
 
+    public record AcceptedCounts(Long participants, Long staff) {}
+
+    public AcceptedCounts fetchAcceptedCounts(String turnusCode) {
+        try {
+            AcceptedCounts counts = restClient.get()
+                    .uri(registrationApiUrl + "/api/registrations/accepted-counts?turnusCode={code}", turnusCode)
+                    .retrieve().body(AcceptedCounts.class);
+            if (counts == null || counts.participants() == null || counts.staff() == null
+                    || counts.participants() < 0 || counts.staff() < 0)
+                throw new IllegalStateException("Invalid accepted counts");
+            return counts;
+        } catch (Exception exception) {
+            throw new ResponseStatusException(HttpStatus.BAD_GATEWAY,
+                    "Nie można sprawdzić liczby przyjętych zgłoszeń. Pojemność turnusu nie została zmniejszona.");
+        }
+    }
+
     public List<RegistrationSummary> fetchRegistrations() {
         try {
             List<RegistrationSummary> body = restClient.get()
@@ -44,7 +61,8 @@ public class RegistrationApiClient {
                     .retrieve()
                     .body(new ParameterizedTypeReference<>() {
                     });
-            return body == null ? List.of() : body;
+            if (body == null) throw new IllegalStateException("Missing registration list response");
+            return body;
         } catch (Exception exception) {
             log.error("Nie udało się pobrać zgłoszeń z registration-api", exception);
             throw new ResponseStatusException(HttpStatus.BAD_GATEWAY, "Błąd komunikacji z registration-api");

@@ -5,7 +5,7 @@ const originalFetch = globalThis.fetch
 afterEach(() => { globalThis.fetch = originalFetch })
 
 test('catalogue GET uses operator Bearer credentials and preserves inactive entries', async () => {
-  const definitions = [{ turnusCode: 'T1', active: false, registrationOpen: false }]
+  const definitions = [{ turnusCode: 'T1', active: false, participantRegistrationOpen: false }]
   globalThis.fetch = async (url, options) => {
     assert.equal(url, 'http://localhost:8081/api/turnuses')
     assert.equal(options.headers.Authorization, 'Bearer operator-token')
@@ -22,11 +22,11 @@ test('detail codes are encoded, create uses POST and edit sends its version with
     return new Response(JSON.stringify({ turnusCode: 'T1', version: 4 }), { status: 200 })
   }
   await fetchTurnus('token', 'A/B')
-  await createTurnus('token', { turnusCode: 'T1', active: false, registrationOpen: false })
+  await createTurnus('token', { turnusCode: 'T1', active: false, participantRegistrationOpen: false })
   await updateTurnus('token', 'T1', { turnusCode: 'T1', version: 3, active: true })
   assert.ok(calls[0].url.endsWith('/A%2FB'))
   assert.equal(calls[1].method, 'POST')
-  assert.equal(JSON.parse(calls[1].body).registrationOpen, false)
+  assert.equal(JSON.parse(calls[1].body).participantRegistrationOpen, false)
   assert.equal(calls[2].method, 'PATCH')
   assert.equal(JSON.parse(calls[2].body).version, 3)
 })

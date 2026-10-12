@@ -21,10 +21,12 @@ public record Turnus(
         LocalDate endDate,
 
         Integer minAge,
-        Integer capacity,
+        Integer participantCapacity,
+        Integer staffCapacity,
 
         boolean active,
-        boolean registrationOpen
+        boolean participantRegistrationOpen,
+        boolean staffRegistrationOpen
 
 ) {}
 

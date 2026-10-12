@@ -12,8 +12,10 @@ public record TurnusRequest(
         @NotNull @Min(2000) @Max(9999) Integer seasonYear,
         @NotNull LocalDate startDate, @NotNull LocalDate endDate,
         @NotNull @Min(0) @Max(120) Integer minAge,
-        @NotNull @Min(1) Integer capacity,
-        @NotNull Boolean active, @NotNull Boolean registrationOpen,
+        @NotNull @Min(1) Integer participantCapacity,
+        @NotNull @Min(1) Integer staffCapacity,
+        @NotNull Boolean active, @NotNull Boolean participantRegistrationOpen,
+        @NotNull Boolean staffRegistrationOpen,
         @PositiveOrZero Long version) {
     @AssertTrue(message = "Data końca nie może poprzedzać daty początku.")
     public boolean isDateRangeValid() {

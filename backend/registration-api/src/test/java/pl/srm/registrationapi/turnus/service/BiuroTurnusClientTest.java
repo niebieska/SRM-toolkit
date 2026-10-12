@@ -16,8 +16,8 @@ class BiuroTurnusClientTest {
     static final String VALID = """
             [{"turnusCode":"T1","turnusName":"Turnus","turnusLocation":"Miejsce",
             "seasonType":"SUMMER","seasonYear":2026,"startDate":"2026-08-01",
-            "endDate":"2026-08-10","minAge":14,"capacity":60,"active":true,
-            "registrationOpen":true,"version":3}]
+            "endDate":"2026-08-10","minAge":14,"participantCapacity":60,"staffCapacity":10,"active":true,
+            "participantRegistrationOpen":true,"staffRegistrationOpen":true,"version":3}]
             """;
     HttpServer server;
     String body = VALID;
@@ -45,6 +45,7 @@ class BiuroTurnusClientTest {
 
     BiuroTurnusClient client(Duration timeout) {
         return new BiuroTurnusClient(new ObjectMapper().findAndRegisterModules(),
+                new pl.srm.registrationapi.turnus.validator.TurnusCatalogueValidator(),
                 "http://127.0.0.1:" + server.getAddress().getPort(), "reader", "test-secret",
                 Duration.ofSeconds(15), timeout);
     }
@@ -52,7 +53,8 @@ class BiuroTurnusClientTest {
     @Test void readsFullDefinitionAndUsesDedicatedBasicCredentials() throws Exception {
         var result = client(Duration.ofSeconds(30)).fetch();
         assertEquals(1, result.size());
-        assertEquals(60, result.getFirst().capacity());
+        assertEquals(60, result.getFirst().participantCapacity());
+        assertEquals(10, result.getFirst().staffCapacity());
         assertEquals("2026-08-01", result.getFirst().startDate().toString());
         assertEquals("Basic " + Base64.getEncoder().encodeToString("reader:test-secret".getBytes(StandardCharsets.UTF_8)),
                 authorization.get());
@@ -63,7 +65,11 @@ class BiuroTurnusClientTest {
         body = "[]";
         assertTrue(client.fetch().isEmpty());
         for (String invalid : new String[]{"null", "{}", "not-json", "[{}]",
-                VALID.replace("\"active\":true,", ""), VALID.replace("\"capacity\":60", "\"capacity\":0"),
+                VALID.replace("\"active\":true,", ""), VALID.replace("\"participantCapacity\":60", "\"participantCapacity\":0"),
+                VALID.replace("\"staffCapacity\":10", "\"staffCapacity\":0"),
+                VALID.replace("\"staffRegistrationOpen\":true,", ""),
+                VALID.replace("\"seasonYear\":2026", "\"seasonYear\":1999"),
+                VALID.replace("\"seasonYear\":2026", "\"seasonYear\":10000"),
                 VALID.replace("2026-08-10", "2026-07-01"),
                 "[" + VALID.trim().substring(1, VALID.trim().length() - 1) + ","
                         + VALID.trim().substring(1, VALID.trim().length() - 1) + "]"}) {

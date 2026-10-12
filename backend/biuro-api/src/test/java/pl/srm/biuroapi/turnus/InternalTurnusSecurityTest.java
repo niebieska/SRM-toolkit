@@ -33,7 +33,7 @@ class InternalTurnusSecurityTest {
 
     @BeforeEach void resetCatalogue() {
         jdbc.update("DELETE FROM turnus WHERE turnus_code LIKE 'TEST%'");
-        jdbc.update("UPDATE turnus SET active = true, registration_open = true");
+        jdbc.update("UPDATE turnus SET active = true, participant_registration_open = true");
     }
 
     String basic(String password) {
@@ -59,14 +59,14 @@ class InternalTurnusSecurityTest {
     }
 
     @Test void returnsFullCatalogueIncludingClosedAndArchivedDefinitions() throws Exception {
-        jdbc.update("UPDATE turnus SET registration_open = false WHERE turnus_code = 'ZAGLE26T1'");
+        jdbc.update("UPDATE turnus SET participant_registration_open = false WHERE turnus_code = 'ZAGLE26T1'");
         jdbc.update("UPDATE turnus SET active = false WHERE turnus_code = 'ZAGLE26T2'");
         var response = request("GET", "/internal/turnuses", basic("test-reader-password"));
         assertEquals(200, response.statusCode());
         assertEquals(2, (int) JsonPath.read(response.body(), "$.length()"));
-        assertEquals(false, JsonPath.read(response.body(), "$[0].registrationOpen"));
+        assertEquals(false, JsonPath.read(response.body(), "$[0].participantRegistrationOpen"));
         assertEquals(false, JsonPath.read(response.body(), "$[1].active"));
-        assertEquals(60, (int) JsonPath.read(response.body(), "$[0].capacity"));
+        assertEquals(60, (int) JsonPath.read(response.body(), "$[0].participantCapacity"));
         assertTrue(response.headers().firstValue("Set-Cookie").isEmpty());
     }
 

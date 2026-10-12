@@ -26,7 +26,8 @@ import static org.junit.jupiter.api.Assertions.*;
 @SpringBootTest(properties = {
         "spring.datasource.url=${TEST_DB_URL}", "spring.datasource.username=${TEST_DB_USER}",
         "spring.datasource.password=${TEST_DB_PASSWORD}", "registration.service.password=integration-only",
-        "spring.jpa.open-in-view=false"
+        "spring.jpa.open-in-view=false", "turnus.catalogue.password=integration-only",
+        "turnus.catalogue.url=http://127.0.0.1:9"
 })
 class RegistrationIntegrityTest {
     @Autowired RegistrationPersistenceService service;
@@ -43,6 +44,21 @@ class RegistrationIntegrityTest {
     private RegistrationContext context(String turnus, String person) {
         return new RegistrationContext(turnus, "unused", person, false, false, true);
     }
+
+    @Test
+    void acceptedCountsUsePersistedStatusesAndSeparateTypesAndTurnusy() {
+        service.saveParticipant(context("A", "one"), "{}");
+        service.saveParticipant(context("A", "two"), "{}");
+        service.saveStaff(context("A", "three"), "{}");
+        service.saveStaff(context("B", "four"), "{}");
+        jdbc.update("UPDATE registration SET status = 'ACCEPTED'");
+        jdbc.update("UPDATE registration SET status = 'WAITLIST' WHERE pesel_hash = 'two'");
+        assertEquals(1L, repository.countByTurnusCodeAndRegistrationTypeAndStatus("A", "PARTICIPANT", "ACCEPTED"));
+        assertEquals(1L, repository.countByTurnusCodeAndRegistrationTypeAndStatus("A", "STAFF", "ACCEPTED"));
+        jdbc.update("UPDATE registration SET status = 'REJECTED' WHERE pesel_hash = 'three'");
+        assertEquals(0L, repository.countByTurnusCodeAndRegistrationTypeAndStatus("A", "STAFF", "ACCEPTED"));
+    }
+    @Autowired pl.srm.registrationapi.registration.repository.RegistrationRepository repository;
 
     @Test
     void concurrentFirstUseAllocatesDistinctNumbers() throws Exception {

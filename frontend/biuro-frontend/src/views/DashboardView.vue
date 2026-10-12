@@ -1,8 +1,9 @@
 <script setup>
-import { computed, reactive, ref, watch } from 'vue'
+import { computed, onMounted, reactive, ref, watch } from 'vue'
 import { useAuthStore } from '../stores/auth'
 import RegistrationTable from '../components/RegistrationTable.vue'
 import BiuroHeader from '../components/BiuroHeader.vue'
+import { fetchTurnuses } from '../api/turnusApi'
 import { fetchTurnusStats } from '../api/registrationApi'
 
 const authStore = useAuthStore()
@@ -16,18 +17,19 @@ const filters = reactive({
   search: '',
 })
 
-const turnusOptions = [
-  {
-    code: 'ZAGLE26T1',
-    name: 'Żagle 2026 - Turnus I',
-    dates: '01.08.2026 - 11.08.2026',
-  },
-  {
-    code: 'ZAGLE26T2',
-    name: 'Żagle 2026 - Turnus II',
-    dates: '11.08.2026 - 21.08.2026',
-  },
-]
+const turnusOptions = ref([])
+const catalogueError = ref('')
+const statsError = ref('')
+const statsLoading = ref(false)
+let statsRequest = 0
+onMounted(async () => {
+  try { turnusOptions.value = await fetchTurnuses(authStore.token) }
+  catch (e) { catalogueError.value = e.message }
+})
+const visibleStats = computed(() => !stats.value ? [] : [
+  { type: 'PARTICIPANT', label: 'Uczestnicy', ...stats.value.participants },
+  { type: 'STAFF', label: 'Kadra', ...stats.value.staff },
+].filter(item => !filters.registrationType || filters.registrationType === item.type))
 
 const hasActiveFilters = computed(() =>
   Boolean(filters.status || filters.registrationType || filters.turnusCode || filters.search)
@@ -40,17 +42,20 @@ function clearFilters() {
   filters.search = ''
 }
 
-async function loadTurnusStats(turnusCode = filters.turnusCode) {
-  if (!turnusCode) {
-    stats.value = null
-    return
-  }
-
+async function loadTurnusStats() {
+  const turnusCode = filters.turnusCode
+  const request = ++statsRequest
+  stats.value = null
+  statsError.value = ''
+  statsLoading.value = Boolean(turnusCode)
+  if (!turnusCode) return
   try {
-    stats.value = await fetchTurnusStats(authStore.token, turnusCode)
+    const value = await fetchTurnusStats(authStore.token, turnusCode)
+    if (request === statsRequest) stats.value = value
   } catch (e) {
-    console.error('stats error:', e)
-    stats.value = null
+    if (request === statsRequest) statsError.value = e.message
+  } finally {
+    if (request === statsRequest) statsLoading.value = false
   }
 }
 
@@ -84,10 +89,10 @@ watch(
           <option value="">Wszystkie turnusy</option>
           <option
               v-for="turnus in turnusOptions"
-              :key="turnus.code"
-              :value="turnus.code"
+              :key="turnus.turnusCode"
+              :value="turnus.turnusCode"
           >
-            {{ turnus.name }}
+            {{ turnus.turnusName }}
           </option>
         </select>
          <div class="relative">
@@ -117,37 +122,30 @@ watch(
            </button>
          </div>
       </section>
-      <section  v-if="stats" class="bg-white rounded-xl shadow p-3">
+      <p v-if="catalogueError" role="alert" class="rounded bg-red-50 text-red-800 p-3">Nie udało się wczytać filtrów turnusów: {{ catalogueError }}</p>
+      <p v-if="statsError" role="alert" class="rounded bg-red-50 text-red-800 p-3">{{ statsError }}</p>
+      <p v-if="statsLoading" role="status" class="text-slate-500">Wczytywanie statystyk…</p>
+      <section v-for="item in visibleStats" :key="item.type" class="bg-white rounded-xl shadow p-3">
         <div class="flex flex-wrap items-center gap-6 text-sm">
-
           <div>
             <span class="text-slate-500">Turnus:</span>
-            <span class="font-medium ml-1">{{ stats.turnusCode }}</span>
+            <span class="font-medium ml-1">{{ stats.turnusCode }} · {{ item.label }}</span>
           </div>
-
           <div>
             <span class="text-slate-500">Zajęte miejsca:</span>
-            <span class="font-medium ml-1">
-        {{ stats.occupiedPlaces }}/{{ stats.occupiedPlaces + stats.availablePlaces }}
-      </span>
+            <span class="font-medium ml-1" :class="item.accepted >= item.capacity ? 'text-amber-800' : ''">{{ item.accepted }}/{{ item.capacity }}</span>
           </div>
-
           <div>
-            <span class="text-slate-500">Przyjęci uczestnicy:</span>
-            <span class="font-medium ml-1">{{ stats.accepted }}</span>
-            <span class="text-slate-400 ml-1">
-        (Kobiety: {{ stats.acceptedFemale }}, Mężczyźni: {{ stats.acceptedMale }})
-      </span>
+            <span class="text-slate-500">{{ item.type === 'PARTICIPANT' ? 'Przyjęci uczestnicy:' : 'Przyjęta kadra:' }}</span>
+            <span class="font-medium ml-1">{{ item.accepted }}</span>
+            <span class="text-slate-400 ml-1">(Kobiety: {{ item.acceptedFemale }}, Mężczyźni: {{ item.acceptedMale }})</span>
           </div>
-
           <div>
             <span class="text-slate-500">Lista rezerwowa:</span>
-            <span class="font-medium ml-1">{{ stats.waitlist }}</span>
-            <span class="text-slate-400 ml-1">
-        (Kobiety: {{ stats.waitlistFemale }}, Mężczyźni: {{ stats.waitlistMale }})
-      </span>
+            <span class="font-medium ml-1">{{ item.waitlist }}</span>
+            <span class="text-slate-400 ml-1">(Kobiety: {{ item.waitlistFemale }}, Mężczyźni: {{ item.waitlistMale }})</span>
           </div>
-
+          <div v-if="item.overCapacity" class="font-medium text-red-700">Ponad limit: {{ item.overCapacity }}</div>
         </div>
       </section>
       <RegistrationTable :filters="filters" @status-updated="loadTurnusStats"/>

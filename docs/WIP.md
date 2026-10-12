@@ -814,3 +814,80 @@ Moved project plans, progress notes and assessments into `docs/`. The root READM
   counting people assigned multiple roles needs agreement before implementation.
 - Added to [Turnus requirements](Turnus-management-plan.md). Backend/UI
   implementation remains pending; the current editor has no staffing section.
+
+## 2026-10-12 — Separate Turnus capacities and registration switches
+
+- Latest agreed scope supersedes the earlier acceptance-blocking plan: acceptance
+  stays enabled at/beyond capacity. Only capacity reductions below the corresponding
+  accepted count are blocked. Both limits are positive; migrated staff capacity is 10.
+- Implemented Biuro migration/catalogue/editor fields, independent public form
+  availability and submission checks, protected database-backed accepted counts,
+  and capacity-reduction validation preserving fields/version on failure.
+- Replaced hardcoded capacity/participant-only statistics with catalogue-based
+  participant/staff groups, status totals, free places and excess. Unknown genders
+  remain in totals. Dynamic Turnus filters and late-response protection added.
+- Added targeted capacity, statistics, client-failure, catalogue, validation and
+  security regressions. Detailed behavior, deployment compatibility and manual
+  scenarios: [Turnus capacity management](Turnus-capacity-management.md).
+- Verification complete: normal backend suite passed (155 executed, ten optional
+  MariaDB cases skipped); all ten optional integrity/migration/count cases then
+  passed against disposable MariaDB 11. The 15 catalogue/capacity cases also
+  passed on MariaDB, including concurrent edits. Both frontend test commands
+  (five Biuro files / three Registration files) and production builds passed.
+  Runtime Vue checks verified statistics type selection and late-response handling.
+- Review found and fixed MariaDB concurrent-edit errors (row lock before version
+  check), a duplicated public type query parameter, and invalid type queries
+  incorrectly reaching the generic 500 handler. Capacity/count/client failures
+  have targeted regressions; no live application database was modified.
+- Direct V1/V2 → V3 upgrade verification preserved a synthetic capacity 73,
+  inactive/closed flags and version 9, and initialized staff capacity 10.
+  Browser/deployed acceptance remains pending; synthetic scenarios are in the
+  linked capacity document. No commits made by Codex.
+
+## 2026-10-12 — Catalogue validation cleanup
+
+- Extracted catalogue definition checks into `TurnusCatalogueValidator`, following
+  the existing dedicated-validator pattern. Identity, season, dates, age and
+  capacities have separate validation methods. Availability rules for submissions
+  remain in the existing `TurnusValidator`.
+- Duplicate-code detection stays in `BiuroTurnusClient`; raw JSON boolean checks
+  stay before deserialization so missing flags cannot silently become false.
+- Added season-year range 2000–9999, matching Biuro's request validation. An invalid
+  entry still rejects the whole refresh and preserves the last successful cache.
+- Verification: 46 targeted validator/client/startup/cache/scheduling cases passed,
+  including 31 definition/boundary cases. `git diff --check` passed. No commit made.
+- UI feedback applied separately: statistics retain the earlier compact layout;
+  free places, NEW and REJECTED counts are not displayed. Backend statistics still
+  supply those values; accepted/capacity, gender breakdowns, waitlist and excess
+  warnings remain visible for the selected type(s).
+
+## 2026-10-12 — Post-commit transport regression review
+
+- Found a release-blocking regression in the timeout change: Biuro's configured
+  `SimpleClientHttpRequestFactory` rejects PATCH, so administrative status updates
+  returned 502 before reaching Registration. Previous client tests mocked the
+  transport and did not detect this.
+- Reproduced the failure against a real local HTTP server using the production
+  RestClient builder. Replaced the transport with `JdkClientHttpRequestFactory`,
+  preserving 15-second connect and 30-second read timeouts.
+- All 55 Biuro tests pass, including the real authenticated PATCH regression.
+  Correction/test are uncommitted pending review; no additional commit was made.
+- Remaining review notes: the list availability filter has a nested ternary worth
+  simplifying. Browser verification remains pending. Capacity reductions retain
+  the documented single-operator assumption, not atomic coordination with
+  simultaneous acceptance in Registration's separate database.
+
+## 2026-10-12 — Request/response failure handling follow-up
+
+- Missing or blank `turnusCode` on the protected accepted-count endpoint now
+  returns 400 / INVALID_REQUEST without querying the database. Missing required
+  query parameters are handled explicitly instead of falling through to 500.
+- Biuro no longer treats null/empty upstream registration responses as an empty
+  list. Empty bodies, JSON null, malformed/non-array JSON and 204 responses yield
+  an upstream error; a valid [] is still supported. This prevents misleading
+  zero statistics during response-contract failures.
+- Added HTTP/security and client regressions. Full backend suite passed:
+  193 executed successfully, ten optional MariaDB cases skipped; no failures.
+  The uncommitted PATCH transport correction and real HTTP regression are included.
+- No new commit made. Browser/deployed acceptance and previously recorded
+  follow-ups remain pending.

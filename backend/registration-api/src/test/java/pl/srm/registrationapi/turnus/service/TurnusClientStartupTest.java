@@ -63,7 +63,7 @@ class TurnusClientStartupTest {
     }
 
     @Configuration
-    @Import(BiuroTurnusClient.class)
+    @Import({BiuroTurnusClient.class, pl.srm.registrationapi.turnus.validator.TurnusCatalogueValidator.class})
     static class StartupConfiguration {
         @Bean com.fasterxml.jackson.databind.ObjectMapper mapper() {
             return new com.fasterxml.jackson.databind.ObjectMapper().findAndRegisterModules();
