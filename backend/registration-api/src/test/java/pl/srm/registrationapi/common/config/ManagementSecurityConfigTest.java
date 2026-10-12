@@ -187,6 +187,19 @@ class ManagementSecurityConfigTest {
     }
 
     @Test
+    void missingOrBlankTurnusCodeReturns400WithoutQueryingDatabase() throws Exception {
+        var repository = context.getBean(pl.srm.registrationapi.registration.repository.RegistrationRepository.class);
+        mvc.perform(get("/api/registrations/accepted-counts").header(HttpHeaders.AUTHORIZATION, credentials))
+                .andExpect(status().isBadRequest()).andExpect(jsonPath("$.code").value("INVALID_REQUEST"));
+        for (String code : new String[]{"", " "}) {
+            mvc.perform(get("/api/registrations/accepted-counts").param("turnusCode", code)
+                    .header(HttpHeaders.AUTHORIZATION, credentials))
+                    .andExpect(status().isBadRequest()).andExpect(jsonPath("$.code").value("INVALID_REQUEST"));
+        }
+        verifyNoInteractions(repository);
+    }
+
+    @Test
     void acceptedCountsRequireServiceCredentialsAndUseTypeSpecificDatabaseCounts() throws Exception {
         var repository = context.getBean(pl.srm.registrationapi.registration.repository.RegistrationRepository.class);
         when(repository.countByTurnusCodeAndRegistrationTypeAndStatus("T1", "PARTICIPANT", "ACCEPTED")).thenReturn(42L);
