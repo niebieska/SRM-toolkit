@@ -1,7 +1,8 @@
 # Biuro Turnus editor — first UI version
 
 Branch: `feature/turnus-editor`. The existing JWT-protected catalogue API is used;
-no backend, database, dependency or capacity-enforcement changes are included.
+This describes the first UI version. The subsequent capacity feature is documented
+in [Turnus capacity management](Turnus-capacity-management.md).
 
 ## Pages
 
@@ -10,8 +11,8 @@ no backend, database, dependency or capacity-enforcement changes are included.
 - `/turnusy/nowy`: creation page, initially inactive with registration closed.
 - `/turnusy/:code`: dedicated definition editor; code is read-only, edit version retained for optimistic locking.
 
-Only the working Definicja section is shown. Participant/staff pages, list exports,
-payments and separate capacities/switches remain future features. The layout
+Only the working Definicja section is shown. Participant/staff pages, list exports and payments remain future features.
+Separate capacities/switches are added by the subsequent capacity feature. The layout
 provides space for future Turnus sections without placing them in a modal.
 
 The editor sends all existing fields, validates required values/date ordering,
