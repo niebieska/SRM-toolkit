@@ -7,23 +7,20 @@ import pl.srm.registrationapi.registration.exception.RegistrationException;
 import pl.srm.registrationapi.registration.model.RegistrationType;
 import pl.srm.registrationapi.registration.parser.RegistrationContext;
 
-import java.util.Map;
 import java.util.Set;
 
 /** Validates the existing JSON contract without changing stored historical payloads. */
 @Component
 public class SubmissionPayloadValidator {
     private final ObjectMapper mapper;
-    // Current catalogue; replace with the shared season source in the Turnus package.
-    private static final Set<String> MINOR_ROLES = Set.of("kandydat_na_animatora", "sternik_z_opiekunem");
-    private static final Set<String> ADULT_ROLES = Set.of("animator", "ksiadz", "sternik", "kucharka", "ratownik", "kierowca");
-    private static final Map<String, Set<String>> SUBROLES = Map.of(
-            "animator", Set.of("kandydat_na_animatora", "animator", "animator_wychowawca"),
-            "ksiadz", Set.of("prowadzacy", "wychowawca", "sternik", "pomoc"));
+    private final pl.srm.registrationapi.season.StaffRoleValidator staffRoles;
 
-    public SubmissionPayloadValidator(ObjectMapper mapper) { this.mapper = mapper; }
+    public SubmissionPayloadValidator(ObjectMapper mapper, pl.srm.registrationapi.season.StaffRoleValidator staffRoles) {
+        this.mapper = mapper;
+        this.staffRoles = staffRoles;
+    }
 
-    public void validate(String payload, RegistrationContext context, RegistrationType type) {
+    public void validate(String payload, RegistrationContext context, RegistrationType type, pl.srm.registrationapi.season.StaffCatalogue catalogue) {
         final JsonNode root;
         try { root = mapper.readTree(payload); }
         catch (Exception ex) { throw invalid("Nieprawidłowy format zgłoszenia."); }
@@ -71,17 +68,8 @@ public class SubmissionPayloadValidator {
             if (value.equals("tak")) text(answer, "detail", 4000);
         }
         if (type == RegistrationType.STAFF) {
-            String role = text(root, "role", 50);
-            allowed(role, context.isMinor() ? MINOR_ROLES : ADULT_ROLES, "Rola kadry");
-            if (SUBROLES.containsKey(role)) allowed(text(root, "subrole", 50), SUBROLES.get(role), "Funkcja kadry");
-            else if (!root.path("subrole").asText("").isBlank()) throw invalid("Wybrana rola nie posiada funkcji.");
-            // Certificate selections are declarations, not mandatory qualifications.
-            if (!root.path("certificates").isObject() || !root.path("certificateDetails").isObject())
-                throw invalid("Nieprawidłowy format uprawnień.");
-            root.path("certificates").elements().forEachRemaining(value -> {
-                if (!value.isBoolean()) throw invalid("Nieprawidłowa deklaracja uprawnień.");
-            });
-            if (root.path("certificates").path("inne").asBoolean(false)) text(root.path("certificateDetails"), "inne", 2000);
+            text(root, "role", 50);
+            staffRoles.validate(root, context.isMinor(), catalogue);
         }
     }
 

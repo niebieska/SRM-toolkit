@@ -32,8 +32,8 @@ public class RegistrationValidationService {
     }
 
     public void validatePayload(String payload, RegistrationContext context,
-                                RegistrationType type) {
-        payloadValidator.validate(payload, context, type);
+                                RegistrationType type, Turnus turnus) {
+        payloadValidator.validate(payload, context, type, turnus.staffCatalogue());
     }
 
     private void validatePesel(RegistrationContext data) {

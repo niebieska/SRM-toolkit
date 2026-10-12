@@ -49,7 +49,7 @@ public class ParticipantRegistrationService implements RegistrationService {
         turnusValidator.validate(turnus, RegistrationType.PARTICIPANT);
         validationService.validateEligibility(data, turnus);
         validationService.validatePayload(payload, data,
-                RegistrationType.PARTICIPANT);
+                RegistrationType.PARTICIPANT, turnus);
 
         String code = persistenceService.saveParticipant(data, payload);
 
