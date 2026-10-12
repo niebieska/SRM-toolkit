@@ -47,7 +47,7 @@ public class ManagementSecurityConfig {
                         .dispatcherTypeMatchers(DispatcherType.ERROR).permitAll()
                         .requestMatchers(HttpMethod.POST,
                                 "/api/registrations/participant", "/api/registrations/staff").permitAll()
-                        .requestMatchers(HttpMethod.GET, "/api/turnuses", "/api/turnusy", "/actuator/health").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/turnuses", "/api/turnusy", "/api/turnuses/staff-options", "/api/turnusy/staff-options", "/actuator/health").permitAll()
                         .requestMatchers("/api/registrations", "/api/registrations/**")
                                 .hasRole("REGISTRATION_MANAGEMENT")
                         .anyRequest().denyAll())

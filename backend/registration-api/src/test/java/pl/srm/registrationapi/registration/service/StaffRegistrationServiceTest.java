@@ -1,10 +1,15 @@
 package pl.srm.registrationapi.registration.service;
 
+import java.time.LocalDate;
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
+import org.mockito.Mockito;
 import org.mockito.junit.jupiter.MockitoExtension;
+import pl.srm.registrationapi.registration.exception.RegistrationException;
+import pl.srm.registrationapi.registration.model.RegistrationType;
 import pl.srm.registrationapi.registration.parser.RegistrationContext;
 import pl.srm.registrationapi.registration.parser.RegistrationParser;
 import pl.srm.registrationapi.registration.service.submission.RegistrationNotificationService;
@@ -15,8 +20,6 @@ import pl.srm.registrationapi.registration.validator.TurnusValidator;
 import pl.srm.registrationapi.turnus.model.SeasonType;
 import pl.srm.registrationapi.turnus.model.Turnus;
 import pl.srm.registrationapi.turnus.service.TurnusProvider;
-
-import java.time.LocalDate;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.mockito.ArgumentMatchers.any;
@@ -100,11 +103,11 @@ class StaffRegistrationServiceTest {
         when(parser.parse(anyString())).thenReturn(context);
         Turnus selectedTurnus = turnus();
         when(turnusProvider.getByCode("ZAGLE26T1")).thenReturn(selectedTurnus);
-        org.mockito.Mockito.doThrow(new pl.srm.registrationapi.registration.exception.RegistrationException("INVALID_REQUEST", "Missing contact"))
-                .when(validationService).validatePayload(eq("{}"), eq(context), eq(pl.srm.registrationapi.registration.model.RegistrationType.STAFF));
-        org.junit.jupiter.api.Assertions.assertThrows(pl.srm.registrationapi.registration.exception.RegistrationException.class,
+        Mockito.doThrow(new RegistrationException("INVALID_REQUEST", "Missing contact"))
+                .when(validationService).validatePayload(eq("{}"), eq(context), eq(RegistrationType.STAFF), any());
+        Assertions.assertThrows(RegistrationException.class,
                 () -> service.register("{}"));
-        org.mockito.Mockito.verifyNoInteractions(persistenceService, notificationService);
+        Mockito.verifyNoInteractions(persistenceService, notificationService);
     }
 
     private Turnus turnus() {
@@ -130,13 +133,13 @@ class StaffRegistrationServiceTest {
         var data = new RegistrationContext("ZAGLE26T1", "90010112349", "hash", false, true, true);
         when(parser.parse("payload")).thenReturn(data);
         when(turnusProvider.getByCode("ZAGLE26T1")).thenThrow(
-                new pl.srm.registrationapi.registration.exception.RegistrationException(
+                new RegistrationException(
                         "TURNUS_CATALOGUE_UNAVAILABLE", "Catalogue unavailable"));
-        var error = org.junit.jupiter.api.Assertions.assertThrows(
-                pl.srm.registrationapi.registration.exception.RegistrationException.class,
+        var error = Assertions.assertThrows(
+                RegistrationException.class,
                 () -> service.register("payload"));
         assertEquals("TURNUS_CATALOGUE_UNAVAILABLE", error.getCode());
-        org.mockito.Mockito.verifyNoInteractions(persistenceService, notificationService);
+        Mockito.verifyNoInteractions(persistenceService, notificationService);
     }
 
 }

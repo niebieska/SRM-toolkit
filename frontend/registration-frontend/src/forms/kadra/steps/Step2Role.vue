@@ -2,10 +2,13 @@
   <div class="bg-white rounded-2xl shadow p-6 space-y-6">
     <h2 class="text-xl font-bold text-gray-800">KROK 2 – Wybierz rolę w kadrze</h2>
 
-    <!-- Minor info -->
-    <div v-if="!isAdult" class="bg-yellow-50 border border-yellow-200 rounded-lg p-3 text-sm text-yellow-800">
-      Osoby niepełnoletnie mogą pełnić następujące role: <strong>Kandydat na animatora</strong>, <strong>Sternik z
-      opiekunem</strong>.
+    <p v-if="loading" role="status" class="text-sm text-gray-600">Wczytywanie opcji kadry…</p>
+    <div v-if="loadError" role="alert" class="rounded-lg bg-red-50 p-3 text-sm text-red-700">
+      {{ loadError }}
+      <button type="button" class="ml-2 underline" :disabled="loading" @click="loadCatalogue">Spróbuj ponownie</button>
+    </div>
+    <div v-if="!isAdult && catalogue" class="bg-yellow-50 border border-yellow-200 rounded-lg p-3 text-sm text-yellow-800">
+      Dostępne role i funkcje uwzględniają niepełnoletność. Wybierz jedną z przedstawionych opcji.
     </div>
 
     <!-- Role dropdown -->
@@ -15,7 +18,7 @@
               :class="fieldClass('role')">
         <option value="">-- Wybierz rolę --</option>
         <option
-            v-for="role in availableRoles"
+            v-for="role in roleOptions"
             :key="role.value"
             :value="role.value"
         >
@@ -26,17 +29,17 @@
 
     <div v-if="currentRole?.subroles?.length">
       <label class="block text-sm font-medium text-gray-700 mb-1">
-        Funkcja *
+        Funkcja {{ requiresFunction ? '*' : '(opcjonalna)' }}
       </label>
 
       <select
           v-model="local.subrole"
           :class="fieldClass('subrole')"
       >
-        <option value="">-- Wybierz funkcję --</option>
+        <option value="">{{ requiresFunction ? '-- Wybierz funkcję --' : 'Bez dodatkowej funkcji' }}</option>
 
         <option
-            v-for="subrole in currentRole.subroles"
+            v-for="subrole in functionOptions"
             :key="subrole.value"
             :value="subrole.value"
         >
@@ -76,7 +79,8 @@
         ← Wstecz
       </button>
       <button @click="goNext"
-              class="bg-gray-800 text-white px-8 py-3 rounded-xl font-semibold hover:bg-gray-700 transition">
+              class="bg-gray-800 text-white px-8 py-3 rounded-xl font-semibold hover:bg-gray-700 transition disabled:opacity-50"
+              :disabled="loading || !catalogue">
         Dalej →
       </button>
     </div>
@@ -84,114 +88,96 @@
 </template>
 
 <script setup>
-import {ref, computed, watch} from 'vue'
-import {staffRoles as allRoles, certificatesByRole, resolveCertificateSource} from '../../../config/staffRoles.js'
+import { ref, computed, watch, onBeforeUnmount } from 'vue'
+import { availableRoles, availableFunctions, functionRequired, selectionError, certificatesFor } from '../../../config/staffRoles.js'
+import { fetchStaffCatalogue } from '../../../api/staffCatalogueApi.js'
 
 const props = defineProps({
-  formData: {type: Object, required: true},
-  isAdult: {type: Boolean, default: false},
+  formData: { type: Object, required: true },
+  isAdult: { type: Boolean, default: false },
 })
 const emit = defineEmits(['update:formData', 'prev', 'next'])
-const local = ref({
-  ...props.formData,
-  subrole: props.formData.subrole || '',
-  certificateDetails: {...(props.formData.certificateDetails || {})},
-})
+const local = ref({ ...props.formData, subrole: props.formData.subrole || '',
+  certificateDetails: { ...(props.formData.certificateDetails || {}) } })
+const selectedCertificates = ref(Object.keys(props.formData.certificates || {}).filter(key => props.formData.certificates[key]))
+const catalogue = ref(null)
+const loading = ref(false)
+const loadError = ref('')
 const roleError = ref('')
-const availableRoles = computed(() => {
-  return allRoles.filter(role => {
-    if (props.isAdult) {
-      return !role.minorOnly
-    }
-    return !role.adultOnly
-  })
-})
-const currentRole = computed(() => {
-  return allRoles.find(role => role.value === local.value.role)
-})
+let requestSequence = 0
+const roleOptions = computed(() => availableRoles(catalogue.value, props.isAdult))
+const currentRole = computed(() => roleOptions.value.find(role => role.value === local.value.role))
+const functionOptions = computed(() => availableFunctions(currentRole.value, props.isAdult))
+const requiresFunction = computed(() => functionRequired(currentRole.value, props.isAdult))
+const currentCertificates = computed(() => currentRole.value
+  ? certificatesFor(catalogue.value, local.value.role, local.value.subrole) : [])
 
-const selectedCertificates = ref(Object.keys(props.formData.certificates || {}).filter(k => props.formData.certificates[k]))
-const certificateSource = computed(() => resolveCertificateSource(local.value.role, local.value.subrole))
-// Reset certificates when role changes
-const currentCertificates = computed(() => {
-  const roleStillAvailable = availableRoles.value.some(
-      role => role.value === local.value.role
-  )
-
-  if (!roleStillAvailable) {
-    return []
+function clearCertificates() {
+  selectedCertificates.value = []
+  local.value.certificateDetails = {}
+}
+function normalizeSelection() {
+  if (!catalogue.value) return
+  if (!currentRole.value) {
+    local.value.role = ''
+    local.value.subrole = ''
+    clearCertificates()
+    return
   }
-
-  return certificatesByRole[certificateSource.value] || []
+  if (local.value.subrole && !functionOptions.value.some(option => option.value === local.value.subrole)) {
+    local.value.subrole = ''
+    clearCertificates()
+  }
+  const allowed = new Set(currentCertificates.value.map(option => option.id))
+  selectedCertificates.value = selectedCertificates.value.filter(id => allowed.has(id))
+}
+async function loadCatalogue() {
+  const sequence = ++requestSequence
+  loading.value = true
+  loadError.value = ''
+  catalogue.value = null
+  local.value.turnusCode = props.formData.turnusCode
+  try {
+    if (!props.formData.turnusCode) throw new Error('Wróć do poprzedniego kroku i wybierz turnus.')
+    const value = await fetchStaffCatalogue(props.formData.turnusCode)
+    if (sequence !== requestSequence) return
+    catalogue.value = value
+    normalizeSelection()
+  } catch (error) {
+    if (sequence === requestSequence) loadError.value = error.message
+  } finally {
+    if (sequence === requestSequence) loading.value = false
+  }
+}
+watch(() => props.formData.turnusCode, loadCatalogue, { immediate: true })
+watch(() => props.isAdult, normalizeSelection)
+watch(() => local.value.role, () => {
+  if (local.value.subrole && !functionOptions.value.some(option => option.value === local.value.subrole)) local.value.subrole = ''
 })
-
-
-watch(
-    availableRoles,
-    roles => {
-      const roleStillAvailable = roles.some(role => role.value === local.value.role)
-
-      if (!roleStillAvailable) {
-        local.value.role = ''
-        local.value.subrole = ''
-        selectedCertificates.value = []
-        local.value.certificateDetails = {}
-      }
-    },
-    { immediate: true }
-)
-watch(
-    currentRole,
-    role => {
-      if (!role || !role.subroles || !role.subroles.length) {
-        local.value.subrole = ''
-        return
-      }
-
-      const subroleStillAvailable = role.subroles.some(
-          subrole => subrole.value === local.value.subrole
-      )
-
-      if (!subroleStillAvailable) {
-        local.value.subrole = ''
-      }
-    },
-    { immediate: true }
-)
-watch(
-    () => [local.value.role, local.value.subrole],
-    () => {
-      selectedCertificates.value = []
-      local.value.certificateDetails = {}
-    }
-)
+watch(() => [local.value.role, local.value.subrole], clearCertificates)
+onBeforeUnmount(() => { requestSequence++ })
 function fieldClass() {
   return 'w-full border border-gray-300 rounded px-3 py-2 bg-white text-gray-900 focus:outline-none focus:ring-2 focus:ring-gray-400'
 }
+function formValue() {
+  const certificates = Object.fromEntries(selectedCertificates.value.map(id => [id, true]))
+  return { ...local.value, certificates }
+}
 function goPrev() {
-  emit('update:formData', {...local.value})
+  emit('update:formData', formValue())
   emit('prev')
 }
-
 function goNext() {
-  roleError.value = ''
-  if (!availableRoles.value.some(role => role.value === local.value.role)) {
-    roleError.value = 'Wybierz rolę w kadrze.'
+  if (loading.value || !catalogue.value) return
+  roleError.value = selectionError(catalogue.value, local.value.role, local.value.subrole, props.isAdult)
+  if (roleError.value) return
+  const missingDetails = currentCertificates.value.some(option => option.hasDetails
+    && selectedCertificates.value.includes(option.id) && !local.value.certificateDetails[option.id]?.trim())
+  if (missingDetails) {
+    roleError.value = 'Opisz wybrane uprawnienia.'
     return
   }
-  if (currentRole.value?.subroles?.length && !currentRole.value.subroles.some(role => role.value === local.value.subrole)) {
-    roleError.value = 'Wybierz funkcję.'
-    return
-  }
-  if (selectedCertificates.value.includes('inne') && !local.value.certificateDetails.inne?.trim()) {
-    roleError.value = 'Opisz inne uprawnienia.'
-    return
-  }
-  const certificates = {}
-  selectedCertificates.value.forEach(id => {
-    certificates[id] = true
-  })
-  emit('update:formData', {...local.value, certificates})
+  emit('update:formData', formValue())
   emit('next')
 }
 </script>

@@ -1,11 +1,47 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
-import { resolveCertificateSource } from '../../config/staffRoles.js'
+import fs from 'node:fs'
+import { availableRoles, availableFunctions, selectionError, resolveCertificateSource, certificatesFor } from '../../config/staffRoles.js'
+const load = season => JSON.parse(fs.readFileSync(new URL(`../../../../../backend/biuro-api/src/main/resources/staff-seasons/${season}.json`, import.meta.url)))
+const summer = load('summer'), winter = load('winter')
 
-test('priest functions use dedicated certificate lists before generic functions', () => {
-  assert.equal(resolveCertificateSource('ksiadz', 'sternik'), 'ksiadz_sternik')
-  assert.equal(resolveCertificateSource('ksiadz', 'prowadzacy'), 'ksiadz_prowadzacy')
-  assert.equal(resolveCertificateSource('ksiadz', 'pomoc'), 'ksiadz')
-  assert.equal(resolveCertificateSource('sternik', ''), 'sternik')
-  assert.equal(resolveCertificateSource('animator', 'animator_wychowawca'), 'animator')
+test('Summer preserves legacy role choices and dedicated certificate precedence', () => {
+  assert.deepEqual(availableRoles(summer, false).map(r => r.value), ['kandydat_na_animatora', 'sternik_z_opiekunem'])
+  assert.equal(resolveCertificateSource(summer, 'ksiadz', 'sternik'), 'ksiadz_sternik')
+  assert.equal(resolveCertificateSource(summer, 'ksiadz', 'prowadzacy'), 'ksiadz_prowadzacy')
+  assert.equal(resolveCertificateSource(summer, 'ksiadz', 'pomoc'), 'ksiadz')
+  assert.equal(resolveCertificateSource(summer, 'animator', 'animator_wychowawca'), 'animator')
+  assert.ok(selectionError(summer, 'animator', '', true))
+  assert.equal(selectionError(summer, 'animator', 'animator_wychowawca', true), '')
+})
+
+test('Winter minors can select only Animator candidate; adults can also select it', () => {
+  assert.deepEqual(availableRoles(winter, false).map(r => r.value), ['animator'])
+  const animator = winter.roles.find(r => r.value === 'animator')
+  assert.deepEqual(availableFunctions(animator, false).map(f => f.value), ['kandydat_na_animatora'])
+  for (const adult of [false, true]) assert.equal(selectionError(winter, 'animator', 'kandydat_na_animatora', adult), '')
+  assert.ok(selectionError(winter, 'animator', '', false))
+  assert.equal(selectionError(winter, 'animator', '', true), '')
+  assert.ok(selectionError(winter, 'instruktor', 'narty', false))
+})
+
+test('Winter instructor requires one discipline and priest permits at most one function', () => {
+  assert.ok(selectionError(winter, 'instruktor', '', true))
+  assert.equal(selectionError(winter, 'instruktor', 'narty', true), '')
+  assert.equal(selectionError(winter, 'instruktor', 'snowboard', true), '')
+  assert.ok(selectionError(winter, 'instruktor', 'narty,snowboard', true))
+  assert.equal(selectionError(winter, 'ksiadz', '', true), '')
+  for (const f of ['prowadzacy', 'pomoc', 'instruktor_narty', 'instruktor_snowboard']) {
+    assert.equal(selectionError(winter, 'ksiadz', f, true), '')
+  }
+  assert.ok(selectionError(winter, 'ksiadz', 'sternik', true))
+})
+
+test('changing season invalidates unavailable roles/functions and certificates follow the new catalogue', () => {
+  assert.ok(selectionError(winter, 'sternik', '', true))
+  assert.ok(selectionError(winter, 'animator', 'animator_wychowawca', true))
+  assert.deepEqual(certificatesFor(winter, 'instruktor', 'narty').map(c => c.id), ['inne'])
+  const changed = structuredClone(winter)
+  changed.certificatesByRole.instruktor.push({id:'narty_test',label:'Added in configuration',hasDetails:false})
+  assert.equal(certificatesFor(changed, 'instruktor', 'narty').length, 2)
 })

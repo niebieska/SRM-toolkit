@@ -1,7 +1,13 @@
 package pl.srm.registrationapi.common.config;
 
 import jakarta.servlet.Filter;
+import java.nio.charset.StandardCharsets;
+import java.time.LocalDate;
+import java.util.Base64;
+import java.util.List;
+import java.util.stream.Stream;
 import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -18,16 +24,18 @@ import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import org.springframework.web.context.support.AnnotationConfigWebApplicationContext;
 import org.springframework.web.servlet.config.annotation.EnableWebMvc;
 import pl.srm.registrationapi.common.exception.GlobalExceptionHandler;
-import pl.srm.registrationapi.registration.exception.RegistrationException;
+import pl.srm.registrationapi.registration.controller.AcceptedCountsController;
 import pl.srm.registrationapi.registration.controller.RegistrationController;
+import pl.srm.registrationapi.registration.exception.RegistrationException;
+import pl.srm.registrationapi.registration.repository.RegistrationRepository;
 import pl.srm.registrationapi.registration.service.management.RegistrationManagementService;
 import pl.srm.registrationapi.registration.service.submission.ParticipantRegistrationService;
 import pl.srm.registrationapi.registration.service.submission.StaffRegistrationService;
+import pl.srm.registrationapi.season.TestStaffCatalogues;
 import pl.srm.registrationapi.turnus.controller.TurnusController;
+import pl.srm.registrationapi.turnus.model.SeasonType;
+import pl.srm.registrationapi.turnus.model.Turnus;
 import pl.srm.registrationapi.turnus.service.TurnusProvider;
-
-import java.util.List;
-import java.util.stream.Stream;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
@@ -95,8 +103,8 @@ class ManagementSecurityConfigTest {
                 "Basic",
                 "Basic ",
                 "Basic not-valid-base64!",
-                "Basic " + java.util.Base64.getEncoder().encodeToString(
-                        "no-colon".getBytes(java.nio.charset.StandardCharsets.UTF_8)),
+                "Basic " + Base64.getEncoder().encodeToString(
+                        "no-colon".getBytes(StandardCharsets.UTF_8)),
                 "Basic " + HttpHeaders.encodeBasicAuth("unknown-service", "test-password", null),
                 "Bearer not-a-service-credential"
         );
@@ -163,6 +171,19 @@ class ManagementSecurityConfigTest {
     }
 
     @Test
+    void staffOptionsArePublicWithoutExposingManagementOperations() throws Exception {
+        var provider = context.getBean(TurnusProvider.class);
+        when(provider.getByCode("T1")).thenReturn(new Turnus("T1", "Turnus", null, "Place",
+                SeasonType.WINTER, 2027,
+                LocalDate.of(2027, 1, 17), LocalDate.of(2027, 1, 24),
+                14, 50, 10, true, true, true, TestStaffCatalogues.load("winter")));
+        mvc.perform(get("/api/turnusy/staff-options").param("turnusCode", "T1")).andExpect(status().isOk())
+                .andExpect(jsonPath("$.seasonType").value("WINTER"));
+        mvc.perform(get("/api/registrations")).andExpect(status().isUnauthorized());
+        verifyNoInteractions(management);
+    }
+
+    @Test
     void preservesPublicBrowserPreflight() throws Exception {
         mvc.perform(options("/api/registrations/participant")
                 .header(HttpHeaders.ORIGIN, "http://localhost:5173")
@@ -182,13 +203,13 @@ class ManagementSecurityConfigTest {
 
     @Test
     void refusesBlankServiceCredentials() {
-        org.junit.jupiter.api.Assertions.assertThrows(IllegalArgumentException.class,
+        Assertions.assertThrows(IllegalArgumentException.class,
                 () -> new ManagementSecurityConfig().serviceUsers("biuro-service", " "));
     }
 
     @Test
     void missingOrBlankTurnusCodeReturns400WithoutQueryingDatabase() throws Exception {
-        var repository = context.getBean(pl.srm.registrationapi.registration.repository.RegistrationRepository.class);
+        var repository = context.getBean(RegistrationRepository.class);
         mvc.perform(get("/api/registrations/accepted-counts").header(HttpHeaders.AUTHORIZATION, credentials))
                 .andExpect(status().isBadRequest()).andExpect(jsonPath("$.code").value("INVALID_REQUEST"));
         for (String code : new String[]{"", " "}) {
@@ -201,7 +222,7 @@ class ManagementSecurityConfigTest {
 
     @Test
     void acceptedCountsRequireServiceCredentialsAndUseTypeSpecificDatabaseCounts() throws Exception {
-        var repository = context.getBean(pl.srm.registrationapi.registration.repository.RegistrationRepository.class);
+        var repository = context.getBean(RegistrationRepository.class);
         when(repository.countByTurnusCodeAndRegistrationTypeAndStatus("T1", "PARTICIPANT", "ACCEPTED")).thenReturn(42L);
         when(repository.countByTurnusCodeAndRegistrationTypeAndStatus("T1", "STAFF", "ACCEPTED")).thenReturn(8L);
         mvc.perform(get("/api/registrations/accepted-counts").param("turnusCode", "T1")
@@ -212,12 +233,12 @@ class ManagementSecurityConfigTest {
     @Configuration
     @EnableWebMvc
     static class TestMvcConfig {
-        @Bean pl.srm.registrationapi.registration.repository.RegistrationRepository repository() {
-            return mock(pl.srm.registrationapi.registration.repository.RegistrationRepository.class);
+        @Bean RegistrationRepository repository() {
+            return mock(RegistrationRepository.class);
         }
-        @Bean pl.srm.registrationapi.registration.controller.AcceptedCountsController counts(
-                pl.srm.registrationapi.registration.repository.RegistrationRepository repository) {
-            return new pl.srm.registrationapi.registration.controller.AcceptedCountsController(repository);
+        @Bean AcceptedCountsController counts(
+                RegistrationRepository repository) {
+            return new AcceptedCountsController(repository);
         }
         @Bean GlobalExceptionHandler exceptionHandler() { return new GlobalExceptionHandler(); }
         @Bean ParticipantRegistrationService participantService() { return mock(ParticipantRegistrationService.class); }

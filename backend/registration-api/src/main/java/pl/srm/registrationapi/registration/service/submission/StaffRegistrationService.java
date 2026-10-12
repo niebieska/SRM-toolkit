@@ -51,7 +51,7 @@ public class StaffRegistrationService implements RegistrationService {
         turnusValidator.validate(turnus, RegistrationType.STAFF);
         validationService.validateEligibility(data, turnus);
         validationService.validatePayload(payload, data,
-                RegistrationType.STAFF);
+                RegistrationType.STAFF, turnus);
 
         String code = persistenceService.saveStaff(data, payload);
         LOGGER.info(

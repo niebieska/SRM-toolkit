@@ -67,6 +67,8 @@ class InternalTurnusSecurityTest {
         assertEquals(false, JsonPath.read(response.body(), "$[0].participantRegistrationOpen"));
         assertEquals(false, JsonPath.read(response.body(), "$[1].active"));
         assertEquals(60, (int) JsonPath.read(response.body(), "$[0].participantCapacity"));
+        assertEquals("SUMMER", JsonPath.read(response.body(), "$[0].staffCatalogue.seasonType"));
+        assertEquals(8, (int) JsonPath.read(response.body(), "$[0].staffCatalogue.roles.length()"));
         assertTrue(response.headers().firstValue("Set-Cookie").isEmpty());
     }
 

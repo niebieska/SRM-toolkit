@@ -16,6 +16,10 @@
 
     <dependencies>
         <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-validation</artifactId>
+        </dependency>
+        <dependency>
             <groupId>org.flywaydb</groupId>
             <artifactId>flyway-mysql</artifactId>
         </dependency>
@@ -60,6 +64,13 @@
     </dependencies>
 
     <build>
+        <testResources>
+            <testResource><directory>src/test/resources</directory></testResource>
+            <testResource>
+                <directory>../biuro-api/src/main/resources/staff-seasons</directory>
+                <targetPath>staff-season-fixtures</targetPath>
+            </testResource>
+        </testResources>
         <plugins>
             <plugin>
                 <groupId>org.springframework.boot</groupId>

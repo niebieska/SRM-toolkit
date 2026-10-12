@@ -36,3 +36,7 @@ spring:
   security:
     user:
       name: ignored
+
+staff:
+  catalogue:
+    location: ${STAFF_CATALOGUE_LOCATION:classpath:staff-seasons/}
