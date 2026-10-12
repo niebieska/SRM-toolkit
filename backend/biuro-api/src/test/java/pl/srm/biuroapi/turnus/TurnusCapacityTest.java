@@ -11,6 +11,7 @@ import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import org.springframework.web.context.WebApplicationContext;
 import pl.srm.biuroapi.auth.config.JwtConfig;
 import java.time.LocalDate;
+import java.util.List;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
@@ -50,13 +51,13 @@ class TurnusCapacityTest {
     }
     TurnusRequest request(String code, Long version, int participantCapacity) {
         return new TurnusRequest(code, "Turnus testowy", "Opis", "Miejsce", TurnusDefinition.SeasonType.SUMMER,
-                2026, LocalDate.of(2026, 8, 1), LocalDate.of(2026, 8, 11), 14, participantCapacity, 10, true, true, true, version);
+                2026, LocalDate.of(2026, 8, 1), LocalDate.of(2026, 8, 11), 14, participantCapacity, 10, true, true, true, version, List.of());
     }
     TurnusRequest capacities(String code, Long version, int participants, int staff, boolean participantOpen, boolean staffOpen) {
         var value = request(code, version, participants);
         return new TurnusRequest(value.turnusCode(), value.turnusName(), value.turnusDescription(), value.turnusLocation(),
                 value.seasonType(), value.seasonYear(), value.startDate(), value.endDate(), value.minAge(),
-                participants, staff, value.active(), participantOpen, staffOpen, version);
+                participants, staff, value.active(), participantOpen, staffOpen, version, List.of());
     }
     @Test void migratesLegacyCapacityAndInitialStaffCapacity() {
         var value = catalogue.get("ZAGLE26T1");

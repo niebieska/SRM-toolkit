@@ -11,6 +11,7 @@ import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import org.springframework.web.context.WebApplicationContext;
 import pl.srm.biuroapi.auth.config.JwtConfig;
 import java.time.LocalDate;
+import java.util.List;
 import java.util.concurrent.*;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
@@ -49,7 +50,7 @@ class TurnusCatalogueTest {
     }
     TurnusRequest request(String code, Long version, int participantCapacity) {
         return new TurnusRequest(code, "Turnus testowy", "Opis", "Miejsce", TurnusDefinition.SeasonType.SUMMER,
-                2026, LocalDate.of(2026, 8, 1), LocalDate.of(2026, 8, 11), 14, participantCapacity, 10, true, true, true, version);
+                2026, LocalDate.of(2026, 8, 1), LocalDate.of(2026, 8, 11), 14, participantCapacity, 10, true, true, true, version, List.of());
     }
     String payload(String code, int participantCapacity) {
         return """
