@@ -1,9 +1,10 @@
 package pl.srm.registrationapi.season;
 
 import jakarta.validation.Validator;
+import java.util.HashSet;
+import java.util.List;
 import org.springframework.stereotype.Component;
 import org.springframework.util.Assert;
-import java.util.List;
 
 @Component
 public class StaffCatalogueValidator {
@@ -19,6 +20,6 @@ public class StaffCatalogueValidator {
             unique(certificates.stream().map(StaffCatalogue.Certificate::id).toList());
     }
     private void unique(List<String> codes) {
-        Assert.isTrue(new java.util.HashSet<>(codes).size() == codes.size(), "Duplicate staff catalogue code");
+        Assert.isTrue(new HashSet<>(codes).size() == codes.size(), "Duplicate staff catalogue code");
     }
 }

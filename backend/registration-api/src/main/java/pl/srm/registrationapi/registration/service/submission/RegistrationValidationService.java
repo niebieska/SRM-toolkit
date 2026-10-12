@@ -1,23 +1,23 @@
 package pl.srm.registrationapi.registration.service.submission;
 
-import pl.srm.registrationapi.registration.model.RegistrationType;
-
 import org.springframework.stereotype.Service;
 import pl.srm.registrationapi.registration.exception.RegistrationException;
+import pl.srm.registrationapi.registration.model.RegistrationType;
 import pl.srm.registrationapi.registration.parser.RegistrationContext;
 import pl.srm.registrationapi.registration.repository.RegistrationRepository;
 import pl.srm.registrationapi.registration.util.PeselHelper;
+import pl.srm.registrationapi.registration.validator.SubmissionPayloadValidator;
 import pl.srm.registrationapi.turnus.model.Turnus;
 
 @Service
 public class RegistrationValidationService {
 
-   private final pl.srm.registrationapi.registration.validator.SubmissionPayloadValidator payloadValidator;
+   private final SubmissionPayloadValidator payloadValidator;
    private final PeselHelper peselHelper;
    private final RegistrationRepository repository;
 
     public RegistrationValidationService(PeselHelper peselHelper, RegistrationRepository repository,
-                                         pl.srm.registrationapi.registration.validator.SubmissionPayloadValidator payloadValidator) {
+                                         SubmissionPayloadValidator payloadValidator) {
         this.payloadValidator = payloadValidator;
         this.peselHelper = peselHelper;
         this.repository = repository;

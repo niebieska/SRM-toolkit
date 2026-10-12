@@ -2,25 +2,26 @@ package pl.srm.registrationapi.registration.validator;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import java.util.Set;
 import org.springframework.stereotype.Component;
 import pl.srm.registrationapi.registration.exception.RegistrationException;
 import pl.srm.registrationapi.registration.model.RegistrationType;
 import pl.srm.registrationapi.registration.parser.RegistrationContext;
-
-import java.util.Set;
+import pl.srm.registrationapi.season.StaffCatalogue;
+import pl.srm.registrationapi.season.StaffRoleValidator;
 
 /** Validates the existing JSON contract without changing stored historical payloads. */
 @Component
 public class SubmissionPayloadValidator {
     private final ObjectMapper mapper;
-    private final pl.srm.registrationapi.season.StaffRoleValidator staffRoles;
+    private final StaffRoleValidator staffRoles;
 
-    public SubmissionPayloadValidator(ObjectMapper mapper, pl.srm.registrationapi.season.StaffRoleValidator staffRoles) {
+    public SubmissionPayloadValidator(ObjectMapper mapper, StaffRoleValidator staffRoles) {
         this.mapper = mapper;
         this.staffRoles = staffRoles;
     }
 
-    public void validate(String payload, RegistrationContext context, RegistrationType type, pl.srm.registrationapi.season.StaffCatalogue catalogue) {
+    public void validate(String payload, RegistrationContext context, RegistrationType type, StaffCatalogue catalogue) {
         final JsonNode root;
         try { root = mapper.readTree(payload); }
         catch (Exception ex) { throw invalid("Nieprawidłowy format zgłoszenia."); }

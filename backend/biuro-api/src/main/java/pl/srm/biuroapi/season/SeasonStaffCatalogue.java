@@ -1,12 +1,13 @@
 package pl.srm.biuroapi.season;
 
+import java.util.EnumMap;
+import java.util.Locale;
+import java.util.Map;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.ResourceLoader;
 import org.springframework.stereotype.Component;
 import pl.srm.biuroapi.turnus.TurnusDefinition.SeasonType;
 import tools.jackson.databind.ObjectMapper;
-import java.util.EnumMap;
-import java.util.Map;
 
 /** File-backed role catalogue, loaded and validated once at startup. */
 @Component
@@ -17,7 +18,7 @@ public class SeasonStaffCatalogue {
         var loaded = new EnumMap<SeasonType, StaffCatalogue>(SeasonType.class);
         for (SeasonType season : SeasonType.values()) {
             var resource = resources.getResource(location + (location.endsWith("/") ? "" : "/")
-                    + season.name().toLowerCase(java.util.Locale.ROOT) + ".json");
+                    + season.name().toLowerCase(Locale.ROOT) + ".json");
             try (var input = resource.getInputStream()) {
                 StaffCatalogue catalogue = mapper.readValue(input, StaffCatalogue.class);
                 validator.validate(catalogue, season.name());

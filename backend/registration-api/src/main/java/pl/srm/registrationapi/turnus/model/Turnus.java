@@ -1,9 +1,9 @@
 package pl.srm.registrationapi.turnus.model;
 
-
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
-
+import com.fasterxml.jackson.annotation.JsonProperty;
 import java.time.LocalDate;
+import pl.srm.registrationapi.season.StaffCatalogue;
 
 @JsonIgnoreProperties(ignoreUnknown = true)
 public record Turnus(
@@ -27,8 +27,8 @@ public record Turnus(
         boolean active,
         boolean participantRegistrationOpen,
         boolean staffRegistrationOpen,
-        @com.fasterxml.jackson.annotation.JsonProperty(access = com.fasterxml.jackson.annotation.JsonProperty.Access.WRITE_ONLY)
-        pl.srm.registrationapi.season.StaffCatalogue staffCatalogue
+        @JsonProperty(access = JsonProperty.Access.WRITE_ONLY)
+        StaffCatalogue staffCatalogue
 
 ) {
     // Kept for existing isolated Turnus tests and the non-runtime JSON stub.
