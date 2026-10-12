@@ -18,8 +18,10 @@ public class BiuroTurnusClient {
     private final RestClient client;
     private final ObjectMapper mapper;
     private final TurnusCatalogueValidator validator;
+    private final pl.srm.registrationapi.season.StaffCatalogueValidator staffValidator;
 
     public BiuroTurnusClient(ObjectMapper mapper, TurnusCatalogueValidator validator,
+            pl.srm.registrationapi.season.StaffCatalogueValidator staffValidator,
             @Value("${turnus.catalogue.url}") String url,
             @Value("${turnus.catalogue.username}") String username,
             @Value("${turnus.catalogue.password}") String password,
@@ -36,6 +38,7 @@ public class BiuroTurnusClient {
                 .defaultHeaders(headers -> headers.setBasicAuth(username, password)).build();
         this.mapper = mapper;
         this.validator = validator;
+        this.staffValidator = staffValidator;
     }
 
     public List<Turnus> fetch() throws Exception {
@@ -50,6 +53,7 @@ public class BiuroTurnusClient {
                 throw new IllegalArgumentException("Missing Turnus availability flags");
             Turnus turnus = mapper.treeToValue(node, Turnus.class);
             validator.validate(turnus);
+            staffValidator.validate(turnus.staffCatalogue(), turnus.seasonType().name());
             if (!codes.add(turnus.turnusCode()))
                 throw new IllegalArgumentException("Duplicate Turnus code");
             result.add(turnus);

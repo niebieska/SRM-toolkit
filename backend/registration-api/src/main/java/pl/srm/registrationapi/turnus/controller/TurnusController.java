@@ -20,6 +20,17 @@ public class TurnusController {
         this.provider = provider;
     }
 
+    @GetMapping("/staff-options")
+    public pl.srm.registrationapi.season.StaffCatalogue staffOptions(
+            @org.springframework.web.bind.annotation.RequestParam String turnusCode) {
+        if (turnusCode.isBlank()) throw new pl.srm.registrationapi.registration.exception.RegistrationException(
+                "INVALID_REQUEST", "Podaj kod turnusu.");
+        var catalogue = provider.getByCode(turnusCode).staffCatalogue();
+        if (catalogue == null) throw new pl.srm.registrationapi.registration.exception.RegistrationException(
+                "TURNUS_CATALOGUE_UNAVAILABLE", "Opcje kadry są chwilowo niedostępne. Spróbuj ponownie później.");
+        return catalogue;
+    }
+
     @GetMapping
     public List<Turnus> getTurnuses(@org.springframework.web.bind.annotation.RequestParam(defaultValue = "PARTICIPANT")
             RegistrationType registrationType) {
