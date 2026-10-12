@@ -50,15 +50,20 @@ export async function fetchRegistrationDetail(token, code) {
 }
 
 export async function fetchTurnusStats(token, turnusCode) {
-  const response = await fetch(`http://localhost:8081/api/biuro/registrations/stats/${turnusCode}`, {
-    headers: {
-      Authorization: `Bearer ${token}`,
-    },
-  })
-
-  if (!response.ok) {
-    throw new Error(`HTTP error! status: ${response.status}`)
+  let response
+  try {
+    response = await fetch(`http://localhost:8081/api/biuro/registrations/stats/${encodeURIComponent(turnusCode)}`, {
+      headers: authHeaders(token),
+    })
+  } catch {
+    throw new Error('Nie można połączyć się z Biurem. Spróbuj ponownie.')
   }
-
-  return response.json()
+  const body = await response.json().catch(() => null)
+  if (!response.ok) {
+    throw new Error(body?.message || 'Nie udało się wczytać statystyk. Spróbuj ponownie.')
+  }
+  if (!body?.participants || !body?.staff) {
+    throw new Error('Biuro zwróciło nieprawidłowe statystyki. Spróbuj ponownie.')
+  }
+  return body
 }

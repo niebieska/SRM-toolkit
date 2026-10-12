@@ -3,73 +3,35 @@ package pl.srm.biuroapi.registration.service;
 import org.springframework.stereotype.Service;
 import pl.srm.biuroapi.registration.model.RegistrationSummary;
 import pl.srm.biuroapi.registration.model.TurnusRegistrationStats;
-
+import pl.srm.biuroapi.turnus.TurnusCatalogue;
 import java.util.List;
-import java.util.stream.Collectors;
 
 @Service
 public class RegistrationStatisticsService {
+    private final TurnusCatalogue catalogue;
+    public RegistrationStatisticsService(TurnusCatalogue catalogue) { this.catalogue = catalogue; }
 
-    private static final int TURNUS_CAPACITY = 50;
+    public TurnusRegistrationStats calculateForTurnus(String turnusCode, List<RegistrationSummary> registrations) {
+        var turnus = catalogue.get(turnusCode);
+        return new TurnusRegistrationStats(turnusCode,
+                calculateType(turnusCode, "PARTICIPANT", turnus.participantCapacity(), registrations),
+                calculateType(turnusCode, "STAFF", turnus.staffCapacity(), registrations));
+    }
 
-    public List<TurnusRegistrationStats> calculate(
+    private TurnusRegistrationStats.TypeStats calculateType(String code, String type, int capacity,
             List<RegistrationSummary> registrations) {
-
-        return registrations.stream()
-                .filter(r -> "PARTICIPANT".equalsIgnoreCase(r.registrationType()))
-                .collect(Collectors.groupingBy(RegistrationSummary::turnusCode))
-                .entrySet()
-                .stream()
-                .map(entry -> toStats(entry.getKey(), entry.getValue()))
-                .toList();
-    }
-    public TurnusRegistrationStats calculateForTurnus(
-            String turnusCode,
-            List<RegistrationSummary> registrations
-    ) {
-        List<RegistrationSummary> relevant = registrations.stream()
-                .filter(r -> "PARTICIPANT".equalsIgnoreCase(r.registrationType()))
-                .filter(r -> turnusCode.equalsIgnoreCase(r.turnusCode()))
-                .filter(r -> isRelevantStatus(r.status()))
-                .toList();
-
-        return toStats(turnusCode, relevant);
+        var relevant = registrations.stream().filter(r -> code.equals(r.turnusCode()))
+                .filter(r -> type.equalsIgnoreCase(r.registrationType())).toList();
+        long accepted = count(relevant, "ACCEPTED", null);
+        return new TurnusRegistrationStats.TypeStats(capacity, accepted,
+                Math.max(0, capacity - accepted), Math.max(0, accepted - capacity),
+                count(relevant, "NEW", null), count(relevant, "WAITLIST", null), count(relevant, "REJECTED", null),
+                count(relevant, "ACCEPTED", "male"), count(relevant, "ACCEPTED", "female"),
+                count(relevant, "WAITLIST", "male"), count(relevant, "WAITLIST", "female"));
     }
 
-    private boolean isRelevantStatus(String status) {
-        return "ACCEPTED".equalsIgnoreCase(status)
-                || "WAITLIST".equalsIgnoreCase(status);
-    }
-
-    private TurnusRegistrationStats toStats(String turnusCode, List<RegistrationSummary> registrations) {
-        int acceptedMale = count(registrations, "ACCEPTED", "male");
-        int acceptedFemale = count(registrations, "ACCEPTED", "female");
-
-        int waitlistMale = count(registrations, "WAITLIST", "male");
-        int waitlistFemale = count(registrations, "WAITLIST", "female");
-
-        int accepted = acceptedMale + acceptedFemale;
-        int waitlist = waitlistMale + waitlistFemale;
-
-        int occupiedPlaces = accepted;
-        int availablePlaces = Math.max(0, TURNUS_CAPACITY - occupiedPlaces);
-
-        return new TurnusRegistrationStats(
-                turnusCode,
-                occupiedPlaces,
-                availablePlaces,
-                accepted,
-                acceptedMale,
-                acceptedFemale,
-                waitlist,
-                waitlistMale,
-                waitlistFemale
-        );
-    }
-    private int count(List<RegistrationSummary> registrations, String status, String gender) {
-        return (int) registrations.stream()
-                .filter(r -> status.equalsIgnoreCase(r.status()))
-                .filter(r -> gender.equalsIgnoreCase(r.gender()))
-                .count();
+    private long count(List<RegistrationSummary> registrations, String status, String gender) {
+        return registrations.stream().filter(r -> status.equalsIgnoreCase(r.status()))
+                .filter(r -> gender == null || gender.equalsIgnoreCase(r.gender())).count();
     }
 }
