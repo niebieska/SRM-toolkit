@@ -1,6 +1,8 @@
 package pl.srm.biuroapi.turnus;
 
+import jakarta.validation.Valid;
 import jakarta.validation.constraints.*;
+import java.util.List;
 import java.time.LocalDate;
 
 public record TurnusRequest(
@@ -16,7 +18,7 @@ public record TurnusRequest(
         @NotNull @Min(1) Integer staffCapacity,
         @NotNull Boolean active, @NotNull Boolean participantRegistrationOpen,
         @NotNull Boolean staffRegistrationOpen,
-        @PositiveOrZero Long version) {
+        @PositiveOrZero Long version, List<@NotNull @Valid StaffRequirement> staffRequirements) {
     @AssertTrue(message = "Data końca nie może poprzedzać daty początku.")
     public boolean isDateRangeValid() {
         return startDate == null || endDate == null || !endDate.isBefore(startDate);

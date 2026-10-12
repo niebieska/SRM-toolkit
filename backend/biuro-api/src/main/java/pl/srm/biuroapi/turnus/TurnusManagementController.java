@@ -2,18 +2,33 @@ package pl.srm.biuroapi.turnus;
 
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.ResponseEntity;
+import org.springframework.http.converter.HttpMessageNotReadableException;
+import org.springframework.web.bind.MissingServletRequestParameterException;
+import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
+import pl.srm.biuroapi.common.api.ApiError;
 import org.springframework.web.bind.annotation.*;
 import java.util.List;
+import pl.srm.biuroapi.season.StaffingCategories;
 
 @RestController
 @RequestMapping("/api/turnuses")
 public class TurnusManagementController {
     private final TurnusCatalogue catalogue;
-    public TurnusManagementController(TurnusCatalogue catalogue) { this.catalogue = catalogue; }
-    @ExceptionHandler(org.springframework.http.converter.HttpMessageNotReadableException.class)
-    public org.springframework.http.ResponseEntity<pl.srm.biuroapi.common.api.ApiError> malformedRequest() {
-        return org.springframework.http.ResponseEntity.badRequest()
-                .body(new pl.srm.biuroapi.common.api.ApiError(400, "Nieprawidłowe dane turnusu."));
+    private final StaffingCategories categories;
+    public TurnusManagementController(TurnusCatalogue catalogue, StaffingCategories categories) {
+        this.catalogue = catalogue;
+        this.categories = categories;
+    }
+    @GetMapping("/staffing-categories")
+    public List<StaffingCategories.Category> staffingCategories(@RequestParam TurnusDefinition.SeasonType seasonType) {
+        return categories.get(seasonType);
+    }
+    @ExceptionHandler({HttpMessageNotReadableException.class, MethodArgumentTypeMismatchException.class,
+            MissingServletRequestParameterException.class})
+    public ResponseEntity<ApiError> malformedRequest() {
+        return ResponseEntity.badRequest()
+                .body(new ApiError(400, "Nieprawidłowe dane turnusu."));
     }
     @GetMapping public List<TurnusDefinition> list() { return catalogue.list(); }
     @GetMapping("/{code}") public TurnusDefinition get(@PathVariable String code) { return catalogue.get(code); }

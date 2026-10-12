@@ -1,0 +1,88 @@
+[
+  {
+    "code": "kucharka",
+    "label": "Kucharka",
+    "selections": [
+      {
+        "role": "kucharka",
+        "subrole": null
+      }
+    ]
+  },
+  {
+    "code": "kierowca",
+    "label": "Kierowca",
+    "selections": [
+      {
+        "role": "kierowca",
+        "subrole": null
+      }
+    ]
+  },
+  {
+    "code": "animator",
+    "label": "Animatorzy",
+    "selections": [
+      {
+        "role": "animator",
+        "subrole": null
+      },
+      {
+        "role": "animator",
+        "subrole": "kandydat_na_animatora"
+      }
+    ]
+  },
+  {
+    "code": "ksiadz_prowadzacy",
+    "label": "Ksiądz prowadzący",
+    "selections": [
+      {
+        "role": "ksiadz",
+        "subrole": "prowadzacy"
+      }
+    ]
+  },
+  {
+    "code": "ksiadz",
+    "label": "Ksiądz",
+    "selections": [
+      {
+        "role": "ksiadz",
+        "subrole": null
+      },
+      {
+        "role": "ksiadz",
+        "subrole": "pomoc"
+      },
+      {
+        "role": "ksiadz",
+        "subrole": "instruktor_narty"
+      },
+      {
+        "role": "ksiadz",
+        "subrole": "instruktor_snowboard"
+      }
+    ]
+  },
+  {
+    "code": "instruktor_narty",
+    "label": "Instruktor — narty",
+    "selections": [
+      {
+        "role": "instruktor",
+        "subrole": "narty"
+      }
+    ]
+  },
+  {
+    "code": "instruktor_snowboard",
+    "label": "Instruktor — snowboard",
+    "selections": [
+      {
+        "role": "instruktor",
+        "subrole": "snowboard"
+      }
+    ]
+  }
+]

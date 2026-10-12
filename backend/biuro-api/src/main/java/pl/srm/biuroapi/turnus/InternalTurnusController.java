@@ -22,6 +22,7 @@ public class InternalTurnusController {
     public List<ObjectNode> list() {
         return catalogue.list().stream().map(turnus -> {
             ObjectNode response = mapper.valueToTree(turnus);
+            response.remove("staffRequirements");
             response.set("staffCatalogue", mapper.valueToTree(seasons.get(turnus.seasonType())));
             return response;
         }).toList();
