@@ -1,0 +1,295 @@
+{
+  "seasonType": "SUMMER",
+  "roles": [
+    {
+      "value": "kandydat_na_animatora",
+      "label": "Kandydat na animatora",
+      "adultOnly": false,
+      "minorOnly": true,
+      "subroleRequired": false,
+      "subroles": []
+    },
+    {
+      "value": "sternik_z_opiekunem",
+      "label": "Sternik z opiekunem",
+      "adultOnly": false,
+      "minorOnly": true,
+      "subroleRequired": false,
+      "subroles": []
+    },
+    {
+      "value": "animator",
+      "label": "Animator",
+      "adultOnly": true,
+      "minorOnly": false,
+      "subroleRequired": true,
+      "subroles": [
+        {
+          "value": "kandydat_na_animatora",
+          "label": "Kandydat na animatora",
+          "adultOnly": true,
+          "minorOnly": false
+        },
+        {
+          "value": "animator",
+          "label": "Animator",
+          "adultOnly": true,
+          "minorOnly": false
+        },
+        {
+          "value": "animator_wychowawca",
+          "label": "Animator wychowawca",
+          "adultOnly": true,
+          "minorOnly": false
+        }
+      ]
+    },
+    {
+      "value": "ksiadz",
+      "label": "Ksiądz",
+      "adultOnly": true,
+      "minorOnly": false,
+      "subroleRequired": true,
+      "subroles": [
+        {
+          "value": "prowadzacy",
+          "label": "Prowadzący",
+          "adultOnly": true,
+          "minorOnly": false
+        },
+        {
+          "value": "wychowawca",
+          "label": "Wychowawca",
+          "adultOnly": true,
+          "minorOnly": false
+        },
+        {
+          "value": "sternik",
+          "label": "Sternik",
+          "adultOnly": true,
+          "minorOnly": false
+        },
+        {
+          "value": "pomoc",
+          "label": "Pomoc duszpasterska",
+          "adultOnly": true,
+          "minorOnly": false
+        }
+      ]
+    },
+    {
+      "value": "sternik",
+      "label": "Sternik",
+      "adultOnly": true,
+      "minorOnly": false,
+      "subroleRequired": false,
+      "subroles": []
+    },
+    {
+      "value": "kucharka",
+      "label": "Kucharka",
+      "adultOnly": true,
+      "minorOnly": false,
+      "subroleRequired": false,
+      "subroles": []
+    },
+    {
+      "value": "ratownik",
+      "label": "Ratownik",
+      "adultOnly": true,
+      "minorOnly": false,
+      "subroleRequired": false,
+      "subroles": []
+    },
+    {
+      "value": "kierowca",
+      "label": "Kierowca",
+      "adultOnly": true,
+      "minorOnly": false,
+      "subroleRequired": false,
+      "subroles": []
+    }
+  ],
+  "certificatesByRole": {
+    "kandydat_na_animatora": [
+      {
+        "id": "kurs_wychowawcy_w_trakcie",
+        "label": "Kurs wychowawcy wypoczynku (w trakcie)",
+        "hasDetails": false
+      },
+      {
+        "id": "inne",
+        "label": "Inne (jakie?)",
+        "hasDetails": true
+      }
+    ],
+    "sternik_z_opiekunem": [
+      {
+        "id": "patent_zeglarski",
+        "label": "Patent żeglarski",
+        "hasDetails": false
+      },
+      {
+        "id": "patent_motorowodny",
+        "label": "Patent motorowodny",
+        "hasDetails": false
+      },
+      {
+        "id": "inne",
+        "label": "Inne (jakie?)",
+        "hasDetails": true
+      }
+    ],
+    "animator": [
+      {
+        "id": "wychowawca_wypoczynku",
+        "label": "Wychowawca wypoczynku",
+        "hasDetails": false
+      },
+      {
+        "id": "kpp",
+        "label": "KPP – Kwalifikowana Pierwsza Pomoc",
+        "hasDetails": false
+      },
+      {
+        "id": "prawo_jazdy_b",
+        "label": "Prawo jazdy kat. B",
+        "hasDetails": false
+      },
+      {
+        "id": "patent_zeglarski",
+        "label": "Patent żeglarski",
+        "hasDetails": false
+      },
+      {
+        "id": "inne",
+        "label": "Inne (jakie?)",
+        "hasDetails": true
+      }
+    ],
+    "sternik": [
+      {
+        "id": "patent_zeglarski",
+        "label": "Patent żeglarski",
+        "hasDetails": false
+      },
+      {
+        "id": "kurs_wychowawcy",
+        "label": "Kurs wychowawcy wypoczynku",
+        "hasDetails": false
+      },
+      {
+        "id": "patent_motorowodny",
+        "label": "Patent motorowodny",
+        "hasDetails": false
+      },
+      {
+        "id": "inne",
+        "label": "Inne (jakie?)",
+        "hasDetails": true
+      }
+    ],
+    "ksiadz_sternik": [
+      {
+        "id": "patent_zeglarski",
+        "label": "Patent żeglarski",
+        "hasDetails": false
+      },
+      {
+        "id": "patent_motorowodny",
+        "label": "Patent motorowodny",
+        "hasDetails": false
+      },
+      {
+        "id": "inne",
+        "label": "Inne (jakie?)",
+        "hasDetails": true
+      }
+    ],
+    "ksiadz_prowadzacy": [
+      {
+        "id": "kierownik_wypoczynku",
+        "label": "Kierownik wypoczynku",
+        "hasDetails": false
+      },
+      {
+        "id": "inne",
+        "label": "Inne (jakie?)",
+        "hasDetails": true
+      }
+    ],
+    "ksiadz": [
+      {
+        "id": "kierownik_wypoczynku",
+        "label": "Kierownik wypoczynku",
+        "hasDetails": false
+      },
+      {
+        "id": "prawo_jazdy_b",
+        "label": "Prawo jazdy kat. B",
+        "hasDetails": false
+      },
+      {
+        "id": "kpp",
+        "label": "KPP – Kwalifikowana Pierwsza Pomoc",
+        "hasDetails": false
+      },
+      {
+        "id": "inne",
+        "label": "Inne (jakie?)",
+        "hasDetails": true
+      }
+    ],
+    "kucharka": [
+      {
+        "id": "ksiazeczka_sanepid",
+        "label": "Książeczka sanepidowska",
+        "hasDetails": false
+      },
+      {
+        "id": "inne",
+        "label": "Inne (jakie?)",
+        "hasDetails": true
+      }
+    ],
+    "ratownik": [
+      {
+        "id": "uprawnienia_ratownicze",
+        "label": "Uprawnienia ratownicze",
+        "hasDetails": false
+      },
+      {
+        "id": "kpp",
+        "label": "KPP – Kwalifikowana Pierwsza Pomoc",
+        "hasDetails": false
+      },
+      {
+        "id": "patent_motorowodny",
+        "label": "Patent motorowodny",
+        "hasDetails": false
+      },
+      {
+        "id": "patent_zeglarski",
+        "label": "Patent żeglarski",
+        "hasDetails": false
+      },
+      {
+        "id": "inne",
+        "label": "Inne (jakie?)",
+        "hasDetails": true
+      }
+    ],
+    "kierowca": [
+      {
+        "id": "prawo_jazdy_b",
+        "label": "Prawo jazdy kat. B",
+        "hasDetails": false
+      },
+      {
+        "id": "inne",
+        "label": "Inne (jakie?)",
+        "hasDetails": true
+      }
+    ]
+  }
+}

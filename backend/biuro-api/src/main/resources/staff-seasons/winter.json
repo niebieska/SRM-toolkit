@@ -1,0 +1,127 @@
+{
+  "seasonType": "WINTER",
+  "roles": [
+    {
+      "value": "kucharka",
+      "label": "Kucharka",
+      "adultOnly": true,
+      "minorOnly": false,
+      "subroleRequired": false,
+      "subroles": []
+    },
+    {
+      "value": "kierowca",
+      "label": "Kierowca",
+      "adultOnly": true,
+      "minorOnly": false,
+      "subroleRequired": false,
+      "subroles": []
+    },
+    {
+      "value": "animator",
+      "label": "Animator",
+      "adultOnly": true,
+      "minorOnly": false,
+      "subroleRequired": false,
+      "subroles": [
+        {
+          "value": "kandydat_na_animatora",
+          "label": "Kandydat na animatora",
+          "adultOnly": false,
+          "minorOnly": false
+        }
+      ]
+    },
+    {
+      "value": "ksiadz",
+      "label": "Ksiądz",
+      "adultOnly": true,
+      "minorOnly": false,
+      "subroleRequired": false,
+      "subroles": [
+        {
+          "value": "prowadzacy",
+          "label": "Prowadzący",
+          "adultOnly": true,
+          "minorOnly": false
+        },
+        {
+          "value": "pomoc",
+          "label": "Pomoc duszpasterska",
+          "adultOnly": true,
+          "minorOnly": false
+        },
+        {
+          "value": "instruktor_narty",
+          "label": "Instruktor narciarstwa",
+          "adultOnly": true,
+          "minorOnly": false
+        },
+        {
+          "value": "instruktor_snowboard",
+          "label": "Instruktor snowboardu",
+          "adultOnly": true,
+          "minorOnly": false
+        }
+      ]
+    },
+    {
+      "value": "instruktor",
+      "label": "Instruktor",
+      "adultOnly": true,
+      "minorOnly": false,
+      "subroleRequired": true,
+      "subroles": [
+        {
+          "value": "narty",
+          "label": "Narty",
+          "adultOnly": true,
+          "minorOnly": false
+        },
+        {
+          "value": "snowboard",
+          "label": "Snowboard",
+          "adultOnly": true,
+          "minorOnly": false
+        }
+      ]
+    }
+  ],
+  "certificatesByRole": {
+    "kucharka": [
+      {
+        "id": "inne",
+        "label": "Inne uprawnienia (jakie?)",
+        "hasDetails": true
+      }
+    ],
+    "kierowca": [
+      {
+        "id": "inne",
+        "label": "Inne uprawnienia (jakie?)",
+        "hasDetails": true
+      }
+    ],
+    "animator": [
+      {
+        "id": "inne",
+        "label": "Inne uprawnienia (jakie?)",
+        "hasDetails": true
+      }
+    ],
+    "ksiadz": [
+      {
+        "id": "inne",
+        "label": "Inne uprawnienia (jakie?)",
+        "hasDetails": true
+      }
+    ],
+    "instruktor": [
+      {
+        "id": "inne",
+        "label": "Inne uprawnienia (jakie?)",
+        "hasDetails": true
+      }
+    ]
+  }
+}
