@@ -27,7 +27,7 @@ class RegistrationNotificationServiceTest {
     Turnus turnus(String code, String description) {
         return new Turnus(code, "Narty z Jezusem — nowa nazwa", description, "Gliczarów Górny",
                 SeasonType.WINTER, 2027, LocalDate.of(2027, 1, 7), LocalDate.of(2027, 1, 14),
-                14, 50, true, true);
+                14, 50, 10, true, true, true);
     }
     RegistrationContext context(boolean minor) {
         return new RegistrationContext("NEW2027", "test", "hash", minor, true, true);
@@ -104,7 +104,8 @@ class RegistrationNotificationServiceTest {
         }
         assertEquals("REG-1", assertDoesNotThrow(() -> service.register(PAYLOAD)));
         verify(provider, times(1)).getByCode("NEW2027");
-        verify(validator).validate(same(selected));
+        verify(validator).validate(same(selected), eq(staff ? pl.srm.registrationapi.registration.model.RegistrationType.STAFF
+                : pl.srm.registrationapi.registration.model.RegistrationType.PARTICIPANT));
         if (staff) verify(persistence).saveStaff(data, PAYLOAD);
         else verify(persistence).saveParticipant(data, PAYLOAD);
         verifyNoMoreInteractions(persistence);

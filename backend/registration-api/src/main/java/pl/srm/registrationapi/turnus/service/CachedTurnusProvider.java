@@ -1,5 +1,7 @@
 package pl.srm.registrationapi.turnus.service;
 
+import pl.srm.registrationapi.registration.model.RegistrationType;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
@@ -62,7 +64,13 @@ public class CachedTurnusProvider implements TurnusProvider {
     }
 
     @Override public List<Turnus> getAvailableTurnuses() {
-        return snapshot().stream().filter(Turnus::active).filter(Turnus::registrationOpen).toList();
+        return getAvailableTurnuses(RegistrationType.PARTICIPANT);
+    }
+
+    @Override public List<Turnus> getAvailableTurnuses(RegistrationType type) {
+        return snapshot().stream().filter(Turnus::active)
+                .filter(t -> type == RegistrationType.STAFF
+                        ? t.staffRegistrationOpen() : t.participantRegistrationOpen()).toList();
     }
 
     @Override public Turnus getByCode(String code) {

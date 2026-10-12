@@ -1,5 +1,7 @@
 package pl.srm.registrationapi.turnus.controller;
 
+import pl.srm.registrationapi.registration.model.RegistrationType;
+
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -19,7 +21,8 @@ public class TurnusController {
     }
 
     @GetMapping
-    public List<Turnus> getTurnuses() {
-        return provider.getAvailableTurnuses();
+    public List<Turnus> getTurnuses(@org.springframework.web.bind.annotation.RequestParam(defaultValue = "PARTICIPANT")
+            RegistrationType registrationType) {
+        return provider.getAvailableTurnuses(registrationType);
     }
 }

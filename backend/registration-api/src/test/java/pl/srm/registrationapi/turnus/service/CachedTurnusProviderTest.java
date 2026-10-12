@@ -19,7 +19,7 @@ class CachedTurnusProviderTest {
 
     Turnus turnus(String code, boolean active, boolean open) {
         return new Turnus(code, "Turnus", null, "Miejsce", SeasonType.SUMMER, 2026,
-                LocalDate.of(2026, 8, 1), LocalDate.of(2026, 8, 10), 14, 60, active, open);
+                LocalDate.of(2026, 8, 1), LocalDate.of(2026, 8, 10), 14, 60, 10, active, open, open);
     }
 
     @Test void unavailableUntilFirstSuccessThenRecoversOnRetry() throws Exception {
@@ -63,9 +63,30 @@ class CachedTurnusProviderTest {
         assertEquals(List.of("OPEN"), provider.getAvailableTurnuses().stream().map(Turnus::turnusCode).toList());
         var validator = new TurnusValidator();
         assertEquals("REGISTRATION_CLOSED", assertThrows(RegistrationException.class,
-                () -> validator.validate(provider.getByCode("CLOSED"))).getCode());
+                () -> validator.validate(provider.getByCode("CLOSED"), pl.srm.registrationapi.registration.model.RegistrationType.PARTICIPANT)).getCode());
         assertEquals("TURNUS_INACTIVE", assertThrows(RegistrationException.class,
-                () -> validator.validate(provider.getByCode("ARCHIVED"))).getCode());
+                () -> validator.validate(provider.getByCode("ARCHIVED"), pl.srm.registrationapi.registration.model.RegistrationType.PARTICIPANT)).getCode());
+    }
+
+    @Test void participantAndStaffOptionsAndValidationUseIndependentSwitches() throws Exception {
+        var participant = turnus("PARTICIPANTS", true, true);
+        var staff = new Turnus("STAFF", "Turnus", null, "Miejsce", SeasonType.SUMMER, 2026,
+                LocalDate.of(2026, 8, 1), LocalDate.of(2026, 8, 10), 14, 60, 10, true, false, true);
+        participant = new Turnus(participant.turnusCode(), participant.turnusName(), null, participant.turnusLocation(),
+                participant.seasonType(), participant.seasonYear(), participant.startDate(), participant.endDate(),
+                14, 60, 10, true, true, false);
+        when(client.fetch()).thenReturn(List.of(participant, staff, turnus("ARCHIVED", false, true)));
+        provider.refreshIfDue();
+        assertEquals(List.of("PARTICIPANTS"), provider.getAvailableTurnuses(
+                pl.srm.registrationapi.registration.model.RegistrationType.PARTICIPANT).stream().map(Turnus::turnusCode).toList());
+        assertEquals(List.of("STAFF"), provider.getAvailableTurnuses(
+                pl.srm.registrationapi.registration.model.RegistrationType.STAFF).stream().map(Turnus::turnusCode).toList());
+        var validator = new TurnusValidator();
+        assertDoesNotThrow(() -> validator.validate(staff, pl.srm.registrationapi.registration.model.RegistrationType.STAFF));
+        assertEquals("REGISTRATION_CLOSED", assertThrows(RegistrationException.class,
+                () -> validator.validate(staff, pl.srm.registrationapi.registration.model.RegistrationType.PARTICIPANT)).getCode());
+        assertEquals("REGISTRATION_CLOSED", assertThrows(RegistrationException.class,
+                () -> validator.validate(provider.getByCode("PARTICIPANTS"), pl.srm.registrationapi.registration.model.RegistrationType.STAFF)).getCode());
     }
 
     @Test void successfulEmptyCatalogueIsAvailableAndDoesNotRetryEveryThirtySeconds() throws Exception {

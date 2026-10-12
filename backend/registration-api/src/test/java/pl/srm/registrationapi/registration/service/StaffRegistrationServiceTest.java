@@ -82,7 +82,7 @@ class StaffRegistrationServiceTest {
 
         assertEquals("REG-S-ZAGLE26T1-2", code);
 
-        verify(turnusValidator).validate(any());
+        verify(turnusValidator).validate(any(), any());
         verify(validationService).validateEligibility(same(context), any());
         verify(persistenceService).saveStaff(same(context), eq("{\"payload\":true}"));
 
@@ -118,8 +118,10 @@ class StaffRegistrationServiceTest {
                 LocalDate.of(2026, 8, 1),
                 LocalDate.of(2026, 8, 11),
                 14,
-                60,
+                60, 10,
                 true,
+                true
+        ,
                 true
         );
     }

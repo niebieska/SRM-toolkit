@@ -20,8 +20,9 @@ class TurnusControllerTest {
 
     @BeforeEach
     void setUp() {
-        when(provider.getAvailableTurnuses()).thenReturn(List.of());
-        mockMvc = MockMvcBuilders.standaloneSetup(new TurnusController(provider)).build();
+        when(provider.getAvailableTurnuses(pl.srm.registrationapi.registration.model.RegistrationType.PARTICIPANT)).thenReturn(List.of());
+        mockMvc = MockMvcBuilders.standaloneSetup(new TurnusController(provider))
+                .setControllerAdvice(new pl.srm.registrationapi.common.exception.GlobalExceptionHandler()).build();
     }
 
     @Test
@@ -37,8 +38,15 @@ class TurnusControllerTest {
     }
 
     @Test
+    void staffQueryUsesStaffCatalogueAndInvalidTypesAreBadRequests() throws Exception {
+        mockMvc.perform(get("/api/turnuses").param("registrationType", "STAFF")).andExpect(status().isOk());
+        org.mockito.Mockito.verify(provider).getAvailableTurnuses(pl.srm.registrationapi.registration.model.RegistrationType.STAFF);
+        mockMvc.perform(get("/api/turnuses").param("registrationType", "UNKNOWN")).andExpect(status().isBadRequest());
+    }
+
+    @Test
     void unavailableCatalogueReturns503WithPublicErrorContract() throws Exception {
-        when(provider.getAvailableTurnuses()).thenThrow(new pl.srm.registrationapi.registration.exception.RegistrationException(
+        when(provider.getAvailableTurnuses(pl.srm.registrationapi.registration.model.RegistrationType.PARTICIPANT)).thenThrow(new pl.srm.registrationapi.registration.exception.RegistrationException(
                 "TURNUS_CATALOGUE_UNAVAILABLE", "Lista turnusów jest chwilowo niedostępna."));
         mockMvc = MockMvcBuilders.standaloneSetup(new TurnusController(provider))
                 .setControllerAdvice(new pl.srm.registrationapi.common.exception.GlobalExceptionHandler()).build();

@@ -1,5 +1,7 @@
 package pl.srm.registrationapi.registration.service.submission;
 
+import pl.srm.registrationapi.registration.model.RegistrationType;
+
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
@@ -46,10 +48,10 @@ public class StaffRegistrationService implements RegistrationService {
 
         Turnus turnus = turnusProvider.getByCode(data.turnusCode());
 
-        turnusValidator.validate(turnus);
+        turnusValidator.validate(turnus, RegistrationType.STAFF);
         validationService.validateEligibility(data, turnus);
         validationService.validatePayload(payload, data,
-                pl.srm.registrationapi.registration.model.RegistrationType.STAFF);
+                RegistrationType.STAFF);
 
         String code = persistenceService.saveStaff(data, payload);
         LOGGER.info(
