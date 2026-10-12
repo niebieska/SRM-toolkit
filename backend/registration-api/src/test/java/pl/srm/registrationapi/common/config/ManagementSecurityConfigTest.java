@@ -163,6 +163,19 @@ class ManagementSecurityConfigTest {
     }
 
     @Test
+    void staffOptionsArePublicWithoutExposingManagementOperations() throws Exception {
+        var provider = context.getBean(TurnusProvider.class);
+        when(provider.getByCode("T1")).thenReturn(new pl.srm.registrationapi.turnus.model.Turnus("T1", "Turnus", null, "Place",
+                pl.srm.registrationapi.turnus.model.SeasonType.WINTER, 2027,
+                java.time.LocalDate.of(2027, 1, 17), java.time.LocalDate.of(2027, 1, 24),
+                14, 50, 10, true, true, true, pl.srm.registrationapi.season.TestStaffCatalogues.load("winter")));
+        mvc.perform(get("/api/turnusy/staff-options").param("turnusCode", "T1")).andExpect(status().isOk())
+                .andExpect(jsonPath("$.seasonType").value("WINTER"));
+        mvc.perform(get("/api/registrations")).andExpect(status().isUnauthorized());
+        verifyNoInteractions(management);
+    }
+
+    @Test
     void preservesPublicBrowserPreflight() throws Exception {
         mvc.perform(options("/api/registrations/participant")
                 .header(HttpHeaders.ORIGIN, "http://localhost:5173")

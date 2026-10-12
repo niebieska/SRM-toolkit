@@ -63,8 +63,11 @@ class TurnusClientStartupTest {
     }
 
     @Configuration
-    @Import({BiuroTurnusClient.class, pl.srm.registrationapi.turnus.validator.TurnusCatalogueValidator.class})
+    @Import({BiuroTurnusClient.class, pl.srm.registrationapi.turnus.validator.TurnusCatalogueValidator.class, pl.srm.registrationapi.season.StaffCatalogueValidator.class})
     static class StartupConfiguration {
+        @Bean org.springframework.validation.beanvalidation.LocalValidatorFactoryBean validator() {
+            return new org.springframework.validation.beanvalidation.LocalValidatorFactoryBean();
+        }
         @Bean com.fasterxml.jackson.databind.ObjectMapper mapper() {
             return new com.fasterxml.jackson.databind.ObjectMapper().findAndRegisterModules();
         }

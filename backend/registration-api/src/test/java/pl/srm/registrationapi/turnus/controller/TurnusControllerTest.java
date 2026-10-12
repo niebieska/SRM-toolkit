@@ -25,6 +25,37 @@ class TurnusControllerTest {
                 .setControllerAdvice(new pl.srm.registrationapi.common.exception.GlobalExceptionHandler()).build();
     }
 
+    pl.srm.registrationapi.turnus.model.Turnus definition() {
+        return new pl.srm.registrationapi.turnus.model.Turnus("T1", "Turnus", null, "Place",
+                pl.srm.registrationapi.turnus.model.SeasonType.SUMMER, 2026,
+                java.time.LocalDate.of(2026, 8, 1), java.time.LocalDate.of(2026, 8, 10),
+                14, 60, 10, true, true, true, pl.srm.registrationapi.season.TestStaffCatalogues.load("summer"));
+    }
+    @Test
+    void staffOptionsUseSelectedTurnusAndAreNotIncludedInOrdinaryPublicList() throws Exception {
+        when(provider.getByCode("T1")).thenReturn(definition());
+        when(provider.getAvailableTurnuses(pl.srm.registrationapi.registration.model.RegistrationType.PARTICIPANT))
+                .thenReturn(List.of(definition()));
+        mockMvc.perform(get("/api/turnusy/staff-options").param("turnusCode", "T1"))
+                .andExpect(status().isOk())
+                .andExpect(org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath("$.seasonType").value("SUMMER"))
+                .andExpect(org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath("$.roles[0].value").value("kandydat_na_animatora"));
+        mockMvc.perform(get("/api/turnuses"))
+                .andExpect(org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath("$[0].staffCatalogue").doesNotExist());
+    }
+    @Test
+    void missingBlankOrUnknownTurnusOptionsUseExplicitErrors() throws Exception {
+        mockMvc.perform(get("/api/turnuses/staff-options")).andExpect(status().isBadRequest());
+        mockMvc.perform(get("/api/turnuses/staff-options").param("turnusCode", " ")).andExpect(status().isBadRequest());
+        when(provider.getByCode("UNKNOWN")).thenThrow(new pl.srm.registrationapi.registration.exception.RegistrationException(
+                "TURNUS_NOT_FOUND", "Nie znaleziono turnusu."));
+        mockMvc.perform(get("/api/turnuses/staff-options").param("turnusCode", "UNKNOWN")).andExpect(status().isNotFound());
+        when(provider.getByCode("T1")).thenReturn(new pl.srm.registrationapi.turnus.model.Turnus("T1", "Turnus", null, "Place",
+                pl.srm.registrationapi.turnus.model.SeasonType.SUMMER, 2026, java.time.LocalDate.of(2026, 8, 1),
+                java.time.LocalDate.of(2026, 8, 10), 14, 60, 10, true, true, true));
+        mockMvc.perform(get("/api/turnuses/staff-options").param("turnusCode", "T1")).andExpect(status().isServiceUnavailable());
+    }
+
     @Test
     void supportsCanonicalTurnusesEndpoint() throws Exception {
         mockMvc.perform(get("/api/turnuses"))
