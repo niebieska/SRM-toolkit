@@ -1,0 +1,102 @@
+[
+  {
+    "code": "ksiadz_prowadzacy",
+    "label": "Ksiądz prowadzący",
+    "selections": [
+      {
+        "role": "ksiadz",
+        "subrole": "prowadzacy"
+      }
+    ]
+  },
+  {
+    "code": "ksiadz",
+    "label": "Ksiądz",
+    "selections": [
+      {
+        "role": "ksiadz",
+        "subrole": "wychowawca"
+      },
+      {
+        "role": "ksiadz",
+        "subrole": "pomoc"
+      }
+    ]
+  },
+  {
+    "code": "animator",
+    "label": "Animator (kandydat na animatora)",
+    "selections": [
+      {
+        "role": "kandydat_na_animatora",
+        "subrole": null
+      },
+      {
+        "role": "animator",
+        "subrole": "kandydat_na_animatora"
+      },
+      {
+        "role": "animator",
+        "subrole": "animator"
+      }
+    ]
+  },
+  {
+    "code": "animator_wychowawca",
+    "label": "Animator wychowawca",
+    "selections": [
+      {
+        "role": "animator",
+        "subrole": "animator_wychowawca"
+      }
+    ]
+  },
+  {
+    "code": "kucharka",
+    "label": "Kucharka",
+    "selections": [
+      {
+        "role": "kucharka",
+        "subrole": null
+      }
+    ]
+  },
+  {
+    "code": "kierowca",
+    "label": "Kierowca",
+    "selections": [
+      {
+        "role": "kierowca",
+        "subrole": null
+      }
+    ]
+  },
+  {
+    "code": "sternik",
+    "label": "Sternik (ksiądz sternik, sternik z opiekunem)",
+    "selections": [
+      {
+        "role": "sternik",
+        "subrole": null
+      },
+      {
+        "role": "sternik_z_opiekunem",
+        "subrole": null
+      },
+      {
+        "role": "ksiadz",
+        "subrole": "sternik"
+      }
+    ]
+  },
+  {
+    "code": "ratownik",
+    "label": "Ratownik",
+    "selections": [
+      {
+        "role": "ratownik",
+        "subrole": null
+      }
+    ]
+  }
+]

@@ -1,7 +1,10 @@
 package pl.srm.biuroapi.season;
 
+import java.util.EnumMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Locale;
+import java.util.Map;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.io.ResourceLoader;
 import org.springframework.stereotype.Component;
@@ -10,25 +13,31 @@ import pl.srm.biuroapi.turnus.TurnusDefinition.SeasonType;
 import tools.jackson.core.type.TypeReference;
 import tools.jackson.databind.ObjectMapper;
 
-/** Winter staffing groups; Summer requirements are deliberately not defined yet. */
+/** File-backed staffing groups validated against the matching season role catalogue. */
 @Component
 public class StaffingCategories {
     public record Selection(String role, String subrole) {}
     public record Category(String code, String label, List<Selection> selections) {
         public Category { selections = List.copyOf(selections); }
     }
-    private final List<Category> winter;
+    private final Map<SeasonType, List<Category>> catalogues;
     public StaffingCategories(ObjectMapper mapper, ResourceLoader resources, SeasonStaffCatalogue seasons,
             @Value("${staff.catalogue.location:classpath:staff-seasons/}") String location) {
-        var resource = resources.getResource(location + (location.endsWith("/") ? "" : "/") + "winter-staffing.json");
-        try (var input = resource.getInputStream()) {
-            winter = List.copyOf(mapper.readValue(input, new TypeReference<List<Category>>() {}));
-            validate(winter, seasons.get(SeasonType.WINTER));
-        } catch (Exception exception) {
-            throw new IllegalStateException("Cannot load Winter staffing categories", exception);
+        var loaded = new EnumMap<SeasonType, List<Category>>(SeasonType.class);
+        for (SeasonType season : SeasonType.values()) {
+            var resource = resources.getResource(location + (location.endsWith("/") ? "" : "/")
+                    + season.name().toLowerCase(Locale.ROOT) + "-staffing.json");
+            try (var input = resource.getInputStream()) {
+                List<Category> categories = List.copyOf(mapper.readValue(input, new TypeReference<List<Category>>() {}));
+                validate(categories, seasons.get(season));
+                loaded.put(season, categories);
+            } catch (Exception exception) {
+                throw new IllegalStateException("Cannot load staffing categories for " + season.name(), exception);
+            }
         }
+        catalogues = Map.copyOf(loaded);
     }
-    public List<Category> get(SeasonType season) { return season == SeasonType.WINTER ? winter : List.of(); }
+    public List<Category> get(SeasonType season) { return catalogues.get(season); }
     private void validate(List<Category> categories, StaffCatalogue catalogue) {
         Assert.notEmpty(categories, "Missing staffing categories");
         var codes = new HashSet<String>();
