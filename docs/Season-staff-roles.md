@@ -122,7 +122,7 @@ Manual acceptance pending:
 Phase 2: required staff headcounts in Turnus definitions; implementation details
 in [Turnus staffing requirements](Turnus-staff-requirements.md). Winter Animator
 combines regular animators and candidates; phase 3 shows their breakdown.
-Summer grouping remains deferred.
+Summer grouping is defined in the linked staffing requirements document.
 Phase 3: required / accepted / missing staffing categories.
 
 ## Final browser verification after all three phases

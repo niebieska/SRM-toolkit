@@ -1,39 +1,5 @@
 [
   {
-    "code": "kucharka",
-    "label": "Kucharka",
-    "selections": [
-      {
-        "role": "kucharka",
-        "subrole": null
-      }
-    ]
-  },
-  {
-    "code": "kierowca",
-    "label": "Kierowca",
-    "selections": [
-      {
-        "role": "kierowca",
-        "subrole": null
-      }
-    ]
-  },
-  {
-    "code": "animator",
-    "label": "Animatorzy",
-    "selections": [
-      {
-        "role": "animator",
-        "subrole": null
-      },
-      {
-        "role": "animator",
-        "subrole": "kandydat_na_animatora"
-      }
-    ]
-  },
-  {
     "code": "ksiadz_prowadzacy",
     "label": "Ksiądz prowadzący",
     "selections": [
@@ -62,6 +28,40 @@
       {
         "role": "ksiadz",
         "subrole": "instruktor_snowboard"
+      }
+    ]
+  },
+  {
+    "code": "animator",
+    "label": "Animator (kandydat na animatora)",
+    "selections": [
+      {
+        "role": "animator",
+        "subrole": null
+      },
+      {
+        "role": "animator",
+        "subrole": "kandydat_na_animatora"
+      }
+    ]
+  },
+  {
+    "code": "kucharka",
+    "label": "Kucharka",
+    "selections": [
+      {
+        "role": "kucharka",
+        "subrole": null
+      }
+    ]
+  },
+  {
+    "code": "kierowca",
+    "label": "Kierowca",
+    "selections": [
+      {
+        "role": "kierowca",
+        "subrole": null
       }
     ]
   },
