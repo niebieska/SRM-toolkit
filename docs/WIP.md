@@ -960,3 +960,49 @@ Moved project plans, progress notes and assessments into `docs/`. The root READM
   The right-column staffing panel layout is not yet accepted and is parked for
   later refinement. Separate Definition/Kadra sections were suggested but are
   not agreed or implemented. Browser/MariaDB acceptance remains pending.
+
+
+## 2026-10-13 — Turnus editor layout trial
+
+- User authorized a four-panel single-page layout: Dane turnusu and Limity above
+  Wymagana kadra and Ustawienia zapisów. Panels align at the top and stack on mobile.
+- Staffing targets use a compact role/count table. Required markers, name-first
+  field order and concise help text improve scanning. No grouping metadata,
+  drafts, generated codes or new publishing behavior added. All switches still
+  default off. Staffing statistics remain planned for Zgłoszenia.
+- Seven Biuro frontend test files and production build pass; diff checks clean.
+  Browser layout review pending. Changes uncommitted; sth.java untouched.
+
+
+## 2026-10-13 — Integrated Turnus editor redesign
+
+- Supersedes the four-panel trial with the user's requested 2:1 layout: main
+  information card and three compact sidebar cards, stacked on smaller screens.
+- Polish breadcrumbs/header, required markers, placeholders, reusable field
+  labels/help/errors, existing date pickers, compact number fields, staffing total,
+  larger checkbox targets and responsive non-sticky actions. Existing API, database,
+  configured roles, defaults and capacity/availability meanings preserved.
+- Client field validation mirrors backend bounds; submit remains locked through
+  creation navigation. No incomplete drafts, automatic code generation or role
+  substitutions added. No dependencies installed; no unrelated pages changed.
+- Eight Biuro frontend test files and build pass. Headless Firefox desktop/tablet/
+  mobile screenshots inspected with synthetic/intercepted API data; temporary
+  preview removed. Live backend acceptance remains pending. No lint/type-check
+  commands configured. Changes uncommitted; sth.java untouched.
+- Follow-up layout: Ustawienia zapisów moved below Informacje o turnusie in the
+  main column; only capacity and staffing remain in the sidebar. Eight frontend
+  test files/build pass after the move. Previous screenshots predate this move.
+- Registration switches use three equal-width bordered controls in one row
+  from 640px, stacked on mobile, with shorter labels and stronger selected states.
+  Descriptions removed at the user's request; behavior and defaults unchanged.
+  Frontend production build passes.
+- Registration control trial now restores full labels and adds live Otwarte /
+  Zamknięte badges (Aktywny / Nieaktywny for the Turnus), keeping equal-width
+  controls and no descriptions. Production build passes; visual review pending.
+- Replaced the editor's in-app unsaved-change browser prompts with a styled native
+  dialog: Zostań / Odrzuć zmiany, including reload/logout variants. Native modal
+  focus containment, safe initial focus, Escape to stay, pending-decision cleanup
+  and guard results preserve edits until navigation/reload succeeds. Header's
+  callback is optional; other pages retain existing logout behavior. Browser-tab
+  close/refresh keeps the mandatory native warning. Nine frontend test files and
+  build pass; new dialog visual/keyboard review pending.

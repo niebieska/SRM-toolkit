@@ -72,12 +72,25 @@ from `/internal/turnuses`; Registration's hourly role cache is unchanged.
 
 ## Editor
 
-The existing definition editor has a “Wymagana kadra” section. Each Winter category
-has a number field; zero means no target. Fields remain visible in a compact vertical list inside a right-column panel
-matching Parameters, with a planned total in the heading. Animator explains that candidates are
-included. Summer displays a deferred-scope note. Save uses the existing button,
-unsaved-change protection and conflict behavior. Category lookup failures offer
-retry and prevent saving against an unavailable catalogue.
+The single-page editor uses a top-aligned two-column layout: information, dates,
+location and description occupy approximately two thirds, with registration
+settings below the information card; compact capacity and staffing cards occupy
+the sidebar. Cards stack below
+1024px; basic fields use two columns from 640px. No technical/spiritual grouping,
+wizard or draft feature is introduced.
+
+Staffing rows preserve the configured labels/codes, including Kucharka, with a
+live total and optional zero targets. Animator includes candidates. All registration
+switch defaults and visibility rules remain unchanged. Staffing statistics still
+belong in Zgłoszenia, not this editor.
+
+Required fields have labels/markers, associated help/error text and visible focus.
+Client validation mirrors existing request bounds and date rules, without staffing
+capacity restrictions. The backend remains authoritative. A reusable
+`TurnusFormField` component renders labels/help/errors; styles are scoped to the
+editor. Save uses the existing version/POST/PATCH flow, navigation guards and
+conflict handling. Submission stays locked until successful creation navigation
+finishes. Category failures offer retry without discarding edits.
 
 No special season-change workflow is included. A definition containing requirements
 incompatible with its selected season is rejected rather than silently discarded.
@@ -111,3 +124,20 @@ Final acceptance after all phases:
 
 Phase 3 required/accepted/missing statistics and animator/candidate breakdown are
 not implemented in this phase.
+
+## 2026-10-13 UI verification
+
+Eight Biuro frontend test files and production build pass. Added validation bounds,
+calendar/date-order checks, reactive total checks, complete payload preservation,
+creation navigation and duplicate-submit tests (including the navigation interval).
+Headless Firefox screenshots were inspected at 1440px desktop, 768px tablet and
+390px mobile widths using synthetic data and intercepted API calls. Cards and
+bottom actions render without visible overflow or overlap. Screenshots are not
+live-backend end-to-end acceptance. No lint/type-check scripts exist in this package.
+The temporary preview was removed; no dependency or backend changes were needed.
+
+Unsaved edits now use a styled native dialog for in-app navigation, reload and
+logout. Stay cancels the operation; discard permits it without prematurely clearing
+form state. Escape stays; the native modal contains focus. Browser refresh/tab close
+still uses the browser-managed warning. Nine frontend test files and build pass;
+new dialog visual/keyboard review remains pending.
