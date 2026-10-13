@@ -1,5 +1,20 @@
 # Work in progress
 
+## 2026-10-13 — Staffing statistics
+
+- Implemented on `feature/staffing-statistics`; split into backend/frontend feature,
+  separate test, and documentation commits.
+- Zgłoszenia shows accepted/required counts for positive staffing targets and
+  grouped-function counts for both seasons. Subrole breakdowns are hidden in the
+  compact UI for now, but remain available in the API. Visible for Wszystkie/Kadra,
+  hidden for Uczestnicy; independent of status/search filters.
+- No new acceptance restrictions, migration or dependencies. Protected summaries
+  now provide role/function metadata through the existing list request.
+- Backend suite and both frontend test suites/builds pass. Optional MariaDB
+  tests remain skipped. User reported manual verification passed after the final
+  compact role line was integrated into the Kadra statistics card.
+- Scope and manual checks: [Staffing statistics](Staffing-statistics.md).
+
 ## Deferred verification — SQL injection protection
 
 - [ ] Review database access, including native counter queries, filters, search,

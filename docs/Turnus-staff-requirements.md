@@ -1,5 +1,10 @@
 # Turnus staffing requirements — phase 2
 
+Phase 3 staffing statistics are now implemented on `feature/staffing-statistics`:
+see [Staffing statistics](Staffing-statistics.md). Earlier phase notes below describe
+the state at their respective implementation dates. The agreed display is
+accepted/required with subrole counts; missing/excess figures are not included.
+
 Original phase 2: `feature/turnus-staff-requirements`, merged as PR #35.
 Summer extension: `feature/summer-staff-requirements`, based on development after PR #35.
 
