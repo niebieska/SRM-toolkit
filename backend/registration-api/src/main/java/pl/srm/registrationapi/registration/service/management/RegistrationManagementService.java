@@ -81,8 +81,14 @@ public class RegistrationManagementService {
         String lastName = null;
         Integer age = null;
         String gender =null;
+        String role = null;
+        String subrole = null;
         try {
             JsonNode root = objectMapper.readTree(registration.getPayload());
+            if (RegistrationType.STAFF.name().equals(registration.getRegistrationType())) {
+                role = trimToNull(root.path("role").textValue());
+                subrole = trimToNull(root.path("subrole").textValue());
+            }
             JsonNode person = root.path("person");
             firstName = person.path("firstName").textValue();
             lastName = person.path("lastName").textValue();
@@ -105,7 +111,9 @@ public class RegistrationManagementService {
                 firstName,
                 lastName,
                 age,
-                gender
+                gender,
+                role,
+                subrole
         );
     }
 
