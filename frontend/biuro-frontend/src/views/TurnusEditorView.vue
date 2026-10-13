@@ -16,7 +16,7 @@ let categorySequence = 0
 const route = useRoute(), router = useRouter(), auth = useAuthStore()
 const isNew = computed(() => route.name === 'turnus-create')
 const form = reactive({})
-const original = ref(''), error = ref(''), success = ref('')
+const original = ref(''), error = ref(''), validationError = ref(''), success = ref('')
 const loading = ref(false), loaded = ref(false), saving = ref(false), conflict = ref(false)
 let loadSequence = 0
 let createdTurnusCode = null
@@ -32,6 +32,7 @@ function defaults() {
 function apply(value) {
   Object.assign(form, defaults(), value, { turnusDescription: value.turnusDescription ?? '', staffRequirements: (value.staffRequirements || []).map(item => ({ ...item })) })
   fieldErrors.value = {}
+  validationError.value = ''
   original.value = JSON.stringify(form)
   loaded.value = true
 }
@@ -39,7 +40,7 @@ async function load() {
   const sequence = ++loadSequence
   loading.value = true
   loaded.value = false
-  error.value = ''; conflict.value = false; success.value = ''
+  error.value = ''; validationError.value = ''; conflict.value = false; success.value = ''
   try {
     const value = isNew.value ? defaults() : await fetchTurnus(auth.token, route.params.code)
     if (sequence === loadSequence) apply(value)
@@ -94,6 +95,7 @@ function validateField(name) {
   const errors = validateTurnusForm(form, categories.value)
   if (errors[name]) fieldErrors.value[name] = errors[name]
   else delete fieldErrors.value[name]
+  if (!Object.keys(errors).length) validationError.value = ''
   if (name === 'startDate' && fieldErrors.value.endDate) validateField('endDate')
 }
 function onFieldInput(event) {
@@ -105,10 +107,10 @@ function descriptionId(name, help = false) {
 }
 async function save() {
   if (saving.value || categoriesLoading.value || categoriesError.value) return
-  error.value = ''; success.value = ''
+  error.value = ''; validationError.value = ''; success.value = ''
   fieldErrors.value = validateTurnusForm(form, categories.value)
   if (Object.keys(fieldErrors.value).length) {
-    error.value = 'Sprawdź zaznaczone pola przed zapisaniem turnusu.'
+    validationError.value = 'Sprawdź zaznaczone pola przed zapisaniem turnusu.'
     const name = Object.keys(fieldErrors.value)[0]
     formElement.value?.querySelector(`[name="${name}"]`)?.focus()
     return
@@ -158,8 +160,8 @@ async function save() {
         <span v-if="loaded" class="rounded-full border px-3 py-1 text-xs font-medium" :class="form.active ? 'border-slate-400 bg-slate-200 text-slate-900' : 'border-slate-200 bg-white text-slate-600'">{{ status }}</span>
       </header>
       <p v-if="loading" role="status" class="turnus-card text-center text-sm text-slate-600">Wczytywanie turnusu…</p>
-      <div v-if="error" role="alert" class="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">
-        <p>{{ error }}</p>
+      <div v-if="error || validationError" role="alert" class="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">
+        <p>{{ error || validationError }}</p>
         <button v-if="conflict || !loaded" type="button" class="mt-2 rounded font-semibold underline focus-visible:ring-2 focus-visible:ring-red-600" :disabled="loading || saving" @click="reload">Wczytaj aktualną wersję</button>
       </div>
       <p v-if="success" role="status" class="rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800">{{ success }}</p>

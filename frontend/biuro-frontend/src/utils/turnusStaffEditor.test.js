@@ -17,9 +17,9 @@ source = source.replace(/import .* from '..\/stores\/auth'/, "const useAuthStore
 source = source.replace(/from '([^']+)'/g, (match, path) => {
   if (path === 'vue') return `from '${import.meta.resolve('vue')}'`
   return path.startsWith('.') ? `from '${new URL(path + '.js', file).href}'` : match
-})
+})Ca
 source = source.replace('__expose();', '')
-source = source.replace('return __returned__', '__expose({ canLeave, reload, discardPrompt, decideDiscard, form, fieldErrors, plannedStaff, categoriesLoading, categoriesError, dirty, save, setRequirement, loadCategories }); return __returned__')
+source = source.replace('return __returned__', '__expose({ error, validationError, validateField, canLeave, reload, discardPrompt, decideDiscard, form, fieldErrors, plannedStaff, categoriesLoading, categoriesError, dirty, save, setRequirement, loadCategories }); return __returned__')
 const { default: Editor } = await import(`data:text/javascript;base64,${Buffer.from(source).toString('base64')}`)
 Editor.render = () => null
 const renderer = createRenderer({ createComment: () => ({}), insert() {}, remove() {},
@@ -218,4 +218,40 @@ test('logout honors stay/discard and busy state before clearing authentication',
   events.length = 0
   await header(true, true).logout()
   assert.deepEqual(events, [])
+})
+
+
+test('validation summary clears after the last correction, not the first', async t => {
+  const vm = await mount(t, async url => new Response(JSON.stringify(url.includes('staffing-categories')
+    ? [{ code: 'animator' }] : definition)))
+  vm.form.staffCapacity = 0
+  vm.form.minAge = -1
+  await vm.save()
+  assert.ok(vm.validationError)
+  vm.form.minAge = 14
+  vm.validateField('minAge')
+  assert.ok(vm.validationError)
+  assert.ok(vm.fieldErrors.staffCapacity)
+  vm.form.staffCapacity = 10
+  vm.validateField('staffCapacity')
+  assert.deepEqual(vm.fieldErrors, {})
+  assert.equal(vm.validationError, '')
+})
+
+test('correcting fields does not dismiss a genuine backend failure', async t => {
+  const vm = await mount(t, async (url, options) => {
+    if (url.includes('staffing-categories')) return new Response(JSON.stringify([{ code: 'animator' }]))
+    if (options.method === 'PATCH') return new Response(JSON.stringify({ message: 'Biuro chwilowo niedostępne.' }), { status: 503 })
+    return new Response(JSON.stringify(definition))
+  })
+  vm.form.turnusName = 'Changed name'
+  await vm.save()
+  assert.equal(vm.error, 'Biuro chwilowo niedostępne.')
+  vm.form.staffCapacity = 0
+  vm.validateField('staffCapacity')
+  vm.form.staffCapacity = 10
+  vm.validateField('staffCapacity')
+  assert.equal(vm.error, 'Biuro chwilowo niedostępne.')
+  assert.deepEqual(vm.fieldErrors, {})
+  assert.equal(vm.dirty, true)
 })

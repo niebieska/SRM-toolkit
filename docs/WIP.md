@@ -1006,3 +1006,7 @@ Moved project plans, progress notes and assessments into `docs/`. The root READM
   callback is optional; other pages retain existing logout behavior. Browser-tab
   close/refresh keeps the mandatory native warning. Nine frontend test files and
   build pass; new dialog visual/keyboard review pending.
+- Review correction: separated validation summary from backend errors. The summary
+  now clears after all fields are corrected; genuine server failures remain visible.
+  Added regressions for partial/final corrections and preserving backend errors.
+  Nine frontend test files/build pass. This correction is uncommitted.
