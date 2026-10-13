@@ -114,4 +114,33 @@ class RegistrationManagementServiceTest {
         assertEquals("INVALID_STATUS", exception.getCode());
         verify(statusService).updateStatus("REG-P-ZAGLE26T1-1", request);
     }
+    @Test
+    void staffSummariesExposeNormalizedRoleAndFunctionWithoutChangingParticipantSummaries() {
+        var staff = new Registration("S1", "STAFF", "T1", "hash", false, "ACCEPTED", null,
+                """
+                {"role":" animator ","subrole":" kandydat_na_animatora ","person":{"firstName":"Anna"}}
+                """,
+                LocalDateTime.of(2027, 1, 1, 12, 0), null);
+        var participant = new Registration("P1", "PARTICIPANT", "T1", "other", false, "ACCEPTED", null,
+                "{\"role\":\"animator\",\"subrole\":\"animator\"}", LocalDateTime.of(2027, 1, 1, 12, 0), null);
+        when(repository.findAll(Sort.by(Sort.Direction.DESC, "createdAt"))).thenReturn(List.of(staff, participant));
+        var summaries = service.getAll();
+        assertEquals("animator", summaries.getFirst().role());
+        assertEquals("kandydat_na_animatora", summaries.getFirst().subrole());
+        assertEquals("Anna", summaries.getFirst().firstName());
+        assertNull(summaries.get(1).role());
+        assertNull(summaries.get(1).subrole());
+    }
+    @Test
+    void emptyStaffFunctionBecomesNullAndMissingLegacyRoleDoesNotBreakList() {
+        var staff = new Registration("S1", "STAFF", "T1", "hash", false, "ACCEPTED", null,
+                "{\"role\":\"ksiadz\",\"subrole\":\"  \"}", LocalDateTime.of(2027, 1, 1, 12, 0), null);
+        var missing = new Registration("S2", "STAFF", "T1", "other", false, "ACCEPTED", null,
+                "{}", LocalDateTime.of(2027, 1, 1, 12, 0), null);
+        when(repository.findAll(Sort.by(Sort.Direction.DESC, "createdAt"))).thenReturn(List.of(staff, missing));
+        var summaries = service.getAll();
+        assertEquals("ksiadz", summaries.getFirst().role());
+        assertNull(summaries.getFirst().subrole());
+        assertNull(summaries.get(1).role());
+    }
 }
