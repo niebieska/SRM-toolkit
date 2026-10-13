@@ -1,12 +1,13 @@
 # Turnus staffing requirements — phase 2
 
-Branch: `feature/turnus-staff-requirements`, based on development after PR #34.
+Original phase 2: `feature/turnus-staff-requirements`, merged as PR #35.
+Summer extension: `feature/summer-staff-requirements`, based on development after PR #35.
 
 ## Agreed scope
 
-Each Winter Turnus has editable staffing targets in its Biuro definition. Targets
+Each Summer and Winter Turnus has editable staffing targets in its Biuro definition. Targets
 are planning information: they do not block acceptance, change total staff
-capacity or operate registration switches. Summer staffing requirements are deferred.
+capacity or operate registration switches. Each season selects its own category mappings.
 
 Winter categories:
 
@@ -22,19 +23,38 @@ Winter categories:
 
 Animator has one combined target. Phase 3 will show regular animator/candidate
 counts beneath that combined total. Priest instructor functions count only as
-Ksiądz, never again under the standalone instructor category. Summer may use
-different grouping later. One person belongs to one category.
+Ksiądz, never again under the standalone instructor category. Summer uses the
+separate mappings below. One person belongs to one category.
+
+Summer categories:
+
+| Category code | Label | Included registration choices |
+|---|---|---|
+| kucharka | Kucharka | Kucharka |
+| kierowca | Kierowca | Kierowca |
+| animator | Animatorzy | Standalone minor candidate; adult Animator + candidate or Animator function |
+| animator_wychowawca | Animator wychowawca | Animator + Animator wychowawca |
+| ksiadz_prowadzacy | Ksiądz prowadzący | Ksiądz + Prowadzący |
+| ksiadz | Ksiądz | Ksiądz + Wychowawca or Pomoc |
+| sternik | Sternik | Sternik, Sternik z opiekunem, Ksiądz + Sternik |
+| ratownik | Ratownik | Ratownik |
+
+Summer Animator and candidates share one target; Animator wychowawca has a separate
+target. Sternik z opiekunem shares Sternik's target, but must remain visible as a
+separate breakdown in phase 3 statistics. Ksiądz + Sternik counts only as Sternik;
+leading priest remains separate. Other priest functions remain Ksiądz. No existing
+registration role identifiers, age rules, certificate options or saved payloads change.
 
 ## Configuration
 
-`backend/biuro-api/src/main/resources/staff-seasons/winter-staffing.json` defines
-category codes, labels and exact role/function mappings. Biuro loads it at startup
-and validates unique category codes, valid selections, one category per selection,
-and complete coverage of the current Winter role catalogue.
+`backend/biuro-api/src/main/resources/staff-seasons/winter-staffing.json` and
+`summer-staffing.json` define category codes, labels and exact role/function mappings.
+Biuro loads both at startup and validates unique category codes, valid selections, one category per selection,
+and complete coverage of each corresponding season role catalogue.
 
-The file uses the same `STAFF_CATALOGUE_LOCATION` folder as the role files.
-External configuration folders now need **all three files**: `summer.json`,
-`winter.json`, and `winter-staffing.json`. Missing/invalid staffing configuration
+Both files use the same `STAFF_CATALOGUE_LOCATION` folder as the role files.
+External configuration folders now need **all four files**: `summer.json`,
+`winter.json`, `summer-staffing.json`, and `winter-staffing.json`. Missing/invalid staffing configuration
 fails Biuro startup; no silent fallback is used. Bundled changes require rebuild
 and restart; external file changes require restart. No global season switch is added.
 
@@ -60,13 +80,31 @@ numeric strings are rejected. Zero entries are removed before storage. An empty
 list means requirements are unconfigured/cleared; it does not deactivate a Turnus.
 There is no restriction relating targets to total capacity.
 
+### Client verification: staff places versus required staffing
+
+For now these values remain independent:
+
+- **Miejsca dla kadry**: the configured total number of staff places.
+- **Łącznie wymagana kadra**: the sum of role-specific staffing targets.
+
+Neither value is the accepted staff count. No automatic synchronization,
+capacity changes, save restrictions or new warnings are introduced by this decision.
+
+- [ ] Confirm with the client whether these represent separate concepts in their
+  workflow or whether staff places should eventually be derived from role targets.
+- [ ] If they remain separate, confirm whether a comparison/warning is useful
+  when the required total exceeds the available staff places.
+
+Any later change requires an explicit product decision; current behavior is retained.
+
 For backwards compatibility, omitted/null requirements mean an empty list on
 create and preserve current requirements on update. Explicit `[]` clears them.
 Writes share the existing transaction and Turnus version check; invalid or stale
 edits cannot partially overwrite the definition or requirements.
 
 `GET /api/turnuses/staffing-categories?seasonType=WINTER` returns available
-categories and mappings under operator JWT authentication. SUMMER returns `[]`.
+categories and mappings under operator JWT authentication. SUMMER returns its
+eight categories; WINTER retains its seven categories.
 Unknown/missing season produces 400. Requirements stay in Biuro and are omitted
 from `/internal/turnuses`; Registration's hourly role cache is unchanged.
 
@@ -118,7 +156,9 @@ Final acceptance after all phases:
 - [ ] Set Animator=6 and Kucharka=2, save, reload and confirm persistence.
 - [ ] Change a target, set another to zero, save and verify both results.
 - [ ] Confirm definition flags and total staff capacity stay as manually set.
-- [ ] Verify a Summer Turnus still loads/edits and displays the deferred note.
+- [ ] Set Summer Animator, Animator wychowawca and Sternik targets; save/reload
+  and confirm they remain distinct where agreed. Registration role/certificate
+  selections remain unchanged. Verify zero removes a target.
 - [ ] Verify invalid input is rejected; stale edits preserve current saved targets.
 - [ ] Complete the final form checklist in [Season staff roles](Season-staff-roles.md).
 
@@ -141,3 +181,18 @@ logout. Stay cancels the operation; discard permits it without prematurely clear
 form state. Escape stays; the native modal contains focus. Browser refresh/tab close
 still uses the browser-managed warning. Nine frontend test files and build pass;
 new dialog visual/keyboard review remains pending.
+
+## Summer extension — 2026-10-13
+
+The season loader now requires both staffing catalogues and keeps immutable
+snapshots validated against the matching role files. Winter mapping is unchanged.
+Summer targets use the existing JSON storage/API/version handling; no migration,
+new acceptance restrictions, or statistics calculation is introduced. Statistics
+and the Sternik z opiekunem breakdown remain phase 3 work in Zgłoszenia.
+
+Summer extension verification: 233 backend tests executed successfully, ten
+optional MariaDB cases skipped; nine Biuro and five Registration frontend test
+files and both production builds pass. Configuration tests cover invalid/missing
+files and immutable mappings for both seasons. Summer API and persistence tests
+cover create/read/edit/clear and rejection of Winter-only categories; editor tests
+use the actual Summer resource. Live browser acceptance remains pending.

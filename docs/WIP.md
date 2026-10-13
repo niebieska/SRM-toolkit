@@ -1010,3 +1010,31 @@ Moved project plans, progress notes and assessments into `docs/`. The root READM
   now clears after all fields are corrected; genuine server failures remain visible.
   Added regressions for partial/final corrections and preserving backend errors.
   Nine frontend test files/build pass. This correction is uncommitted.
+
+## 2026-10-13 — Summer staffing requirements extension
+
+- Branch `feature/summer-staff-requirements`, based on development after PR #35.
+- Agreed: Ksiądz prowadzący has its own target; Ksiądz + Sternik counts toward
+  Sternik; Sternik z opiekunem shares Sternik's target but needs its own breakdown
+  in later statistics. Animator wychowawca has a separate target.
+- Remaining priest functions stay under Ksiądz unless the user changes that rule.
+- User confirmed regular Animator and Kandydat share one target. Summer
+  Animator wychowawca remains separate. Summer catalogue is now enabled.
+- User confirmed staff places and summed staffing targets remain independent for
+  now. Added client verification questions in
+  [Turnus staffing requirements](Turnus-staff-requirements.md): separate concepts
+  versus derived capacity, and whether a comparison/warning would be helpful.
+  No synchronization, new warning or restriction implemented.
+- Loader now loads and validates both season staffing catalogues; Winter mapping is preserved.
+  No migration, registration role/certificate changes, or statistics implementation.
+  Changes uncommitted; sth.java untouched.
+- Added eight Summer categories, persistence/API and cross-season validation tests,
+  configuration failure/immutability tests for both seasons, and editor regressions
+  using the actual Summer configuration. Sternik guidance explains the combined
+  target; its guardian variant must have a separate phase 3 statistics breakdown.
+- External catalogue folders now require summer-staffing.json alongside the three
+  existing files. No database migration or registration role/certificate changes.
+  Automated verification passed: 233 backend tests executed successfully, ten
+  optional MariaDB cases skipped; nine Biuro and five Registration frontend test
+  files and both builds pass. Diff checks clean. Browser acceptance pending.
+  No commits made.
