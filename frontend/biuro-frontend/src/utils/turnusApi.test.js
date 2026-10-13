@@ -1,6 +1,6 @@
 import { test, afterEach } from 'node:test'
 import assert from 'node:assert/strict'
-import { fetchTurnuses, fetchTurnus, createTurnus, updateTurnus } from '../api/turnusApi.js'
+import { fetchTurnuses, fetchTurnus, createTurnus, updateTurnus, fetchStaffingCategories } from '../api/turnusApi.js'
 const originalFetch = globalThis.fetch
 afterEach(() => { globalThis.fetch = originalFetch })
 
@@ -46,4 +46,14 @@ test('network and invalid success responses produce actionable errors', async ()
   await assert.rejects(fetchTurnuses('token'), /Nie można połączyć/)
   globalThis.fetch = async () => new Response('<html>', { status: 200 })
   await assert.rejects(fetchTurnuses('token'), /nieprawidłową odpowiedź/)
+})
+
+
+test('staffing category lookup uses Bearer authentication and the selected season', async () => {
+  globalThis.fetch = async (url, options) => {
+    assert.equal(url, 'http://localhost:8081/api/turnuses/staffing-categories?seasonType=WINTER')
+    assert.equal(options.headers.Authorization, 'Bearer token')
+    return new Response(JSON.stringify([{ code: 'animator', label: 'Animatorzy' }]))
+  }
+  assert.deepEqual(await fetchStaffingCategories('token', 'WINTER'), [{ code: 'animator', label: 'Animatorzy' }])
 })

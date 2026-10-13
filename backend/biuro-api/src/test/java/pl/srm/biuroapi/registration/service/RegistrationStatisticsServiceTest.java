@@ -18,7 +18,7 @@ class RegistrationStatisticsServiceTest {
     void definition() {
         when(catalogue.get("T1")).thenReturn(new TurnusDefinition("T1", "Turnus", null, "Place",
                 TurnusDefinition.SeasonType.SUMMER, 2026, LocalDate.of(2026, 8, 1), LocalDate.of(2026, 8, 10),
-                14, 2, 1, true, true, true, 0));
+                14, 2, 1, true, true, true, 0, List.of()));
     }
     @Test void totalsIncludeUnknownGenderAndKeepTypesAndTurnusySeparate() {
         definition();
