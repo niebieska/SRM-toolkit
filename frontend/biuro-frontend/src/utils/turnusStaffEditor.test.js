@@ -17,9 +17,9 @@ source = source.replace(/import .* from '..\/stores\/auth'/, "const useAuthStore
 source = source.replace(/from '([^']+)'/g, (match, path) => {
   if (path === 'vue') return `from '${import.meta.resolve('vue')}'`
   return path.startsWith('.') ? `from '${new URL(path + '.js', file).href}'` : match
-})Ca
+})
 source = source.replace('__expose();', '')
-source = source.replace('return __returned__', '__expose({ error, validationError, validateField, canLeave, reload, discardPrompt, decideDiscard, form, fieldErrors, plannedStaff, categoriesLoading, categoriesError, dirty, save, setRequirement, loadCategories }); return __returned__')
+source = source.replace('return __returned__', '__expose({ error, validationError, validateField, canLeave, reload, discardPrompt, decideDiscard, form, fieldErrors, plannedStaff, categories, categoriesLoading, categoriesError, dirty, save, setRequirement, loadCategories }); return __returned__')
 const { default: Editor } = await import(`data:text/javascript;base64,${Buffer.from(source).toString('base64')}`)
 Editor.render = () => null
 const renderer = createRenderer({ createComment: () => ({}), insert() {}, remove() {},
@@ -28,6 +28,7 @@ const renderer = createRenderer({ createComment: () => ({}), insert() {}, remove
 async function settle() {
   for (let i = 0; i < 5; i++) { await new Promise(resolve => setImmediate(resolve)); await nextTick() }
 }
+const summerCategories = JSON.parse(await readFile(new URL('../../../../backend/biuro-api/src/main/resources/staff-seasons/summer-staffing.json', import.meta.url), 'utf8'))
 const definition = { turnusCode: 'T1', turnusName: 'Winter', turnusDescription: null,
   turnusLocation: 'Gliczarów Górny', seasonYear: 2027, minAge: 14, seasonType: 'WINTER', startDate: '2027-01-17', endDate: '2027-01-24', version: 3,
   participantCapacity: 50, staffCapacity: 10, active: true, participantRegistrationOpen: false,
@@ -47,9 +48,13 @@ async function mount(t, fetch, isNew = false) {
 }
 test('new Summer editor loads categories before any season change', async t => {
   const calls = []
-  const vm = await mount(t, async url => { calls.push(url); return new Response('[]') }, true)
+  const vm = await mount(t, async url => { calls.push(url); return new Response(JSON.stringify(summerCategories)) }, true)
   assert.ok(calls.some(url => url.endsWith('staffing-categories?seasonType=SUMMER')))
   assert.equal(vm.categoriesLoading, false)
+  assert.equal(vm.categories.length, 8)
+  assert.equal(vm.form.active, false)
+  assert.equal(vm.form.participantRegistrationOpen, false)
+  assert.equal(vm.form.staffRegistrationOpen, false)
   assert.equal(vm.dirty, false)
 })
 test('Winter targets save with version and flags; zero removes the target', async t => {
@@ -254,4 +259,35 @@ test('correcting fields does not dismiss a genuine backend failure', async t => 
   assert.equal(vm.error, 'Biuro chwilowo niedostępne.')
   assert.deepEqual(vm.fieldErrors, {})
   assert.equal(vm.dirty, true)
+})
+
+
+test('Summer editor saves shared and separate targets without limiting them to capacity', async t => {
+  const summer = { ...definition, seasonType: 'SUMMER', turnusCode: 'ZAGLE2027T1', staffRequirements: [] }
+  let payload
+  const vm = await mount(t, async (url, options) => {
+    if (url.includes('staffing-categories')) {
+      assert.ok(url.endsWith('seasonType=SUMMER'))
+      return new Response(JSON.stringify(summerCategories))
+    }
+    if (options.method === 'PATCH') {
+      payload = JSON.parse(options.body)
+      return new Response(JSON.stringify({ ...payload, version: 4 }))
+    }
+    return new Response(JSON.stringify(summer))
+  })
+  assert.deepEqual(vm.categories.map(category => category.code), summerCategories.map(category => category.code))
+  vm.setRequirement('animator', '6')
+  vm.setRequirement('animator_wychowawca', '2')
+  vm.setRequirement('sternik', '5')
+  assert.equal(vm.plannedStaff, 13)
+  await vm.save()
+  assert.deepEqual(payload.staffRequirements, [
+    { categoryCode: 'animator', requiredCount: 6 },
+    { categoryCode: 'animator_wychowawca', requiredCount: 2 },
+    { categoryCode: 'sternik', requiredCount: 5 },
+  ])
+  assert.equal(payload.staffCapacity, 10)
+  assert.equal(payload.staffRegistrationOpen, true)
+  assert.equal(vm.dirty, false)
 })

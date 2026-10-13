@@ -79,7 +79,7 @@ class StaffRequirementsTest {
         assertEquals(409, conflict.getStatusCode().value());
         assertEquals(8, catalogue.get("STAFFTEST1").staffRequirements().getFirst().requiredCount());
         assertThrows(ResponseStatusException.class, () -> requirements.validate(
-                List.of(new StaffRequirement("animator", 2)), SeasonType.SUMMER));
+                List.of(new StaffRequirement("instruktor_narty", 2)), SeasonType.SUMMER));
     }
     @Test void WinterGroupingMatchesAgreedRolesWithoutDoubleCountingPriests() {
         var winter = categories.get(SeasonType.WINTER);
@@ -90,14 +90,14 @@ class StaffRequirementsTest {
         var priest = winter.stream().filter(c -> c.code().equals("ksiadz")).findFirst().orElseThrow();
         assertTrue(priest.selections().contains(new StaffingCategories.Selection("ksiadz", "instruktor_narty")));
         assertFalse(priest.selections().contains(new StaffingCategories.Selection("ksiadz", "prowadzacy")));
-        assertEquals(List.of(), categories.get(SeasonType.SUMMER));
+        assertEquals(8, categories.get(SeasonType.SUMMER).size());
     }
-    @Test void categoryEndpointRequiresOperatorAndSupportsDeferredSummer() throws Exception {
+    @Test void categoryEndpointRequiresOperatorAndSupportsBothSeasons() throws Exception {
         mvc.perform(get("/api/turnuses/staffing-categories").param("seasonType", "WINTER")).andExpect(status().isForbidden());
         mvc.perform(get("/api/turnuses/staffing-categories").param("seasonType", "WINTER")
                 .header("Authorization", token)).andExpect(status().isOk()).andExpect(jsonPath("$.length()").value(7));
         mvc.perform(get("/api/turnuses/staffing-categories").param("seasonType", "SUMMER")
-                .header("Authorization", token)).andExpect(status().isOk()).andExpect(content().json("[]"));
+                .header("Authorization", token)).andExpect(status().isOk()).andExpect(jsonPath("$.length()").value(8));
         mvc.perform(get("/api/turnuses/staffing-categories").header("Authorization", token))
                 .andExpect(status().isBadRequest());
         mvc.perform(get("/api/turnuses/staffing-categories").param("seasonType", "INVALID")
