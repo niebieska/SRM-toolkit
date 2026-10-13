@@ -137,4 +137,18 @@ class RegistrationApiClientTest {
         assertThrows(IllegalArgumentException.class,
                 () -> new RegistrationApiClient(RestClient.builder(), "http://localhost:8080", "biuro-service", " "));
     }
+    @Test
+    void preservesStaffRoleAndFunctionFromTheSummaryContract() {
+        server.expect(requestTo("http://registration-api:8080/api/registrations"))
+                .andExpect(header(HttpHeaders.AUTHORIZATION, credentials))
+                .andRespond(withSuccess("""
+                        [{"registrationCode":"S1","registrationType":"STAFF",
+                          "status":"ACCEPTED","turnusCode":"T1","minor":false,
+                          "role":"ksiadz","subrole":"sternik"}]
+                        """, MediaType.APPLICATION_JSON));
+        var staff = client.fetchRegistrations().getFirst();
+        assertEquals("ksiadz", staff.role());
+        assertEquals("sternik", staff.subrole());
+        server.verify();
+    }
 }

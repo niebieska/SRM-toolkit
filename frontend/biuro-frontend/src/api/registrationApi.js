@@ -1,3 +1,5 @@
+import { validStaffingStatistics } from '../utils/staffingStatistics.js'
+
 function authHeaders(token) {
   return {
     Authorization: `Bearer ${token}`,
@@ -62,7 +64,7 @@ export async function fetchTurnusStats(token, turnusCode) {
   if (!response.ok) {
     throw new Error(body?.message || 'Nie udało się wczytać statystyk. Spróbuj ponownie.')
   }
-  if (!body?.participants || !body?.staff) {
+  if (!body?.participants || !body?.staff || !validStaffingStatistics(body)) {
     throw new Error('Biuro zwróciło nieprawidłowe statystyki. Spróbuj ponownie.')
   }
   return body

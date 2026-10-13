@@ -11,6 +11,8 @@ public record RegistrationSummary(
         String firstName,
         String lastName,
         Integer age,
-        String gender
+        String gender,
+        String role,
+        String subrole
 ) {
 }

@@ -5,15 +5,18 @@ import pl.srm.biuroapi.registration.model.RegistrationSummary;
 import pl.srm.biuroapi.turnus.TurnusCatalogue;
 import pl.srm.biuroapi.turnus.TurnusDefinition;
 import java.time.LocalDate;
+import pl.srm.biuroapi.season.StaffingCategories;
+import pl.srm.biuroapi.season.SeasonStaffCatalogue;
 import java.util.List;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
 class RegistrationStatisticsServiceTest {
     final TurnusCatalogue catalogue = mock(TurnusCatalogue.class);
-    final RegistrationStatisticsService service = new RegistrationStatisticsService(catalogue);
+    final RegistrationStatisticsService service = new RegistrationStatisticsService(catalogue, new StaffingStatisticsService(
+            mock(StaffingCategories.class), mock(SeasonStaffCatalogue.class)));
     RegistrationSummary row(String code, String type, String status, String gender) {
-        return new RegistrationSummary("REG", type, code, false, status, null, null, "Name", "Surname", 20, gender);
+        return new RegistrationSummary("REG", type, code, false, status, null, null, "Name", "Surname", 20, gender, null, null);
     }
     void definition() {
         when(catalogue.get("T1")).thenReturn(new TurnusDefinition("T1", "Turnus", null, "Place",

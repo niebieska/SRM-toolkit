@@ -9,13 +9,18 @@ import java.util.List;
 @Service
 public class RegistrationStatisticsService {
     private final TurnusCatalogue catalogue;
-    public RegistrationStatisticsService(TurnusCatalogue catalogue) { this.catalogue = catalogue; }
+    private final StaffingStatisticsService staffing;
+    public RegistrationStatisticsService(TurnusCatalogue catalogue, StaffingStatisticsService staffing) {
+        this.catalogue = catalogue;
+        this.staffing = staffing;
+    }
 
     public TurnusRegistrationStats calculateForTurnus(String turnusCode, List<RegistrationSummary> registrations) {
         var turnus = catalogue.get(turnusCode);
+        var roles = staffing.calculate(turnus, registrations);
         return new TurnusRegistrationStats(turnusCode,
                 calculateType(turnusCode, "PARTICIPANT", turnus.participantCapacity(), registrations),
-                calculateType(turnusCode, "STAFF", turnus.staffCapacity(), registrations));
+                calculateType(turnusCode, "STAFF", turnus.staffCapacity(), registrations), roles.roles(), roles.unmappedAccepted());
     }
 
     private TurnusRegistrationStats.TypeStats calculateType(String code, String type, int capacity,
