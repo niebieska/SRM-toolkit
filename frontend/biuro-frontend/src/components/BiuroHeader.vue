@@ -1,11 +1,17 @@
 <script setup>
 import { useRouter } from 'vue-router'
 import { useAuthStore } from '../stores/auth'
-const props = defineProps({ unsavedChanges: Boolean, busy: Boolean })
+const props = defineProps({ unsavedChanges: Boolean, busy: Boolean, confirmDiscard: Function })
 const auth = useAuthStore()
 const router = useRouter()
 async function logout() {
-  if (props.busy || (props.unsavedChanges && !window.confirm('Wylogowanie usunie niezapisane zmiany. Kontynuować?'))) return
+  if (props.busy) return
+  if (props.unsavedChanges) {
+    const confirmed = props.confirmDiscard
+      ? await props.confirmDiscard('logout')
+      : window.confirm('Wylogowanie usunie niezapisane zmiany. Kontynuować?')
+    if (!confirmed) return
+  }
   auth.logout()
   await router.push('/login')
 }
