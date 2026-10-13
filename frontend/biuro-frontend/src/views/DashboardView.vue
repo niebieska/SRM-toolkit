@@ -1,8 +1,10 @@
 <script setup>
-import { computed, onMounted, reactive, ref, watch } from 'vue'
+import { computed, onBeforeUnmount, onMounted, reactive, ref, watch } from 'vue'
 import { useAuthStore } from '../stores/auth'
 import RegistrationTable from '../components/RegistrationTable.vue'
 import BiuroHeader from '../components/BiuroHeader.vue'
+import StaffingStatistics from '../components/StaffingStatistics.vue'
+import { visibleStaffingRoles } from '../utils/staffingStatistics.js'
 import { fetchTurnuses } from '../api/turnusApi'
 import { fetchTurnusStats } from '../api/registrationApi'
 
@@ -30,6 +32,9 @@ const visibleStats = computed(() => !stats.value ? [] : [
   { type: 'PARTICIPANT', label: 'Uczestnicy', ...stats.value.participants },
   { type: 'STAFF', label: 'Kadra', ...stats.value.staff },
 ].filter(item => !filters.registrationType || filters.registrationType === item.type))
+
+const staffingRoles = computed(() => visibleStaffingRoles(stats.value, filters.registrationType))
+onBeforeUnmount(() => { statsRequest++ })
 
 const hasActiveFilters = computed(() =>
   Boolean(filters.status || filters.registrationType || filters.turnusCode || filters.search)
@@ -72,7 +77,7 @@ watch(
       <BiuroHeader />
 
        <section class="bg-white rounded-xl shadow p-4 grid grid-cols-1 md:grid-cols-4 gap-3">
-        <select v-model="filters.status" class="rounded border border-slate-300 px-3 py-2">
+        <select aria-label="Status zgłoszenia" v-model="filters.status" class="rounded border border-slate-300 px-3 py-2">
           <option value="">Wszystkie statusy</option>
           <option value="NEW">Nowe</option>
           <option value="ACCEPTED">Zaakceptowane</option>
@@ -80,12 +85,12 @@ watch(
           <option value="REJECTED">Odrzucone</option>
         </select>
 
-        <select v-model="filters.registrationType" class="rounded border border-slate-300 px-3 py-2">
+        <select aria-label="Typ zgłoszenia" v-model="filters.registrationType" class="rounded border border-slate-300 px-3 py-2">
           <option value="">Wszystkie typy</option>
           <option value="PARTICIPANT">Uczestnik</option>
           <option value="STAFF">Kadra</option>
         </select>
-        <select v-model="filters.turnusCode" class="rounded border border-slate-300 px-3 py-2">
+        <select aria-label="Turnus" v-model="filters.turnusCode" class="rounded border border-slate-300 px-3 py-2">
           <option value="">Wszystkie turnusy</option>
           <option
               v-for="turnus in turnusOptions"
@@ -97,6 +102,7 @@ watch(
         </select>
          <div class="relative">
            <input
+               aria-label="Wyszukaj zgłoszenia"
                v-model="filters.search"
                class="w-full rounded border border-slate-300 px-3 py-2 pr-9"
                placeholder="Wyszukaj"
@@ -147,6 +153,11 @@ watch(
           </div>
           <div v-if="item.overCapacity" class="font-medium text-red-700">Ponad limit: {{ item.overCapacity }}</div>
         </div>
+        <StaffingStatistics
+          v-if="item.type === 'STAFF'"
+          :roles="staffingRoles"
+          :unmapped="stats?.unmappedAcceptedStaff || 0"
+        />
       </section>
       <RegistrationTable :filters="filters" @status-updated="loadTurnusStats"/>
     </div>
