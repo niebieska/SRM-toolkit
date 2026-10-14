@@ -3,6 +3,7 @@ import LoginView from '../views/LoginView.vue'
 import DashboardView from '../views/DashboardView.vue'
 import TurnusListView from '../views/TurnusListView.vue'
 import TurnusEditorView from '../views/TurnusEditorView.vue'
+import TurnusListsView from '../views/TurnusListsView.vue'
 import { useAuthStore } from '../stores/auth'
 
 const router = createRouter({
@@ -14,6 +15,7 @@ const router = createRouter({
     { path: '/turnusy', name: 'turnus-list', component: TurnusListView, meta: { requiresAuth: true } },
     { path: '/turnusy/nowy', name: 'turnus-create', component: TurnusEditorView, meta: { requiresAuth: true } },
     { path: '/turnusy/:code', name: 'turnus-detail', component: TurnusEditorView, meta: { requiresAuth: true } },
+    { path: '/turnusy/:code/listy', name: 'turnus-lists', component: TurnusListsView, meta: { requiresAuth: true } },
   ],
 })
 

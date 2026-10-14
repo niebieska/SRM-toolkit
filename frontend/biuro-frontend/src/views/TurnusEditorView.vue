@@ -159,6 +159,10 @@ async function save() {
         </div>
         <span v-if="loaded" class="rounded-full border px-3 py-1 text-xs font-medium" :class="form.active ? 'border-slate-400 bg-slate-200 text-slate-900' : 'border-slate-200 bg-white text-slate-600'">{{ status }}</span>
       </header>
+      <nav v-if="!isNew && loaded" aria-label="Sekcje turnusu" class="flex gap-1 border-b border-slate-200 text-sm">
+        <RouterLink :to="{ name: 'turnus-detail', params: { code: form.turnusCode } }" aria-current="page" class="border-b-2 border-slate-800 px-4 py-2 font-semibold text-slate-900">Definicja</RouterLink>
+        <RouterLink :to="{ name: 'turnus-lists', params: { code: form.turnusCode } }" class="rounded-t px-4 py-2 text-slate-600 hover:bg-white focus-visible:ring-2 focus-visible:ring-slate-500">Listy</RouterLink>
+      </nav>
       <p v-if="loading" role="status" class="turnus-card text-center text-sm text-slate-600">Wczytywanie turnusu…</p>
       <div v-if="error || validationError" role="alert" class="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">
         <p>{{ error || validationError }}</p>
