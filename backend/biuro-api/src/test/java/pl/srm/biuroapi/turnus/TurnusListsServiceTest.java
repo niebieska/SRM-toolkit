@@ -33,7 +33,7 @@ class TurnusListsServiceTest {
     }
     TurnusListPerson person(LocalDate birthDate, String role, String subrole) {
         return new TurnusListPerson("R1", "STAFF", "Jan", "Nowak", null, null,
-                birthDate, "male", null, null, null, role, subrole, birthDate == null);
+                birthDate, "male", null, null, null, role, subrole, birthDate == null, false);
     }
 
     @Test void agesUseTurnusStartAndPreserveMissingAndFutureBirthDates() {

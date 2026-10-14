@@ -55,13 +55,13 @@ public class TurnusListService {
                 birthDate, text(person.path("gender")), text(person.path("contact").path("phone")),
                 text(root.path("guardian").path("contact").path("phone")), text(root.path("ice").path("phone")),
                 staff ? text(root.path("role")) : null, staff ? text(root.path("subrole")) : null,
-                birthDate == null || firstName == null || lastName == null);
+                birthDate == null || firstName == null || lastName == null, registration.isMinor());
     }
 
     private TurnusListPerson incomplete(Registration registration) {
         return new TurnusListPerson(registration.getRegistrationCode(), registration.getRegistrationType(),
                 null, null, null, new Address(null, null, null, null), null, null,
-                null, null, null, null, null, true);
+                null, null, null, null, null, true, registration.isMinor());
     }
 
     private String text(JsonNode node) {
