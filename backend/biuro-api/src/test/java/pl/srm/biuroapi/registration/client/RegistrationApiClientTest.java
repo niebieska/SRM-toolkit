@@ -161,11 +161,12 @@ class RegistrationApiClientTest {
                         [{"registrationCode":"R1","registrationType":"PARTICIPANT",
                           "firstName":"Anna","lastName":"Nowak","birthDate":"2009-01-17",
                           "personPhone":"111222333","guardianPhone":"222333444","icePhone":null,
-                          "incompleteData":false}]
+                          "incompleteData":false,"minor":true}]
                         """, MediaType.APPLICATION_JSON));
         var row = client.fetchTurnusList("T1").getFirst();
         assertEquals(LocalDate.of(2009, 1, 17), row.birthDate());
         assertEquals("222333444", row.guardianPhone());
+        assertTrue(row.minor());
         assertNull(row.icePhone());
         server.verify();
     }

@@ -69,4 +69,13 @@ class TurnusListServiceTest {
         when(repository.findByTurnusCodeAndStatus("T1", "ACCEPTED")).thenReturn(List.of());
         assertTrue(service.accepted("T1").isEmpty());
     }
+
+    @Test void preservesStoredMinorStatusEvenWhenPayloadIsMissingOrContradictory() {
+        for (String payload : List.of("broken", "{\"person\":{\"isAdult\":true}}")) {
+            var registration = registration("PARTICIPANT", payload);
+            registration.setMinor(true);
+            when(repository.findByTurnusCodeAndStatus("T1", "ACCEPTED")).thenReturn(List.of(registration));
+            assertTrue(service.accepted("T1").getFirst().minor());
+        }
+    }
 }
