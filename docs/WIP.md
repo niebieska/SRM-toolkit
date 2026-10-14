@@ -14,9 +14,10 @@
 - PESEL/address/birth date are available in the API; initial screen columns are
   compact. Presets/custom columns/exports follow; notes/payments deferred.
 - Endpoints, evidence and scenarios: [Phase 1 implementation](Turnus-lists-phase-1.md).
-- Follow-up requested after committing this baseline: show PESEL and address in
-  Ogólny, and combine guardian/parent and ICE phones into one column. Presentation
-  details will be discussed before applying corrections.
+- Follow-up committed separately after the baseline:
+  visible PESEL/address; Telefon; combined Telefon rodzica / ICE selecting guardian
+  for stored minors and ICE for stored adults. No fallback or birthday-policy change.
+- Gender removed from Ogólny display; retained for later group-management/custom views.
 
 ## 2026-10-13 — Turnus lists age reference
 

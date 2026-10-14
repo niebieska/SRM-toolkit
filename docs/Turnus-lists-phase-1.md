@@ -58,6 +58,16 @@ No status updates, payments or exports were added in Phase 1.
 
 ## Follow-up after the baseline commit
 
-User requested PESEL and address visible in Ogólny and a single parent/guardian/ICE
-phone column. These presentation corrections are not part of the baseline and
-will be discussed next.
+Implemented as separate corrections after the baseline:
+
+- PESEL and formatted person address are visible in Ogólny for both groups.
+- Gender is hidden in Ogólny; it remains in the API for the group-management
+  preset and later custom columns.
+- Person phone is labelled Telefon.
+- Telefon rodzica / ICE uses the guardian phone for minors and ICE for adults.
+  No fallback to the other contact if the selected phone is missing.
+- Contact choice follows the saved registration minor/adult status, independently
+  of the displayed age at Turnus start. Existing birthday/guardian policies are
+  unchanged and remain a client verification topic.
+- Protected person DTO now includes the saved `minor` flag; both APIs/frontend
+  must be updated together. No database migration.
