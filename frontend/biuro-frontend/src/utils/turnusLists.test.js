@@ -3,7 +3,7 @@ import assert from 'node:assert/strict'
 import { filterAndSortList, listValue, validateTurnusLists } from './turnusLists.js'
 
 const row = (code, type, firstName, lastName, age, role = null) => ({
-  person: { registrationCode: code, registrationType: type, firstName, lastName, gender: 'female', role },
+  person: { registrationCode: code, registrationType: type, firstName, lastName, gender: 'female', role, minor: false },
   age, roleLabel: role, subroleLabel: null,
 })
 const rows = [row('1', 'PARTICIPANT', 'Żaneta', 'Nowak', 9), row('2', 'PARTICIPANT', 'Anna', 'Adamska', 17),
@@ -37,4 +37,28 @@ test('validates selected Turnus, empty lists, group values and age fields', () =
   assert.equal(validateTurnusLists(body, 'T2'), false)
   assert.equal(validateTurnusLists({ ...body, entries: [null] }, 'T1'), false)
   assert.equal(validateTurnusLists({ ...body, entries: [{ ...rows[0], age: -1 }] }, 'T1'), false)
+  assert.equal(validateTurnusLists({ ...body, entries: [{ ...rows[0], person: { ...rows[0].person, minor: undefined } }] }, 'T1'), false)
+})
+
+test('contact number uses stored minor status, independently of displayed age', () => {
+  const entry = { ...rows[0], age: 18, person: { ...rows[0].person, minor: true, guardianPhone: '111222333', icePhone: '444555666' } }
+  assert.equal(listValue(entry, 'contactPhone'), '111222333')
+  entry.person.minor = false
+  assert.equal(listValue(entry, 'contactPhone'), '444555666')
+  entry.person.icePhone = null
+  assert.equal(listValue(entry, 'contactPhone'), null) // Never silently use the other contact.
+  entry.person.minor = true
+  entry.person.guardianPhone = null
+  entry.person.icePhone = '444555666'
+  assert.equal(listValue(entry, 'contactPhone'), null)
+})
+
+test('formats complete and partial addresses without undefined or invented values', () => {
+  const entry = { ...rows[0], person: { ...rows[0].person, address: { street: 'Polna', houseNumber: '2', postalCode: '00-001', city: 'Warszawa' } } }
+  assert.equal(listValue(entry, 'address'), 'Polna 2, 00-001 Warszawa')
+  entry.person.address = { city: 'Warszawa' }
+  assert.equal(listValue(entry, 'address'), 'Warszawa')
+  entry.person.address = {}
+  assert.equal(listValue(entry, 'address'), null)
+  assert.equal(listValue(rows[0], 'address'), null)
 })

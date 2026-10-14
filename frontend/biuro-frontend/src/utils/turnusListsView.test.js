@@ -22,8 +22,8 @@ const renderer = createRenderer({ createComment: () => ({}), insert() {}, remove
   nextSibling: () => null, createText: () => ({}), setText() {}, createElement: () => ({}), patchProp() {}, setElementText() {} })
 const settle = async () => { await nextTick(); await new Promise(resolve => setTimeout(resolve, 0)); await nextTick() }
 const body = code => ({ turnus: { turnusCode: code, turnusName: 'Turnus', startDate: '2027-01-17' }, entries: [
-  { person: { registrationCode: 'P1', registrationType: 'PARTICIPANT', firstName: 'Anna', lastName: 'Nowak' }, age: 17 },
-  { person: { registrationCode: 'S1', registrationType: 'STAFF', firstName: 'Jan', lastName: 'Kowalski', role: 'animator' }, age: 22, roleLabel: 'Animator' },
+  { person: { registrationCode: 'P1', registrationType: 'PARTICIPANT', firstName: 'Anna', lastName: 'Nowak', minor: true }, age: 17 },
+  { person: { registrationCode: 'S1', registrationType: 'STAFF', firstName: 'Jan', lastName: 'Kowalski', role: 'animator', minor: false }, age: 22, roleLabel: 'Animator' },
 ] })
 const response = value => ({ ok: true, json: async () => value })
 function mount() {
@@ -47,6 +47,16 @@ test('loads with operator credentials; separates groups and filters without addi
     assert.equal(view.groups.length, 2)
     assert.equal(view.groups[0].rows[0].person.registrationType, 'PARTICIPANT')
     assert.equal(view.groups[1].rows[0].person.registrationType, 'STAFF')
+    for (const group of view.groups) {
+      const keys = group.columns.map(column => column.key)
+      assert.ok(keys.includes('pesel'))
+      assert.ok(keys.includes('address'))
+      assert.ok(keys.includes('contactPhone'))
+      assert.ok(!keys.includes('gender'))
+      assert.ok(!keys.includes('guardianPhone'))
+      assert.ok(!keys.includes('icePhone'))
+      assert.equal(group.columns.find(column => column.key === 'personPhone').label, 'Telefon')
+    }
     view.search = 'Anna'; await settle()
     assert.equal(view.groups[0].rows.length, 1)
     assert.equal(view.groups[1].rows.length, 0)
