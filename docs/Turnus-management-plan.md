@@ -21,6 +21,15 @@ current endpoints, database configuration and remaining integration work.
 
 ## Required delivery
 
+### Operational lists — age decision (2026-10-13)
+
+For the upcoming Turnus lists, calculate displayed age on the Turnus start date.
+This is a provisional rule explicitly agreed for implementation; verify it with
+the client before final release acceptance. It applies to list display and age
+sorting, and does not change registration adult/minor eligibility or notification
+recipient rules. Client question: should operational/group-management lists use
+age at Turnus start, or another reference date?
+
 - [ ] Biuro users can create and edit Turnusy: name, dates, separate participant/staff
   capacities (minimum 1), shared active flag and independent manual registration
   switches. Existing staff capacities start at 10, editable per Turnus. Capacity

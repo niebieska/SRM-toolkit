@@ -1,5 +1,30 @@
 # Work in progress
 
+## 2026-10-14 — Turnus lists Phase 1
+
+- Implemented on `feature/turnus-lists`; committed separately as backend/frontend
+  features, tests and documentation. General accepted-person view
+  integrated into saved Turnus details, with separate participant/staff tables,
+  name search, group/role filters, sorting and age at Turnus start.
+- Protected accepted-by-Turnus query and explicit DTO; one inter-service call,
+  no Person register or duplicate personal data in Biuro. No migrations/dependencies.
+- Backend suite passes: 255 executed, 11 optional MariaDB tests skipped.
+  Biuro 13 frontend test files and build pass. Synthetic desktop/mobile screenshots
+  reviewed; live API/database acceptance remains pending.
+- PESEL/address/birth date are available in the API; initial screen columns are
+  compact. Presets/custom columns/exports follow; notes/payments deferred.
+- Endpoints, evidence and scenarios: [Phase 1 implementation](Turnus-lists-phase-1.md).
+- Follow-up requested after committing this baseline: show PESEL and address in
+  Ogólny, and combine guardian/parent and ICE phones into one column. Presentation
+  details will be discussed before applying corrections.
+
+## 2026-10-13 — Turnus lists age reference
+
+- Agreed provisional age reference: Turnus start date, for list display and sorting.
+- Verify this choice with the client before final list acceptance; existing
+  registration adult/minor and email rules remain unchanged.
+- Decision recorded in [Turnus management plan](Turnus-management-plan.md).
+
 ## 2026-10-13 — Staffing statistics
 
 - Implemented on `feature/staffing-statistics`; split into backend/frontend feature,
