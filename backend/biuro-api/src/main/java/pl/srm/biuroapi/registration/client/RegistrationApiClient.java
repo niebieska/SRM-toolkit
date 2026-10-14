@@ -13,6 +13,7 @@ import org.springframework.web.server.ResponseStatusException;
 import pl.srm.biuroapi.registration.api.StatusUpdateRequest;
 import pl.srm.biuroapi.registration.model.RegistrationDetail;
 import pl.srm.biuroapi.registration.model.RegistrationSummary;
+import pl.srm.biuroapi.registration.model.TurnusListPerson;
 
 import java.util.List;
 
@@ -66,6 +67,20 @@ public class RegistrationApiClient {
         } catch (Exception exception) {
             log.error("Nie udało się pobrać zgłoszeń z registration-api", exception);
             throw new ResponseStatusException(HttpStatus.BAD_GATEWAY, "Błąd komunikacji z registration-api");
+        }
+    }
+
+    public List<TurnusListPerson> fetchTurnusList(String turnusCode) {
+        try {
+            List<TurnusListPerson> body = restClient.get()
+                    .uri(registrationApiUrl + "/api/registrations/turnus-list?turnusCode={code}", turnusCode)
+                    .retrieve().body(new ParameterizedTypeReference<>() {});
+            if (body == null) throw new IllegalStateException("Missing Turnus list response");
+            return body;
+        } catch (Exception exception) {
+            log.warn("Cannot load Turnus list for {}", turnusCode);
+            throw new ResponseStatusException(HttpStatus.BAD_GATEWAY,
+                    "Nie można wczytać list turnusu. Spróbuj ponownie później.");
         }
     }
 
