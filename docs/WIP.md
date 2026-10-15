@@ -1,5 +1,14 @@
 # Work in progress
 
+## 2026-10-15 — Registration creation from Biuro deferred for prioritization
+
+- Record participant/staff registration creation by authenticated Biuro operators
+  as a candidate feature. Decide priority after current prioritized work; no
+  implementation or addition to first-release scope agreed now.
+- Open decisions: closed-Turnus access, initial status, notifications, consent
+  recording and operator attribution. Keep separate from editing/Turnus transfers.
+- Tracked in [Future product backlog](Future-product-backlog.md).
+
 ## 2026-10-14 — Turnus lists Phase 1
 
 - Implemented on `feature/turnus-lists`; committed separately as backend/frontend

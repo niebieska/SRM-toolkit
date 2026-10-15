@@ -13,6 +13,13 @@ explicitly promoted into Registration-workflow-release-plan.md and recorded in W
 
 ## Registration and domain extensions
 
+- Registration creation by an authenticated Biuro operator (participant/staff),
+  for phone or on-site entries. Recorded 2026-10-15; priority to be decided after
+  current prioritized work is finished, not added to the committed MVP scope yet.
+  Prefer reusing existing submission validation, numbering and duplicate protection.
+  Decide closed-Turnus access, initial status, notification behavior, consent
+  recording and operator attribution before implementation. NEW is a proposal,
+  not an agreed initial-status rule for this workflow.
 - Biuro registration editing and Turnus transfer workflow (linked new registration,
   stable original code), as detailed in WIP.
 - Soft delete, status/history audit and operational notes.
