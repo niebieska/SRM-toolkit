@@ -15,7 +15,7 @@ source = source.replace(/from '([^']+)'/g, (match, path) => {
   return path.startsWith('.') ? `from '${new URL(path.endsWith('.js') ? path : path + '.js', file).href}'` : match
 })
 source = source.replace('__expose();', '').replace('return __returned__',
-  '__expose({ data, error, loading, groups, roles, group, role, search, sort, clearFilters, load }); return __returned__')
+  '__expose({ data, error, loading, groups, roles, group, role, search, sort, sortKey, direction, selectedView, customColumns, selectView, setColumn, clearFilters, load }); return __returned__')
 const View = (await import(`data:text/javascript;base64,${Buffer.from(source).toString('base64')}`)).default
 View.render = () => null // Setup/watchers are exercised; visual acceptance is separate.
 const renderer = createRenderer({ createComment: () => ({}), insert() {}, remove() {}, parentNode: () => null,
@@ -96,5 +96,58 @@ test('failure clears personal data and retry can restore the list', async () => 
     await view.load()
     assert.equal(view.error, '')
     assert.equal(view.groups.length, 2)
+  } finally { app.unmount(); globalThis.fetch = previousFetch }
+})
+
+test('presets and custom columns reuse the loaded people and preserve filters', async () => {
+  const previousFetch = globalThis.fetch
+  let requests = 0
+  const payload = body('T1')
+  payload.entries.push({ person: { registrationCode: 'P2', registrationType: 'PARTICIPANT', firstName: 'Jan', lastName: 'Adamski', minor: true }, age: 15 })
+  globalThis.fetch = async () => { requests++; return response(payload) }
+  const { app, view } = mount()
+  try {
+    await settle()
+    view.selectView('insurance'); await settle()
+    assert.deepEqual(view.groups[0].columns.map(column => column.key), ['firstName', 'lastName', 'pesel', 'address'])
+    assert.ok(view.groups[1].columns.some(column => column.key === 'roleLabel'))
+    view.selectView('groups'); await settle()
+    assert.deepEqual(view.groups[0].rows.map(entry => entry.age), [15, 17])
+    assert.equal(view.sortKey, 'age')
+    view.search = 'Anna'
+    view.selectView('custom'); await settle()
+    assert.equal(view.search, 'Anna')
+    assert.ok(view.customColumns.includes('gender'))
+    assert.ok(!view.customColumns.includes('pesel'))
+    view.setColumn('age', false); await settle()
+    assert.equal(view.sortKey, 'lastName')
+    view.setColumn('pesel', true); await settle()
+    assert.ok(view.groups[0].columns.some(column => column.key === 'pesel'))
+    for (const key of [...view.customColumns]) view.setColumn(key, false)
+    await settle()
+    assert.equal(view.groups[0].columns.length, 0)
+    assert.equal(view.groups[1].columns.length, 0)
+    view.selectView('onsite'); await settle()
+    assert.equal(view.groups[0].columns.length, 5)
+    assert.equal(requests, 1)
+  } finally { app.unmount(); globalThis.fetch = previousFetch }
+})
+
+test('retry preserves the chosen view and columns; a different Turnus resets them', async () => {
+  const previousFetch = globalThis.fetch
+  globalThis.fetch = async url => response(body(url.includes('/T2/') ? 'T2' : 'T1'))
+  const { app, view, route } = mount()
+  try {
+    await settle()
+    view.selectView('groups'); view.selectView('custom'); view.setColumn('pesel', true)
+    view.search = 'Anna'
+    await view.load()
+    assert.equal(view.selectedView, 'custom')
+    assert.ok(view.customColumns.includes('pesel'))
+    assert.equal(view.search, 'Anna')
+    route.params.code = 'T2'; await settle()
+    assert.equal(view.selectedView, 'general')
+    assert.ok(!view.customColumns.includes('gender'))
+    assert.equal(view.search, '')
   } finally { app.unmount(); globalThis.fetch = previousFetch }
 })
