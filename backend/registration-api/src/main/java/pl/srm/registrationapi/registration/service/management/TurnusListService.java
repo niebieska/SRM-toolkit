@@ -5,11 +5,15 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.time.LocalDate;
 import java.util.List;
+
+import java.util.ArrayList;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.stereotype.Service;
 import pl.srm.registrationapi.registration.dto.response.TurnusListPerson;
 import pl.srm.registrationapi.registration.dto.response.TurnusListPerson.Address;
+import pl.srm.registrationapi.registration.dto.response.TurnusListPerson.AdditionalData;
+import pl.srm.registrationapi.registration.dto.response.TurnusListPerson.Qualification;
 import pl.srm.registrationapi.registration.model.Registration;
 import pl.srm.registrationapi.registration.repository.RegistrationRepository;
 import pl.srm.registrationapi.registration.util.PeselHelper;
@@ -55,13 +59,34 @@ public class TurnusListService {
                 birthDate, text(person.path("gender")), text(person.path("contact").path("phone")),
                 text(root.path("guardian").path("contact").path("phone")), text(root.path("ice").path("phone")),
                 staff ? text(root.path("role")) : null, staff ? text(root.path("subrole")) : null,
-                birthDate == null || firstName == null || lastName == null, registration.isMinor());
+                birthDate == null || firstName == null || lastName == null, registration.isMinor(),
+                additionalData(root, registration.isMinor(), staff));
     }
 
     private TurnusListPerson incomplete(Registration registration) {
         return new TurnusListPerson(registration.getRegistrationCode(), registration.getRegistrationType(),
                 null, null, null, new Address(null, null, null, null), null, null,
-                null, null, null, null, null, true, registration.isMinor());
+                null, null, null, null, null, true, registration.isMinor(), null);
+    }
+
+    private AdditionalData additionalData(JsonNode root, boolean minor, boolean staff) {
+        JsonNode contact = root.path(minor ? "guardian" : "ice");
+        JsonNode imageConsent = root.path("consents").path("imageUsage");
+        return new AdditionalData(text(root.path("person").path("contact").path("email")),
+                text(contact.path("firstName")), text(contact.path("lastName")),
+                text(contact.path("relation")), text(contact.path("relationOther")),
+                text(root.path("guardian").path("contact").path("email")),
+                staff ? qualifications(root) : List.of(),
+                imageConsent.isBoolean() ? imageConsent.booleanValue() : null);
+    }
+
+    private List<Qualification> qualifications(JsonNode root) {
+        var result = new ArrayList<Qualification>();
+        root.path("certificates").fields().forEachRemaining(field -> {
+            if (field.getValue().isBoolean() && field.getValue().booleanValue())
+                result.add(new Qualification(field.getKey(), text(root.path("certificateDetails").path(field.getKey()))));
+        });
+        return result;
     }
 
     private String text(JsonNode node) {

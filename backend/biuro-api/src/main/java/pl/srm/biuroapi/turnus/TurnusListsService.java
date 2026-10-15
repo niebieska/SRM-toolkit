@@ -12,7 +12,10 @@ import pl.srm.biuroapi.season.StaffCatalogue;
 
 @Service
 public class TurnusListsService {
-    public record ListEntry(TurnusListPerson person, Integer age, String roleLabel, String subroleLabel) {}
+    public record ListEntry(TurnusListPerson person, Integer age, String roleLabel, String subroleLabel,
+            List<String> qualificationLabels) {
+        public ListEntry { qualificationLabels = List.copyOf(qualificationLabels); }
+    }
     public record TurnusLists(TurnusDefinition turnus, List<ListEntry> entries) {
         public TurnusLists { entries = List.copyOf(entries); }
     }
@@ -51,6 +54,23 @@ public class TurnusListsService {
                     .findFirst().orElse(person.subrole());
             else subroleLabel = person.subrole();
         }
-        return new ListEntry(person, age, roleLabel, subroleLabel);
+        return new ListEntry(person, age, roleLabel, subroleLabel, qualificationLabels(person, catalogue));
+    }
+
+    private List<String> qualificationLabels(TurnusListPerson person, StaffCatalogue catalogue) {
+        if (!"STAFF".equals(person.registrationType()) || person.additionalData() == null) return List.of();
+        var options = catalogue.certificatesByRole();
+        String source = person.role();
+        if (person.subrole() != null) {
+            String combined = person.role() + "_" + person.subrole();
+            if (options.containsKey(combined)) source = combined;
+            else if (options.containsKey(person.subrole())) source = person.subrole();
+        }
+        var available = source == null ? List.<StaffCatalogue.Certificate>of() : options.getOrDefault(source, List.of());
+        return person.additionalData().qualifications().stream().map(qualification -> {
+            String label = available.stream().filter(option -> option.id().equals(qualification.code()))
+                    .map(StaffCatalogue.Certificate::label).findFirst().orElse(qualification.code());
+            return qualification.detail() == null ? label : label + ": " + qualification.detail();
+        }).toList();
     }
 }
