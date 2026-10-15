@@ -78,4 +78,44 @@ class TurnusListServiceTest {
             assertTrue(service.accepted("T1").getFirst().minor());
         }
     }
+
+    @Test void additionalColumnsSelectTheCorrectContactAndOnlyDeclaredQualifications() {
+        String payload = """
+                {"person":{"contact":{"email":"person@example.org"}},
+                 "guardian":{"firstName":"Maria","lastName":"Nowak","relation":"matka",
+                   "contact":{"email":"guardian@example.org"}},
+                 "ice":{"firstName":"Jan","lastName":"Nowak","relation":"inna","relationOther":"Brat"},
+                 "certificates":{"patent_zeglarski":true,"inne":true,"not_selected":false},
+                 "certificateDetails":{"inne":"Instruktor"},"consents":{"imageUsage":false}}
+                """;
+        var staff = registration("STAFF", payload);
+        when(repository.findByTurnusCodeAndStatus("T1", "ACCEPTED")).thenReturn(List.of(staff));
+        var adult = service.accepted("T1").getFirst().additionalData();
+        assertEquals("person@example.org", adult.email());
+        assertEquals("Jan", adult.contactFirstName());
+        assertEquals("inna", adult.contactRelation());
+        assertEquals("Brat", adult.contactRelationOther());
+        assertEquals("guardian@example.org", adult.guardianEmail());
+        assertEquals(Boolean.FALSE, adult.imageConsent());
+        assertEquals(2, adult.qualifications().size());
+        assertEquals("Instruktor", adult.qualifications().get(1).detail());
+        staff.setMinor(true);
+        var minor = service.accepted("T1").getFirst().additionalData();
+        assertEquals("Maria", minor.contactFirstName());
+        assertEquals("matka", minor.contactRelation());
+        assertNull(minor.contactRelationOther());
+        when(repository.findByTurnusCodeAndStatus("T1", "ACCEPTED")).thenReturn(List.of(registration("PARTICIPANT", payload)));
+        assertTrue(service.accepted("T1").getFirst().additionalData().qualifications().isEmpty());
+    }
+
+    @Test void missingHistoricalAdditionalDataDoesNotInventConsentOrContact() {
+        for (String payload : List.of("{}", "{\"consents\":{\"imageUsage\":\"false\"}}")) {
+            when(repository.findByTurnusCodeAndStatus("T1", "ACCEPTED")).thenReturn(List.of(registration("STAFF", payload)));
+            var extra = service.accepted("T1").getFirst().additionalData();
+            assertNull(extra.imageConsent());
+            assertNull(extra.contactFirstName());
+            assertNull(extra.email());
+            assertTrue(extra.qualifications().isEmpty());
+        }
+    }
 }

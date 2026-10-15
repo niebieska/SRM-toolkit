@@ -1,6 +1,6 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
-import { filterAndSortList, listValue, validateTurnusLists } from './turnusLists.js'
+import { columnsForList, filterAndSortList, listValue, validateTurnusLists } from './turnusLists.js'
 
 const row = (code, type, firstName, lastName, age, role = null) => ({
   person: { registrationCode: code, registrationType: type, firstName, lastName, gender: 'female', role, minor: false },
@@ -61,4 +61,64 @@ test('formats complete and partial addresses without undefined or invented value
   entry.person.address = {}
   assert.equal(listValue(entry, 'address'), null)
   assert.equal(listValue(rows[0], 'address'), null)
+})
+
+test('presets select agreed fields and keep staff role/function in the staff section', () => {
+  const keys = (view, type = 'PARTICIPANT') => columnsForList(view, [], type).map(column => column.key)
+  assert.deepEqual(keys('insurance'), ['firstName', 'lastName', 'pesel', 'address'])
+  assert.deepEqual(keys('onsite'), ['firstName', 'lastName', 'pesel', 'personPhone', 'contactPhone'])
+  assert.deepEqual(keys('groups'), ['firstName', 'lastName', 'birthDate', 'gender', 'age'])
+  assert.ok(!keys('general').includes('gender'))
+  for (const view of ['general', 'insurance', 'onsite', 'groups']) {
+    assert.ok(keys(view, 'STAFF').includes('roleLabel'))
+    assert.ok(!keys(view).includes('roleLabel'))
+  }
+})
+
+test('custom columns use known fields once and empty selection is explicit', () => {
+  const columns = columnsForList('custom', ['pesel', 'pesel', 'unknown', 'gender'], 'STAFF')
+  assert.deepEqual(columns.map(column => column.key), ['pesel', 'gender', 'roleLabel'])
+  assert.deepEqual(columnsForList('custom', [], 'STAFF'), [])
+  assert.deepEqual(columnsForList('custom', [], 'PARTICIPANT'), [])
+})
+
+test('birth dates display in Polish format but sort chronologically with unknown dates last', () => {
+  const values = ['2010-12-01', '2009-01-31', null].map((birthDate, index) => ({
+    ...rows[0], person: { ...rows[0].person, registrationCode: String(index), birthDate },
+  }))
+  assert.equal(listValue(values[0], 'birthDate'), '01.12.2010')
+  assert.equal(listValue(values[2], 'birthDate'), null)
+  assert.deepEqual(filterAndSortList(values, { type: 'PARTICIPANT', sortKey: 'birthDate' })
+    .map(entry => entry.person.birthDate), ['2009-01-31', '2010-12-01', null])
+  assert.deepEqual(filterAndSortList(values, { type: 'PARTICIPANT', sortKey: 'birthDate', direction: 'desc' })
+    .map(entry => entry.person.birthDate), ['2010-12-01', '2009-01-31', null])
+})
+
+test('additional optional columns format contact names relationships city qualifications and image consent', () => {
+  const entry = { ...rows[0], person: { ...rows[0].person, address: { city: 'Warszawa' }, additionalData: {
+    email: 'person@example.org', contactFirstName: 'Jan', contactLastName: 'Nowak',
+    guardianEmail: 'guardian@example.org', contactRelation: 'inna', contactRelationOther: 'Brat', imageConsent: false,
+  } }, qualificationLabels: ['Patent żeglarski', 'Inne: Instruktor'] }
+  assert.equal(listValue(entry, 'email'), 'person@example.org')
+  assert.equal(listValue(entry, 'guardianEmail'), 'guardian@example.org')
+  assert.equal(listValue(entry, 'contactName'), 'Jan Nowak')
+  assert.equal(listValue(entry, 'contactRelation'), 'Inna: Brat')
+  assert.equal(listValue(entry, 'city'), 'Warszawa')
+  assert.equal(listValue(entry, 'qualifications'), 'Patent żeglarski; Inne: Instruktor')
+  assert.equal(listValue(entry, 'imageConsent'), 'Nie')
+  entry.person.additionalData.imageConsent = true
+  assert.equal(listValue(entry, 'imageConsent'), 'Tak')
+  for (const key of ['email', 'guardianEmail', 'contactName', 'contactRelation', 'city', 'qualifications', 'imageConsent']) {
+    assert.equal(listValue(rows[0], key), null)
+  }
+})
+
+test('additional fields are optional in custom view and do not expand general or other presets', () => {
+  const extras = ['email', 'contactName', 'guardianEmail', 'contactRelation', 'city', 'qualifications', 'imageConsent']
+  for (const view of ['general', 'insurance', 'onsite', 'groups']) {
+    assert.ok(columnsForList(view, [], 'PARTICIPANT').every(column => !extras.includes(column.key)))
+  }
+  assert.deepEqual(columnsForList('custom', extras, 'PARTICIPANT').map(column => column.key), extras.filter(key => key !== 'qualifications'))
+  assert.ok(columnsForList('custom', extras, 'STAFF').some(column => column.key === 'qualifications'))
+  assert.deepEqual(columnsForList('custom', ['qualifications'], 'PARTICIPANT'), [])
 })

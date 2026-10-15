@@ -8,6 +8,8 @@ Start with the registration workflow release plan for functional scope and the d
 - [Deployment checklist](deployment-checklist.md)
 - [Progress and discovered issues](WIP.md)
 - [Turnus management plan](Turnus-management-plan.md)
+- [Turnus lists — Phase 1 implementation](Turnus-lists-phase-1.md)
+- [Turnus list presets and custom columns — Phase 2](Turnus-list-presets.md)
 - [Turnus editor UI and manual verification](Turnus-editor.md)
 - [Turnus capacities, statistics and manual verification](Turnus-capacity-management.md)
 - [Turnus catalogue implementation and startup](Turnus-catalogue-implementation.md)

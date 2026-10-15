@@ -1,5 +1,28 @@
 # Work in progress
 
+## 2026-10-15 — Turnus list presets and custom columns (Phase 2)
+
+- Implemented on `feature/turnus-list-presets`; split into feature, test and
+  documentation commits. Existing Listy page
+  now offers Ogólny, Ubezpieczenie, Rejestracja na miejscu, Podział na grupy and Własny.
+- Presets/custom column checkboxes reuse current data, filters and separate group
+  tables. Staff roles remain visible. Group preset sorts age ascending; birth dates
+  display in Polish format and sort chronologically.
+- Empty selections and removal of the sort column are handled. Retry retains view
+  settings; changing Turnus resets them. No saved templates, dependency changes
+  or export/payment implementation.
+- Added seven optional custom columns: person email, guardian/ICE name, guardian
+  email, contact relationship, city, staff qualifications and image consent. Existing
+  protected DTOs extended; no new endpoint or migration. Catalogue qualification
+  labels/details and unknown consent handling covered by regression tests.
+- Uprawnienia kadry appears only in the staff table, including Własny. Toolbar
+  order: Typ listy, people/role filters, Wyszukaj, Wyczyść filtry.
+- All 13 Biuro test files/build pass; synthetic desktop/mobile screenshots reviewed.
+  Registration/Biuro backend suites also pass after the additional-column extension;
+  11 optional MariaDB tests skipped. Additional columns need live manual verification.
+  Live manual acceptance remains pending. Scope/scenarios:
+  [Turnus list presets](Turnus-list-presets.md).
+
 ## 2026-10-15 — Registration creation from Biuro deferred for prioritization
 
 - Record participant/staff registration creation by authenticated Biuro operators
