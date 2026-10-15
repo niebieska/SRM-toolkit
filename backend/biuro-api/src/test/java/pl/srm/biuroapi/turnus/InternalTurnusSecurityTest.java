@@ -78,7 +78,7 @@ class InternalTurnusSecurityTest {
         for (String method : new String[]{"POST", "PATCH", "DELETE", "HEAD"})
             assertEquals(403, request(method, "/internal/turnuses", auth).statusCode());
         for (String path : new String[]{"/internal/turnuses/ZAGLE26T1", "/internal/unknown",
-                "/api/turnuses", "/api/biuro/registrations"})
+                "/api/turnuses", "/api/turnuses/ZAGLE26T1/lists", "/api/biuro/registrations"})
             assertEquals(403, request("GET", path, auth).statusCode());
         assertEquals(403, request("POST", "/api/turnuses", auth).statusCode());
     }
@@ -136,5 +136,12 @@ class InternalTurnusSecurityTest {
             assertEquals(404, (int) JsonPath.read(response.body(), "$.status"));
             assertEquals("Nie znaleziono zasobu.", JsonPath.read(response.body(), "$.message"));
         }
+    }
+
+    @Test void listsRequireAnOperatorAndUnknownTurnusReturns404() throws Exception {
+        assertEquals(403, request("GET", "/api/turnuses/ZAGLE26T1/lists", null).statusCode());
+        assertEquals(403, request("GET", "/api/turnuses/ZAGLE26T1/lists", "Bearer invalid-token").statusCode());
+        assertEquals(404, request("GET", "/api/turnuses/MISSING/lists",
+                "Bearer " + jwt.generateToken("test-operator")).statusCode());
     }
 }

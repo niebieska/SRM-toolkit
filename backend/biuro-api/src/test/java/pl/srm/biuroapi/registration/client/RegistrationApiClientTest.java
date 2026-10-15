@@ -13,6 +13,7 @@ import org.springframework.web.server.ResponseStatusException;
 import pl.srm.biuroapi.registration.api.StatusUpdateRequest;
 
 import java.net.ConnectException;
+import java.time.LocalDate;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.springframework.test.web.client.match.MockRestRequestMatchers.*;
@@ -149,6 +150,44 @@ class RegistrationApiClientTest {
         var staff = client.fetchRegistrations().getFirst();
         assertEquals("ksiadz", staff.role());
         assertEquals("sternik", staff.subrole());
+        server.verify();
+    }
+
+    @Test
+    void turnusListUsesServiceAuthenticationAndPreservesBirthDateAndContacts() {
+        server.expect(requestTo("http://registration-api:8080/api/registrations/turnus-list?turnusCode=T1"))
+                .andExpect(header(HttpHeaders.AUTHORIZATION, credentials))
+                .andRespond(withSuccess("""
+                        [{"registrationCode":"R1","registrationType":"PARTICIPANT",
+                          "firstName":"Anna","lastName":"Nowak","birthDate":"2009-01-17",
+                          "personPhone":"111222333","guardianPhone":"222333444","icePhone":null,
+                          "incompleteData":false,"minor":true}]
+                        """, MediaType.APPLICATION_JSON));
+        var row = client.fetchTurnusList("T1").getFirst();
+        assertEquals(LocalDate.of(2009, 1, 17), row.birthDate());
+        assertEquals("222333444", row.guardianPhone());
+        assertTrue(row.minor());
+        assertNull(row.icePhone());
+        server.verify();
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"null", "{}", "not-json"})
+    void invalidTurnusListDoesNotBecomeAnEmptyList(String body) {
+        server.expect(requestTo("http://registration-api:8080/api/registrations/turnus-list?turnusCode=T1"))
+                .andRespond(withSuccess(body, MediaType.APPLICATION_JSON));
+        assertEquals(HttpStatus.BAD_GATEWAY,
+                assertThrows(ResponseStatusException.class, () -> client.fetchTurnusList("T1")).getStatusCode());
+        server.verify();
+    }
+
+    @Test
+    void turnusListTimeoutReturnsSafeError() {
+        server.expect(requestTo("http://registration-api:8080/api/registrations/turnus-list?turnusCode=T1"))
+                .andRespond(withException(new java.net.SocketTimeoutException("secret upstream details")));
+        var error = assertThrows(ResponseStatusException.class, () -> client.fetchTurnusList("T1"));
+        assertEquals(HttpStatus.BAD_GATEWAY, error.getStatusCode());
+        assertFalse(error.getReason().contains("secret"));
         server.verify();
     }
 }

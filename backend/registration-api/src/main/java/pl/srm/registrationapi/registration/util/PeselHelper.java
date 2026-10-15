@@ -41,6 +41,11 @@ public class PeselHelper {
         return sum % 10 == 0;
     }
 
+    public LocalDate birthDate(String pesel) {
+        if (!isValid(pesel)) throw new IllegalArgumentException("Nieprawidłowy PESEL.");
+        return extractBirthDate(pesel);
+    }
+
     private boolean canExtractBirthDate(String pesel) {
         try {
             extractBirthDate(pesel);

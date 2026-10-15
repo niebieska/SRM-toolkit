@@ -9,10 +9,13 @@ import org.springframework.jdbc.core.JdbcTemplate;
 import pl.srm.registrationapi.registration.exception.RegistrationException;
 import pl.srm.registrationapi.registration.parser.RegistrationContext;
 import pl.srm.registrationapi.registration.service.submission.RegistrationPersistenceService;
+import pl.srm.registrationapi.registration.model.Registration;
 
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
+import java.util.stream.Collectors;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
@@ -59,6 +62,23 @@ class RegistrationIntegrityTest {
         assertEquals(0L, repository.countByTurnusCodeAndRegistrationTypeAndStatus("A", "STAFF", "ACCEPTED"));
     }
     @Autowired pl.srm.registrationapi.registration.repository.RegistrationRepository repository;
+
+    @Test
+    void turnusListsQueryIncludesBothTypesButExcludesOtherTurnusyAndStatuses() {
+        service.saveParticipant(context("A", "accepted-participant"), "{}");
+        service.saveStaff(context("A", "accepted-staff"), "{}");
+        service.saveParticipant(context("B", "other-turnus"), "{}");
+        service.saveParticipant(context("A", "new-person"), "{}");
+        service.saveParticipant(context("A", "waitlist-person"), "{}");
+        service.saveParticipant(context("A", "rejected-person"), "{}");
+        jdbc.update("UPDATE registration SET status = 'ACCEPTED' WHERE pesel_hash IN ('accepted-participant', 'accepted-staff', 'other-turnus')");
+        jdbc.update("UPDATE registration SET status = 'WAITLIST' WHERE pesel_hash = 'waitlist-person'");
+        jdbc.update("UPDATE registration SET status = 'REJECTED' WHERE pesel_hash = 'rejected-person'");
+        var rows = repository.findByTurnusCodeAndStatus("A", "ACCEPTED");
+        assertEquals(2, rows.size());
+        assertEquals(Set.of("PARTICIPANT", "STAFF"), rows.stream()
+                .map(Registration::getRegistrationType).collect(Collectors.toSet()));
+    }
 
     @Test
     void concurrentFirstUseAllocatesDistinctNumbers() throws Exception {

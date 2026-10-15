@@ -25,6 +25,8 @@ import org.springframework.web.context.support.AnnotationConfigWebApplicationCon
 import org.springframework.web.servlet.config.annotation.EnableWebMvc;
 import pl.srm.registrationapi.common.exception.GlobalExceptionHandler;
 import pl.srm.registrationapi.registration.controller.AcceptedCountsController;
+import pl.srm.registrationapi.registration.controller.TurnusListController;
+import pl.srm.registrationapi.registration.service.management.TurnusListService;
 import pl.srm.registrationapi.registration.controller.RegistrationController;
 import pl.srm.registrationapi.registration.exception.RegistrationException;
 import pl.srm.registrationapi.registration.repository.RegistrationRepository;
@@ -70,7 +72,8 @@ class ManagementSecurityConfigTest {
     @Test
     void rejectsAnonymousManagementAccessIncludingTypeLists() throws Exception {
         for (String path : List.of("/api/registrations", "/api/registrations/ABC",
-                "/api/registrations/participant", "/api/registrations/staff", "/api/registrations/accepted-counts?turnusCode=T1")) {
+                "/api/registrations/participant", "/api/registrations/staff", "/api/registrations/accepted-counts?turnusCode=T1",
+                "/api/registrations/turnus-list?turnusCode=T1")) {
             mvc.perform(get(path)).andExpect(status().isUnauthorized());
         }
         mvc.perform(patch("/api/registrations/ABC/status")
@@ -208,6 +211,23 @@ class ManagementSecurityConfigTest {
     }
 
     @Test
+    void turnusListsRequireCredentialsAndRejectMissingCode() throws Exception {
+        var lists = context.getBean(TurnusListService.class);
+        when(lists.accepted("T1")).thenReturn(List.of());
+        mvc.perform(get("/api/registrations/turnus-list").param("turnusCode", "T1")
+                .header(HttpHeaders.AUTHORIZATION, credentials))
+                .andExpect(status().isOk()).andExpect(content().json("[]"));
+        verify(lists).accepted("T1");
+        clearInvocations(lists);
+        mvc.perform(get("/api/registrations/turnus-list").header(HttpHeaders.AUTHORIZATION, credentials))
+                .andExpect(status().isBadRequest());
+        mvc.perform(get("/api/registrations/turnus-list").param("turnusCode", " ")
+                .header(HttpHeaders.AUTHORIZATION, credentials))
+                .andExpect(status().isBadRequest());
+        verifyNoInteractions(lists);
+    }
+
+    @Test
     void missingOrBlankTurnusCodeReturns400WithoutQueryingDatabase() throws Exception {
         var repository = context.getBean(RegistrationRepository.class);
         mvc.perform(get("/api/registrations/accepted-counts").header(HttpHeaders.AUTHORIZATION, credentials))
@@ -233,6 +253,8 @@ class ManagementSecurityConfigTest {
     @Configuration
     @EnableWebMvc
     static class TestMvcConfig {
+        @Bean TurnusListService listsService() { return mock(TurnusListService.class); }
+        @Bean TurnusListController lists(TurnusListService service) { return new TurnusListController(service); }
         @Bean RegistrationRepository repository() {
             return mock(RegistrationRepository.class);
         }
