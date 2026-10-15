@@ -9,6 +9,8 @@ import org.springframework.http.HttpStatus;
 import org.springframework.web.server.ResponseStatusException;
 import pl.srm.biuroapi.registration.client.RegistrationApiClient;
 import pl.srm.biuroapi.registration.model.TurnusListPerson;
+import pl.srm.biuroapi.registration.model.TurnusListPerson.AdditionalData;
+import pl.srm.biuroapi.registration.model.TurnusListPerson.Qualification;
 import pl.srm.biuroapi.season.SeasonStaffCatalogue;
 import pl.srm.biuroapi.season.StaffCatalogueValidator;
 import tools.jackson.databind.ObjectMapper;
@@ -33,7 +35,7 @@ class TurnusListsServiceTest {
     }
     TurnusListPerson person(LocalDate birthDate, String role, String subrole) {
         return new TurnusListPerson("R1", "STAFF", "Jan", "Nowak", null, null,
-                birthDate, "male", null, null, null, role, subrole, birthDate == null, false);
+                birthDate, "male", null, null, null, role, subrole, birthDate == null, false, null);
     }
 
     @Test void agesUseTurnusStartAndPreserveMissingAndFutureBirthDates() {
@@ -71,5 +73,22 @@ class TurnusListsServiceTest {
         when(turnuses.get("T1")).thenReturn(turnus(TurnusDefinition.SeasonType.WINTER));
         when(registrations.fetchTurnusList("T1")).thenThrow(new ResponseStatusException(HttpStatus.BAD_GATEWAY));
         assertEquals(HttpStatus.BAD_GATEWAY, assertThrows(ResponseStatusException.class, () -> service().get("T1")).getStatusCode());
+    }
+
+    @Test void qualificationLabelsUseTheCompositeSeasonMappingAndPreserveHistoricalCodesAndDetails() {
+        when(turnuses.get("T1")).thenReturn(turnus(TurnusDefinition.SeasonType.SUMMER));
+        var data = new AdditionalData(null, null, null, null, null, null,
+                List.of(new Qualification("patent_zeglarski", null), new Qualification("inne", "Instruktor"),
+                        new Qualification("historical", "Old qualification")), null);
+        var staff = new TurnusListPerson("S1", "STAFF", "Jan", "Nowak", null, null, null,
+                null, null, null, null, "ksiadz", "sternik", true, false, data);
+        var participant = new TurnusListPerson("P1", "PARTICIPANT", "Anna", "Nowak", null, null, null,
+                null, null, null, null, null, null, true, true, data);
+        when(registrations.fetchTurnusList("T1")).thenReturn(List.of(staff, participant));
+        var entries = service().get("T1").entries();
+        assertEquals(List.of("Patent żeglarski", "Inne (jakie?): Instruktor", "historical: Old qualification"),
+                entries.getFirst().qualificationLabels());
+        assertTrue(entries.get(1).qualificationLabels().isEmpty());
+        assertThrows(UnsupportedOperationException.class, () -> entries.getFirst().qualificationLabels().clear());
     }
 }
