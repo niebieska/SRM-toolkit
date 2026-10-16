@@ -1,5 +1,68 @@
 # Work in progress
 
+## 2026-10-16 — Biuro accounts Phase 1 backend implemented
+
+- Branch `feature/biuro-accounts`: Flyway V5 accounts/roles/sessions/setup lock,
+  BCrypt passwords, database login, profile/own-password/logout APIs and two-hour
+  JWTs tied to stored sessions. Temporary-password accounts have no operational
+  authority; operational endpoints require OPERATOR. Current roles/active state
+  are checked per request. Password change revokes older sessions; logout revokes
+  the current session. Internal Turnus Basic authentication remains separate.
+- Removed the shared-user login and JWT-secret fallback. Explicit JWT_SECRET and
+  one-time first-SYS_ADMIN environment setup are required; old JWTs are invalid.
+  [Setup and phase boundary](Biuro-accounts-phase-1.md) document the API contracts.
+- Final Biuro suite: 111 tests, zero failures/errors/skips. All 12 account/bootstrap
+  integration tests also passed on disposable MariaDB 11.8.9, including fresh V5
+  migration, normalized username uniqueness, concurrent bootstrap, password/session
+  changes and preserved Turnus seeds. Disposable container stopped/removed.
+- Initial sandbox run could not attach Mockito/start local servers; successful
+  verification ran with the required execution permissions. No frontend code
+  changed, so frontend checks were not repeated. Diff whitespace check passed.
+- This is not deployment-ready alone: account administration/self-role assignment,
+  VIEWER assignments, last-admin protection, audit and frontend password/logout/
+  session flows remain. Existing frontend logout still only clears local state.
+  No account-management screen or automatic role-grant workaround was added.
+- Implementation, tests and documentation are recorded in separate checkpoint
+  commits. Unrelated sth.java and the empty untracked Turnus-lists-plan.md were
+  left untouched.
+
+## 2026-10-16 — Biuro accounts and access decisions
+
+- Recorded agreed scope in [accounts/access plan](Biuro-accounts-and-access-plan.md).
+  Unique username/password, hashed credentials, administrator-created accounts,
+  temporary-password change and multiple fixed roles; no public registration.
+- SYS_ADMIN manages access and may assign themselves OPERATOR/VIEWER. OPERATOR
+  has all Turnus/processing access. VIEWER has assigned-Turnus lists, all presets,
+  Własny and exports, plus minimal Turnus navigation; no operational changes.
+- Accepted initial defaults: two-hour sessions, current-session logout revocation,
+  reset/disable revocation, next-request role/assignment updates and protection
+  for the last active SYS_ADMIN. Preserve input on reauthentication; never replay
+  writes automatically. Implementation/schema decisions and tests remain pending.
+
+## 2026-10-16 — Release-plan status reconciled
+
+- Updated [functional release plan](Registration-workflow-release-plan.md) against
+  local `development` at `2cdac33` (PR #40). Turnus catalogue/cache/editor, seasonal
+  staff configuration, capacities/statistics, confirmation metadata and list/export
+  implementation are now recorded as delivered.
+- Kept operator/deployed acceptance pending. Distinguished implemented Biuro and
+  catalogue timeouts from remaining Registration-to-email timeout work. No new
+  full regression run, remote fetch or deployment was performed for this doc update.
+- Remaining focus: JWT/session handling, notification correctness/security,
+  deployment/secrets/configuration, and complete workflow acceptance. Registration
+  editing remains deferred; no new product scope added.
+
+## 2026-10-16 — Registration editing deferred
+
+- Recorded a possible Biuro-only editing feature in
+  [Future product backlog](Future-product-backlog.md). PESEL is assumed correct
+  and remains read-only; Turnus transfers create a separate linked registration.
+- Exact editable fields, consent handling and notification behavior remain to be
+  agreed. Validation, audit and protection against overwriting newer changes belong
+  in the implementation scope. No editing implementation started or release scope
+  expanded. Continue remaining release work, starting with reconciling plan status
+  and JWT/session-expiry handling, followed by email and deployment readiness.
+
 ## 2026-10-16 — Turnus list exports (Phase 3)
 
 - Implemented on `feature/turnus-list-exports`. XLSX, CSV and generated

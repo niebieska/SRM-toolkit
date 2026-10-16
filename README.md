@@ -14,8 +14,8 @@ Public requests remain available without credentials:
 
 All registration list/detail/status endpoints, including participant/staff lists,
 require the dedicated Biuro service account through HTTP Basic authentication.
-The Biuro frontend continues to use its existing admin JWT; service credentials
-belong only to the two backend processes and must never enter frontend bundles.
+Biuro operator authentication uses JWTs; service credentials belong only to the
+backend processes and must never enter frontend bundles.
 Other registration-api routes are denied by default. Only Actuator health is exposed.
 
 Set the same `REGISTRATION_SERVICE_PASSWORD` for registration-api and biuro-api.
@@ -33,3 +33,12 @@ boundary. Existing Compose packaging issues are handled separately.
 
 This change does not rotate existing admin/JWT credentials or remove the previously
 tracked `.env`; those require the separate secrets-hardening change.
+
+## Biuro account implementation checkpoint
+
+On `feature/biuro-accounts`, the backend replaces the shared configured login with
+stored accounts and revocable sessions. `JWT_SECRET` is required; first SYS_ADMIN
+setup and API contracts are documented in [Phase 1](docs/Biuro-accounts-phase-1.md).
+This checkpoint is not a standalone rollout: account management, VIEWER assignments
+and frontend password/session flows are still pending. Existing shared-user tokens
+are invalidated; `BIURO_USERNAME`/`BIURO_PASSWORD` no longer configure operator login.

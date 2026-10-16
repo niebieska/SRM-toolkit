@@ -5,6 +5,8 @@ Start with the registration workflow release plan for functional scope and the d
 ## Active plans and progress
 
 - [Registration workflow release plan](Registration-workflow-release-plan.md)
+- [Biuro accounts, permissions and session plan](Biuro-accounts-and-access-plan.md)
+- [Biuro accounts — Phase 1 backend and setup](Biuro-accounts-phase-1.md)
 - [Deployment checklist](deployment-checklist.md)
 - [Progress and discovered issues](WIP.md)
 - [Turnus management plan](Turnus-management-plan.md)
