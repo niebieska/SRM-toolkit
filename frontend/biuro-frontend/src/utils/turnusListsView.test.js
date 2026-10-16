@@ -15,7 +15,7 @@ source = source.replace(/from '([^']+)'/g, (match, path) => {
   return path.startsWith('.') ? `from '${new URL(path.endsWith('.js') ? path : path + '.js', file).href}'` : match
 })
 source = source.replace('__expose();', '').replace('return __returned__',
-  '__expose({ data, error, loading, groups, roles, group, role, search, sort, sortKey, direction, selectedView, customColumns, selectView, setColumn, clearFilters, load, exportList, exportFormat, exportCount, exporting, exportError, exportSuccess }); return __returned__')
+  '__expose({ data, error, loading, groups, group, search, sort, sortKey, direction, selectedView, customColumns, selectView, setColumn, clearFilters, load, exportList, exportFormat, exportCount, exporting, exportError, exportSuccess }); return __returned__')
 const View = (await import(`data:text/javascript;base64,${Buffer.from(source).toString('base64')}`)).default
 View.render = () => null // Setup/watchers are exercised; visual acceptance is separate.
 const renderer = createRenderer({ createComment: () => ({}), insert() {}, remove() {}, parentNode: () => null,
@@ -60,8 +60,7 @@ test('loads with operator credentials; separates groups and filters without addi
     view.search = 'Anna'; await settle()
     assert.equal(view.groups[0].rows.length, 1)
     assert.equal(view.groups[1].rows.length, 0)
-    view.clearFilters(); view.role = 'animator'; view.group = 'PARTICIPANT'; await settle()
-    assert.equal(view.role, '')
+    view.clearFilters(); view.group = 'PARTICIPANT'; await settle()
     assert.equal(view.groups.length, 1)
     assert.equal(requests, 1)
   } finally { app.unmount(); globalThis.fetch = previousFetch }
