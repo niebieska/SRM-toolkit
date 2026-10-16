@@ -8,6 +8,11 @@ First-release-functional-review.md and Turnus-management-plan.md.
 Operational deployment gates live in [deployment-checklist.md](deployment-checklist.md).
 This file owns functional acceptance; WIP.md records progress and evidence.
 
+Implementation status reconciled 2026-10-16 against local `development` at
+`2cdac33` (export PR #40). This records completed implementation, not deployed
+acceptance or a new full regression run. Earlier dated assessments are historical;
+implementation documents and WIP record subsequent corrections.
+
 ## Current state and acceptance gates
 
 "Exists" below means found in code; it does not mean a complete deployed workflow
@@ -20,8 +25,8 @@ acceptance and verification tasks are tracked separately.
 | Find and inspect | Biuro filters status/type/Turnus; local search and sorting; details with payload fields. | Operators can find each scenario, read required person/guardian/contact/role details, and clearly distinguish status and Turnus. |
 | Decide | Table and details actions support ACCEPTED/WAITLIST/REJECTED; modal offers preset rejection reasons plus free text; Biuro enforces rejection reason. | All three outcomes persist and refresh correctly; reasons visible; failures show no false success. Agree repeated/concurrent action behavior and capacity policy. |
 | Notify | Confirmation and status templates exist with guardian/self routing. | Verify recipients/content for adult/minor and participant/staff; correct dates/payment instructions; SMTP failure does not lose registration or falsely claim delivery; define practical recovery/resend. |
-| Assemble Turnus roster | Registrations already filter by Turnus/type/status, but dedicated operational lists are missing on this branch. | Accepted participants and staff selectable for the correct Turnus; NEW/WAITLIST/REJECTED excluded from accepted lists. Empty lists supported. |
-| Generate lists | No production export/print implementation found; experimental prototype is reference only. | Insurance export and printable on-site registration list use agreed columns, correct selection and current data. Staff inclusion is explicit. Print/export verified using synthetic records. |
+| Assemble Turnus roster | Dedicated accepted-only participant/staff tables, search, type filter, sorting, presets and custom columns are implemented. Staff roles remain visible; qualifications are staff-only. | Accepted participants and staff selectable for the correct Turnus; NEW/WAITLIST/REJECTED excluded from accepted lists. Empty lists supported. |
+| Generate lists | XLSX/CSV/PDF exports use current filters, columns and ordering. XLSX sheets/PDF sections separate groups; CSV includes person type. Binary and browser checks passed; intended application/print acceptance remains pending. | Insurance export and printable on-site registration list use agreed columns, correct selection and current data. Staff inclusion is explicit. Print/export verified using synthetic records. |
 
 ## Ordered work packages
 
@@ -50,28 +55,45 @@ replace browser or deployed email verification. Results and repeat scenarios:
 
 ### 2. Supply consistent Turnus and season data
 
-2026-10-10: the Biuro catalogue backend, migrations and tests are implemented on
-`feat/turnus-catalogue`. This does not close the package: internal lookup, consumer
-migration, season configuration and the editor remain pending. See
-[implementation details](Turnus-catalogue-implementation.md).
+Implemented and merged through PRs #28–37. Biuro owns the persistent catalogue;
+Registration uses authenticated lookup and an hourly atomic in-memory cache,
+retaining its last successful catalogue during outages. The stub remains in the
+repository but is not the live source.
 
-- [ ] Implement the minimum database-backed Turnus management already agreed,
-  including stable codes, dates, capacity, availability and season association.
-- [ ] Migrate public options, validation, statistics and email metadata to it.
-- [ ] Add file-based season roles/subroles/certificate mapping and backend validation.
-- [ ] Keep editing UI simple; avoid building a broader administration suite.
+- [x] Database-backed Turnus management: stable codes, dates, season, capacity,
+  independent participant/staff opening switches and active/archived state.
+- [x] Public options, submission validation, statistics and confirmation email
+  metadata consume catalogue definitions.
+- [x] File-based Summer/Winter roles, subroles, certificates and backend validation.
+- [x] Single-page editor, seasonal staffing requirements and role statistics.
+- [ ] Complete deployed catalogue/edit/cache recovery and season-form acceptance.
+
+Details: [catalogue](Turnus-catalogue-implementation.md),
+[cache](Turnus-catalogue-cache.md), [editor](Turnus-editor.md),
+[capacity](Turnus-capacity-management.md), [season roles](Season-staff-roles.md),
+[email metadata](Turnus-email-metadata.md) and [staffing statistics](Staffing-statistics.md).
 
 ### 3. Make decision and notification outcomes dependable
 
-- [ ] Agree capacity warning/limit behavior and minority/birthday reference rules.
+- [x] Implement agreed capacity policy: separate positive limits; reject reductions
+  below the accepted count of the affected type. Acceptance remains enabled
+  at/beyond capacity; opening/closure is manual under the single-operator assumption.
+  Required staffing totals remain independent of available staff places.
+- [ ] Confirm birthday/minority reference rules with the client. Lists provisionally
+  calculate age at Turnus start; registration minor/adult routing is unchanged.
 - [ ] Decide permitted status changes and unchanged-status/resend behavior before
   implementing transition restrictions; verify the agreed behavior explicitly.
 - [ ] Verify status persistence, rejection reasons and table/details refresh.
 - [ ] Agree participant/staff fees and recipient rules; remove placeholder bank data.
 - [ ] Verify SMTP outcomes and a practical recovery/resend path. Full editable
   templates, group announcements and scheduling remain deferred.
-- [ ] Test notification recipient selection for adult/minor participants and staff.
-- [ ] Configure connect/read timeouts for both inter-service clients. Preserve
+- [x] Add automated confirmation-recipient and catalogue-metadata tests for
+  adult/minor participants and staff; see [email metadata](Turnus-email-metadata.md).
+- [ ] Verify status-notification recipients and deployed mailbox outcomes separately.
+- [x] Configure Biuro-to-Registration and Registration-to-Biuro catalogue timeouts
+  (15-second connect / 30-second read).
+- [ ] Configure Registration-to-email-service timeouts and complete upstream
+  business-error mapping. Preserve
   recognized upstream business errors through an explicit mapping; do not blindly
   forward response bodies or treat service-authentication errors as operator 401s.
   Test business errors, connection failures and timeouts. Do not blindly retry
@@ -87,12 +109,25 @@ migration, season configuration and the editor remain pending. See
   reauthentication. Never automatically replay a POST/PATCH after login.
   Cover expiry on startup and during list loading/edit saving, retained inputs,
   successful reauthentication, and permission-denied responses.
+- [ ] Deliver the agreed individual-account/access scope in
+  [Biuro accounts and access plan](Biuro-accounts-and-access-plan.md): multiple
+  fixed roles, SYS_ADMIN account management, unrestricted operational Turnus access
+  for OPERATOR, assigned-Turnus lists/custom columns/exports for VIEWER, two-hour
+  sessions, revocation and last-administrator protection. Agreed 2026-10-16;
+  implementation remains pending.
 
 ### 4. Deliver usable Turnus lists
 
-- [ ] Agree insurer template/columns and printable on-site list layout early,
-  before implementing exports.
-- [ ] Add accepted participant/staff views, insurance export and printable list.
+- [x] Agree initial fields and presets: Ogólny, Ubezpieczenie, Rejestracja,
+  Podział na grupy and Własny; participant/staff output remains clearly separated.
+- [x] Deliver accepted-only views, presets/custom columns and XLSX/CSV/PDF exports,
+  merged in PRs #38–40. See [Phase 1](Turnus-lists-phase-1.md),
+  [presets](Turnus-list-presets.md) and [exports](Turnus-list-exports.md).
+- [x] Check export scope, real binaries, Polish text, identifiers, PDF pagination
+  and browser downloads using synthetic data. Latest Biuro frontend tests/build:
+  all 14 test files pass; existing PDF lazy-chunk size warning remains.
+- [ ] Confirm insurer compatibility and intended Excel/LibreOffice, CSV import and
+  PDF print output with operators. Prefer XLSX for typed PESEL/phone identifiers.
 - [ ] Verify exclusions, staff selection, new/empty Turnusy, Polish characters,
   export/print output and required data from saved registrations.
 - No digital arrival/attendance tracking.
