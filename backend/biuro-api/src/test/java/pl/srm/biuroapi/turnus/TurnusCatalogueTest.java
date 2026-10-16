@@ -10,6 +10,7 @@ import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import org.springframework.web.context.WebApplicationContext;
 import pl.srm.biuroapi.auth.config.JwtConfig;
+import pl.srm.biuroapi.auth.OperatorTestTokens;
 import java.time.LocalDate;
 import java.util.List;
 import java.util.concurrent.*;
@@ -20,7 +21,6 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @SpringBootTest(properties = {
         "registration.api.password=test-service-password",
         "turnus.lookup.password=test-lookup-password",
-        "biuro.auth.username=test-operator", "biuro.auth.password=test-only-password",
         "spring.datasource.url=jdbc:h2:mem:turnus-tests;MODE=MariaDB;DB_CLOSE_DELAY=-1",
         "spring.datasource.driver-class-name=org.h2.Driver",
         "spring.datasource.username=sa", "spring.datasource.password="})
@@ -46,7 +46,7 @@ class TurnusCatalogueTest {
         jdbc.update("DELETE FROM turnus WHERE turnus_code LIKE 'TEST%'");
         mvc = MockMvcBuilders.webAppContextSetup(context)
                 .addFilters(context.getBean("springSecurityFilterChain", Filter.class)).build();
-        token = "Bearer " + jwt.generateToken("biuro");
+        token = "Bearer " + OperatorTestTokens.create(jdbc, jwt, "test-operator");
     }
     TurnusRequest request(String code, Long version, int participantCapacity) {
         return new TurnusRequest(code, "Turnus testowy", "Opis", "Miejsce", TurnusDefinition.SeasonType.SUMMER,
@@ -100,9 +100,9 @@ class TurnusCatalogueTest {
         } finally { pool.shutdownNow(); }
     }
     @Test void protectedRoutesRejectMissingAndInvalidTokens() throws Exception {
-        mvc.perform(get("/api/turnuses")).andExpect(status().isForbidden());
+        mvc.perform(get("/api/turnuses")).andExpect(status().isUnauthorized());
         mvc.perform(post("/api/turnuses").header("Authorization", "Bearer invalid")
-                .contentType("application/json").content(payload("TEST1", 60))).andExpect(status().isForbidden());
+                .contentType("application/json").content(payload("TEST1", 60))).andExpect(status().isUnauthorized());
         assertEquals(2, catalogue.list().size());
     }
     @Test void loginIssuedTokenWorksWithBrowserOriginAndPreflight() throws Exception {
@@ -115,7 +115,7 @@ class TurnusCatalogueTest {
         String login = mvc.perform(post("/api/auth/login")
                 .header("Origin", "http://localhost:5174")
                 .contentType("application/json")
-                .content("{\"username\":\"test-operator\",\"password\":\"test-only-password\"}"))
+                .content("{\"username\":\"test-operator\",\"password\":\"test-operator-password\"}"))
                 .andExpect(status().isOk()).andReturn().getResponse().getContentAsString();
         String issuedToken = com.jayway.jsonpath.JsonPath.read(login, "$.token");
         mvc.perform(get("/api/turnuses").header("Origin", "http://localhost:5174")
