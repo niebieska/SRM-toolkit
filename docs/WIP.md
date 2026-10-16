@@ -1,5 +1,33 @@
 # Work in progress
 
+## 2026-10-16 — Turnus list exports (Phase 3)
+
+- Implemented on `feature/turnus-list-exports`. XLSX, CSV and generated
+  PDF download from the current filtered/selected/sorted snapshot, with group
+  separation and correct staff-only fields. Count/busy/empty/error states added.
+- XLSX has typed text identifiers and separate sheets; CSV uses BOM/semicolon
+  with formula protection; PDF has Polish fonts, metadata, repeating headings and
+  page numbers. Wide/tall PDF selections fail with an actionable message.
+- Two pinned lazy-loaded libraries, no backend/API/schema changes. All 14 Biuro
+  test files/build pass. Real binaries inspected and all three browser export
+  controls exercised with synthetic data; mobile layout checked.
+- PDF/font lazy chunks trigger a size warning; existing audit findings unchanged
+  (2 moderate/5 high). Operator acceptance in intended spreadsheet/PDF tools remains.
+- Full scope, technical limits and evidence: [Turnus list exports](Turnus-list-exports.md).
+- After the export checkpoint, integrated format selection and download into the
+  list toolbar; removed descriptive text and preserved loading/success/error feedback.
+- Removed the staff-role filter and its view state; compacted remaining controls
+  for a desktop row, retaining wrapping at smaller widths.
+
+## 2026-10-15 — Phase 3 PDF decisions
+
+- Agreed downloadable generated PDF, with Turnus/list metadata, separate participant
+  and staff sections, repeated headers and page numbers.
+- Landscape for wide lists; if a custom selection cannot fit readably, prompt for
+  fewer columns. Never silently omit selected fields.
+- Decisions below preceded the Phase 3 implementation above. Scope and evidence:
+  [Turnus list exports](Turnus-list-exports.md).
+
 ## 2026-10-15 — Turnus list presets and custom columns (Phase 2)
 
 - Implemented on `feature/turnus-list-presets`; split into feature, test and

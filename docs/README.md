@@ -10,6 +10,7 @@ Start with the registration workflow release plan for functional scope and the d
 - [Turnus management plan](Turnus-management-plan.md)
 - [Turnus lists — Phase 1 implementation](Turnus-lists-phase-1.md)
 - [Turnus list presets and custom columns — Phase 2](Turnus-list-presets.md)
+- [Turnus list exports — Phase 3 plan](Turnus-list-exports.md)
 - [Turnus editor UI and manual verification](Turnus-editor.md)
 - [Turnus capacities, statistics and manual verification](Turnus-capacity-management.md)
 - [Turnus catalogue implementation and startup](Turnus-catalogue-implementation.md)

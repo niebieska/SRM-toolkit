@@ -15,7 +15,7 @@ source = source.replace(/from '([^']+)'/g, (match, path) => {
   return path.startsWith('.') ? `from '${new URL(path.endsWith('.js') ? path : path + '.js', file).href}'` : match
 })
 source = source.replace('__expose();', '').replace('return __returned__',
-  '__expose({ data, error, loading, groups, roles, group, role, search, sort, sortKey, direction, selectedView, customColumns, selectView, setColumn, clearFilters, load }); return __returned__')
+  '__expose({ data, error, loading, groups, group, search, sort, sortKey, direction, selectedView, customColumns, selectView, setColumn, clearFilters, load, exportList, exportFormat, exportCount, exporting, exportError, exportSuccess }); return __returned__')
 const View = (await import(`data:text/javascript;base64,${Buffer.from(source).toString('base64')}`)).default
 View.render = () => null // Setup/watchers are exercised; visual acceptance is separate.
 const renderer = createRenderer({ createComment: () => ({}), insert() {}, remove() {}, parentNode: () => null,
@@ -60,8 +60,7 @@ test('loads with operator credentials; separates groups and filters without addi
     view.search = 'Anna'; await settle()
     assert.equal(view.groups[0].rows.length, 1)
     assert.equal(view.groups[1].rows.length, 0)
-    view.clearFilters(); view.role = 'animator'; view.group = 'PARTICIPANT'; await settle()
-    assert.equal(view.role, '')
+    view.clearFilters(); view.group = 'PARTICIPANT'; await settle()
     assert.equal(view.groups.length, 1)
     assert.equal(requests, 1)
   } finally { app.unmount(); globalThis.fetch = previousFetch }
@@ -150,4 +149,58 @@ test('retry preserves the chosen view and columns; a different Turnus resets the
     assert.ok(!view.customColumns.includes('gender'))
     assert.equal(view.search, '')
   } finally { app.unmount(); globalThis.fetch = previousFetch }
+})
+
+test('export counts filtered people, prevents repeated clicks and disables empty selections', async () => {
+  const previousFetch = globalThis.fetch, previousDocument = globalThis.document
+  let downloads = 0, requests = 0
+  globalThis.fetch = async () => { requests++; return response(body('T1')) }
+  globalThis.document = { body: { appendChild() {} }, createElement: () => ({ click() { downloads++ }, remove() {} }) }
+  const { app, view } = mount()
+  try {
+    await settle()
+    assert.equal(view.exportCount, 2)
+    view.search = 'Anna'; await settle()
+    assert.equal(view.exportCount, 1)
+    view.exportFormat = 'csv'
+    const first = view.exportList()
+    assert.equal(view.exporting, true)
+    await view.exportList(); await first
+    assert.equal(downloads, 1)
+    assert.equal(view.exporting, false)
+    assert.match(view.exportSuccess, /CSV/)
+    assert.equal(requests, 1)
+    view.search = 'not-found'; await settle()
+    assert.equal(view.exportCount, 0)
+    await view.exportList()
+    assert.equal(downloads, 1)
+    view.search = ''; view.selectView('custom')
+    for (const key of [...view.customColumns]) view.setColumn(key, false)
+    await settle()
+    assert.equal(view.exportCount, 0)
+  } finally { app.unmount(); globalThis.fetch = previousFetch; globalThis.document = previousDocument }
+})
+
+test('too-wide PDF gives actionable feedback and route changes cancel an obsolete download', async () => {
+  const previousFetch = globalThis.fetch, previousDocument = globalThis.document
+  let downloads = 0
+  globalThis.fetch = async url => response(body(url.includes('/T2/') ? 'T2' : 'T1'))
+  globalThis.document = { body: { appendChild() {} }, createElement: () => ({ click() { downloads++ }, remove() {} }) }
+  const { app, view, route } = mount()
+  try {
+    await settle()
+    view.selectView('custom')
+    for (const key of ['email', 'guardianEmail', 'contactName', 'qualifications', 'address']) view.setColumn(key, true)
+    view.exportFormat = 'pdf'
+    await view.exportList()
+    assert.match(view.exportError, /mniej kolumn/)
+    assert.equal(downloads, 0)
+    assert.equal(view.exporting, false)
+    view.exportFormat = 'csv'
+    const pending = view.exportList()
+    route.params.code = 'T2'
+    await pending; await settle()
+    assert.equal(downloads, 0)
+    assert.equal(view.data.turnus.turnusCode, 'T2')
+  } finally { app.unmount(); globalThis.fetch = previousFetch; globalThis.document = previousDocument }
 })

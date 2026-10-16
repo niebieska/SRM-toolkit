@@ -24,7 +24,7 @@ export const listColumns = availableListColumns.filter(column => generalColumnKe
 export const listViews = [
   { key: 'general', label: 'Ogólny', columns: listColumns.map(column => column.key), sortKey: 'lastName' },
   { key: 'insurance', label: 'Ubezpieczenie', columns: ['firstName', 'lastName', 'pesel', 'address'], sortKey: 'lastName' },
-  { key: 'onsite', label: 'Rejestracja na miejscu', columns: ['firstName', 'lastName', 'pesel', 'personPhone', 'contactPhone'], sortKey: 'lastName' },
+  { key: 'onsite', label: 'Rejestracja', columns: ['firstName', 'lastName', 'pesel', 'personPhone', 'contactPhone'], sortKey: 'lastName' },
   { key: 'groups', label: 'Podział na grupy', columns: ['firstName', 'lastName', 'birthDate', 'gender', 'age'], sortKey: 'age' },
   { key: 'custom', label: 'Własny' },
 ]
