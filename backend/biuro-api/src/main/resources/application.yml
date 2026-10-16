@@ -7,12 +7,14 @@ turnus:
     password: ${TURNUS_LOOKUP_PASSWORD}
 
 biuro:
-  auth:
-    username: ${BIURO_USERNAME:biuro}
-    password: ${BIURO_PASSWORD:biuro123}
+  bootstrap:
+    enabled: ${BIURO_BOOTSTRAP_ENABLED:false}
+    username: ${BIURO_BOOTSTRAP_USERNAME:}
+    display-name: ${BIURO_BOOTSTRAP_DISPLAY_NAME:}
+    password: ${BIURO_BOOTSTRAP_PASSWORD:}
   jwt:
-    secret: ${JWT_SECRET:changeme-very-long-secret-key-at-least-32-chars}
-    expiry-hours: 8
+    secret: ${JWT_SECRET}
+    expiry-hours: 2
 
 registration:
   api:
@@ -33,9 +35,6 @@ spring:
   flyway:
     enabled: true
     locations: classpath:db/migration
-  security:
-    user:
-      name: ignored
 
 staff:
   catalogue:
