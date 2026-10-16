@@ -14,8 +14,10 @@
 - PDF/font lazy chunks trigger a size warning; existing audit findings unchanged
   (2 moderate/5 high). Operator acceptance in intended spreadsheet/PDF tools remains.
 - Full scope, technical limits and evidence: [Turnus list exports](Turnus-list-exports.md).
-- Preserve the current export panel as the implementation checkpoint; discuss
-  integrating its controls into the list toolbar after committing this phase.
+- After the export checkpoint, integrated format selection and download into the
+  list toolbar; removed descriptive text and preserved loading/success/error feedback.
+- Removed the staff-role filter and its view state; compacted remaining controls
+  for a desktop row, retaining wrapping at smaller widths.
 
 ## 2026-10-15 — Phase 3 PDF decisions
 

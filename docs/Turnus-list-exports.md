@@ -3,8 +3,8 @@
 Decisions recorded 2026-10-15. Implemented 2026-10-16 on
 `feature/turnus-list-exports`.
 
-The current separate export panel is the implementation checkpoint. Its placement
-will be reviewed separately; integrating controls into the list toolbar is an option.
+Export controls are integrated into the list toolbar. Descriptive panel text is
+omitted; loading, success and error feedback remain.
 
 ## Scope
 
