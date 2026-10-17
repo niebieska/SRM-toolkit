@@ -10,6 +10,10 @@ import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.web.authentication.WebAuthenticationDetailsSource;
 import org.springframework.stereotype.Component;
+import org.springframework.dao.DataAccessException;
+import org.springframework.transaction.TransactionException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.web.filter.OncePerRequestFilter;
 import pl.srm.biuroapi.auth.service.AuthService;
 
@@ -18,6 +22,7 @@ import java.util.List;
 
 @Component
 public class JwtFilter extends OncePerRequestFilter {
+    private static final Logger log = LoggerFactory.getLogger(JwtFilter.class);
     private static final String BEARER_PREFIX = "Bearer ";
     private final JwtConfig jwt;
     private final AuthService auth;
@@ -40,6 +45,13 @@ public class JwtFilter extends OncePerRequestFilter {
                     authentication.setDetails(new WebAuthenticationDetailsSource().buildDetails(request));
                     SecurityContextHolder.getContext().setAuthentication(authentication);
                 });
+            } catch (DataAccessException | TransactionException exception) {
+                SecurityContextHolder.clearContext();
+                log.error("Biuro account authentication unavailable", exception);
+                response.setStatus(HttpServletResponse.SC_SERVICE_UNAVAILABLE);
+                response.setContentType("application/json;charset=UTF-8");
+                response.getWriter().write("{\"status\":503,\"message\":\"Usługa jest chwilowo niedostępna. Spróbuj ponownie później.\"}");
+                return;
             } catch (JwtException | IllegalArgumentException exception) {
                 // Invalid/legacy tokens remain unauthenticated; never log the token.
                 SecurityContextHolder.clearContext();
