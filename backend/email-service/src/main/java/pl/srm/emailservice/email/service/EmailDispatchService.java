@@ -25,13 +25,13 @@ public class EmailDispatchService {
         this.templateRenderer = templateRenderer;
     }
 
-    public void sendEmail(String to, String templateName, Map<String, String> variables) {
+    public boolean sendEmail(String to, String templateName, Map<String, String> variables) {
         String subject = SUBJECTS.get(templateName);
         if (subject == null) {
             throw new IllegalArgumentException("Unknown template: " + templateName);
         }
 
         String htmlBody = templateRenderer.render(templateName, variables == null ? Map.of() : variables);
-        emailSender.send(new EmailMessage(to, subject, htmlBody));
+        return emailSender.send(new EmailMessage(to, subject, htmlBody));
     }
 }

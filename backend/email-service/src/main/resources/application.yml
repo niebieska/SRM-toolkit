@@ -10,6 +10,10 @@ spring:
     properties:
       mail.smtp.auth: ${MAIL_SMTP_AUTH:false}
       mail.smtp.starttls.enable: ${MAIL_STARTTLS:false}
+      # Milliseconds per socket operation, not a total delivery deadline.
+      mail.smtp.connectiontimeout: ${MAIL_CONNECT_TIMEOUT_MS:5000}
+      mail.smtp.timeout: ${MAIL_READ_TIMEOUT_MS:10000}
+      mail.smtp.writetimeout: ${MAIL_WRITE_TIMEOUT_MS:10000}
 
 email:
   from: ${MAIL_FROM:noreply@srm.pl}
