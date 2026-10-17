@@ -81,22 +81,22 @@ Login retains the token response field and adds user. No password/hash is return
 Unknown/wrong/disabled-account login uses the same generic 401 message. Password
 validation failures are 400. A malformed JSON body is also a safe 400.
 
-## Deliberate phase boundary
+## Deliberate phase boundary — updated after Phase 2
 
 This is a backend checkpoint, not a standalone deployment-ready account feature.
 The existing frontend has not been migrated to the temporary-password/profile/
 server-logout contracts yet. In particular, its old logout only clears local state.
-A new SYS_ADMIN can authenticate/change password through the API but cannot assign
-OPERATOR to themselves until account administration is implemented. Do not grant
-implicit operational access or edit the database as a workaround.
+A SYS_ADMIN can now authenticate/change password and assign themselves OPERATOR
+using the [Phase 2 administration API](Biuro-accounts-phase-2.md). No direct SQL or
+implicit operational grant is needed. The account-management UI remains pending.
 
 Still required in subsequent phases:
 
-- Account creation/reset/activation/role management APIs and UI; last-admin rule.
-- VIEWER Turnus assignment storage/enforcement and permitted navigation.
-- Atomic reset/disable session invalidation, including preventing session revival
-  after reactivation; current requests already reject inactive accounts.
-- Management/authentication audit records and review of login-abuse protection.
+- Account-management UI and VIEWER navigation. The account management APIs,
+  assignments, last-admin protection and reset/disable revocation are implemented
+  in Phase 2, including prevention of old-session revival after reactivation.
+- Audit presentation and review of login-abuse protection; backend management and
+  authentication audit records are implemented in Phase 2.
 - Mandatory-password-change UI, server logout, central session handling and
   preserving unsaved input through reauthentication.
 - Full workflow and deployment acceptance. No refresh tokens or public signup.

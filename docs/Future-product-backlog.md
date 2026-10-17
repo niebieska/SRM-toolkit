@@ -56,7 +56,9 @@ explicitly promoted into Registration-workflow-release-plan.md and recorded in W
 
 ## Access and identity
 
-- Persistent individual users, richer permissions and identity improvements.
+- Individual Biuro accounts and the agreed fixed roles are now active release
+  work: see [accounts/access plan](Biuro-accounts-and-access-plan.md). Broader
+  identity integrations and configurable permission models remain future work.
 - PESEL-exception registrations using the agreed key/fingerprint proposal in WIP.
 
 The first release still requires basic access protection, accurate notification

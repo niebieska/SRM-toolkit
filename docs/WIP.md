@@ -1,5 +1,33 @@
 # Work in progress
 
+## 2026-10-17 — Biuro accounts Phase 2 backend implemented
+
+- Added account creation/editing, temporary-password reset, role management and
+  VIEWER Turnus assignments. SYS_ADMIN has no implicit operational access, but
+  can grant itself OPERATOR or VIEWER. Account versions reject stale edits.
+- Serialized administrative mutations protect the last active SYS_ADMIN during
+  concurrent edits. Disable/reset revoke sessions; role and assignment changes
+  apply on the next request. Mutations recheck the acting administrator's session.
+- Added minimal assigned-Turnus navigation and accepted-person list endpoints for
+  VIEWER; unassigned requests are denied before calling registration-api.
+- Flyway V6 adds assignments, account versions, the administrator lock and audit
+  storage. Account changes and successful authentication events are audited
+  transactionally without passwords or tokens. Registration DB is unchanged.
+- Verification: all 135 Biuro tests pass, zero failures/errors/skips. A targeted
+  34-case run passed on disposable MariaDB 11.8.9, including concurrent last-admin
+  protection, stale edits, session lifecycle and a populated V5-to-V6 upgrade.
+  The strengthened nine-case administration suite also passed on MariaDB.
+- Corrected the standalone H2 migration test to use a connection pool, matching
+  the application; its previous connection lifecycle caused a test-only failure.
+  The final full run passes. Disposable MariaDB was stopped/removed.
+- API contracts and boundaries: [Phase 2](Biuro-accounts-phase-2.md).
+  Frontend account/password screens, permission-aware navigation and session
+  integration remain next; browser acceptance is not complete. No frontend code
+  changed or checks repeated. Login-abuse protection and audit retention remain
+  follow-ups. This phase is recorded in separate implementation, test and
+  documentation commits; unrelated `sth.java` and
+  `Turnus-lists-plan.md` remain untouched.
+
 ## 2026-10-17 — Careful recheck: concurrent-login cleanup fixed
 
 - Reproduced an additional MariaDB deadlock (error 1213): two different accounts

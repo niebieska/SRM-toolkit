@@ -1,9 +1,10 @@
 # Biuro accounts, permissions and sessions
 
 Agreed 2026-10-16. Extends the release-plan JWT/session task into individual
-accounts and access management. The [Phase 1 backend checkpoint](Biuro-accounts-phase-1.md)
-is implemented on `feature/biuro-accounts`; subsequent phases and full acceptance
-remain pending. This document describes the complete target scope.
+accounts and access management. The [Phase 1 backend](Biuro-accounts-phase-1.md)
+and [Phase 2 management/access backend](Biuro-accounts-phase-2.md) are implemented
+on `feature/biuro-accounts`. UI/session integration and full acceptance remain
+pending. This document describes the complete target scope.
 
 ## Accounts and login
 
@@ -79,7 +80,8 @@ SYS_ADMIN assigns roles; this does not introduce a configurable permission build
 
 Each phase must have a documented migration/startup path. Phase 1 uses stored
 session IDs in signed JWTs and checks current account state/roles per request.
-Management and VIEWER assignment contracts remain implementation design work.
+Management and VIEWER assignment contracts are documented in Phase 2. Frontend
+integration and complete deployment acceptance remain pending.
 
 Test username uniqueness/case handling, password hashing/reset, temporary-password
 restrictions, role combinations/self-assignment, assigned/unassigned Turnusy,

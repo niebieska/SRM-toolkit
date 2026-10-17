@@ -114,7 +114,9 @@ Details: [catalogue](Turnus-catalogue-implementation.md),
   fixed roles, SYS_ADMIN account management, unrestricted operational Turnus access
   for OPERATOR, assigned-Turnus lists/custom columns/exports for VIEWER, two-hour
   sessions, revocation and last-administrator protection. Agreed 2026-10-16;
-  implementation remains pending.
+  backend implementation is recorded in [Phase 1](Biuro-accounts-phase-1.md) and
+  [Phase 2](Biuro-accounts-phase-2.md). Account UI/session integration and release
+  acceptance remain pending.
 
 ### 4. Deliver usable Turnus lists
 
