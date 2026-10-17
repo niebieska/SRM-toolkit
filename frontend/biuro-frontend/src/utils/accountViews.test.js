@@ -233,3 +233,38 @@ test('failed password change releases navigation and allows correction', async (
   assert.equal(v.error, 'Obecne hasło jest nieprawidłowe.')
   assert.equal(useAuthStore().token, 'admin-token')
 })
+
+test('successful password change restores its replacement session after expiry during the response', async () => {
+  const auth = useAuthStore(), paths = []
+  let finish, requests = 0
+  globalThis.fetch = async () => { requests++; return new Promise(resolve => { finish = resolve }) }
+  mounted = await setupView('PasswordView', { replace: async path => paths.push(path) })
+  const v = mounted.view
+  v.current = 'Current-password'; v.password = v.confirmation = 'New-password-123'
+  const version = auth.sessionVersion
+  const pending = v.submit()
+  auth.expire('admin-token')
+  assert.equal(auth.token, null); assert.equal(auth.expired, true)
+  assert.equal(auth.sessionVersion, version)
+  finish(json({ token: 'replacement', user: { ...user } })); await pending
+  assert.equal(auth.token, 'replacement'); assert.equal(auth.expired, false)
+  assert.equal(auth.isAuthenticated, true)
+  assert.equal(auth.sessionVersion, version + 1)
+  assert.equal(v.current, ''); assert.equal(v.password, ''); assert.equal(v.confirmation, '')
+  assert.equal(v.busy, false); assert.equal(v.error, '')
+  assert.deepEqual(paths, ['/konta']); assert.equal(requests, 1)
+})
+
+test('successful password change cannot restore a session explicitly cleared while awaiting its response', async () => {
+  const auth = useAuthStore(), paths = []
+  let finish
+  globalThis.fetch = async () => new Promise(resolve => { finish = resolve })
+  mounted = await setupView('PasswordView', { replace: async path => paths.push(path) })
+  const v = mounted.view
+  v.current = 'Current-password'; v.password = v.confirmation = 'New-password-123'
+  const pending = v.submit()
+  auth.expire('admin-token'); auth.clear()
+  finish(json({ token: 'obsolete', user: { ...user } })); await pending
+  assert.equal(auth.token, null); assert.equal(auth.user, null)
+  assert.equal(auth.isAuthenticated, false); assert.deepEqual(paths, [])
+})

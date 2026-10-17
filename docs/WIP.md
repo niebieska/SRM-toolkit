@@ -1,5 +1,20 @@
 # Work in progress
 
+## 2026-10-17 — Password-response expiry review correction
+
+- Reproduced the review finding: expiry cleared the token while a successful
+  password-change response was pending, so the token-equality guard discarded
+  the replacement session. Switched the response guard to captured sessionVersion:
+  expiry preserves it; newer login or explicit clear supersedes the response.
+- Added a regression proving expiry recovery, password-field clearing, one request
+  and normal success navigation. Added explicit-clear rejection coverage; existing
+  newer-login and unmounted-screen regressions remain passing.
+- Verification: new expiry regression failed before the fix; all 16 account-view
+  cases now pass, as do all 18 frontend test files, production build and whitespace
+  checks. Existing PDF/font chunk warnings remain. Fix and regressions are recorded
+  in a dedicated commit, separate from the environment-template draft; no backend
+  or secret/config changes.
+
 ## 2026-10-17 — Initial browser verification
 
 - User confirmed first administrator creation and additional-role management work

@@ -17,9 +17,10 @@ async function submit() {
   busy.value = true
   requestToken = auth.token
   try {
-    const token = requestToken
+    const token = requestToken, sessionVersion = auth.sessionVersion
     const response = await changePassword(token, current.value, password.value)
-    if (auth.token !== token) return
+    // Expiry clears the token; only a newer login/clear supersedes this response.
+    if (auth.sessionVersion !== sessionVersion) return
     auth.login(response)
     current.value = ''; password.value = ''; confirmation.value = ''
     busy.value = false
