@@ -179,4 +179,26 @@ class AccountAuthenticationTest {
         jdbc.update("UPDATE biuro_session SET expires_at = ? WHERE account_id = ?", Timestamp.from(Instant.EPOCH), id);
         assertEquals(401, request("GET", "/api/auth/me", valid, null).statusCode());
     }
+
+    @Test void sessionStorageOutageReturns503WithoutRevokingSessionOrLeakingDetails() throws Exception {
+        permitNormalAccess();
+        String token = login();
+        jdbc.execute("ALTER TABLE biuro_session RENAME TO biuro_session_unavailable");
+        try {
+            for (var response : java.util.List.of(request("GET", "/api/auth/me", token, null),
+                    loginResponse("anna.kowalska", PASSWORD))) {
+                assertEquals(503, response.statusCode());
+                String body = response.body().toString();
+                assertEquals(503, (int) JsonPath.read(body, "$.status"));
+                assertEquals("Usługa jest chwilowo niedostępna. Spróbuj ponownie później.", JsonPath.read(body, "$.message"));
+                assertFalse(body.contains("SELECT"));
+                assertFalse(body.contains("biuro_session_unavailable"));
+                assertFalse(body.contains(token));
+            }
+        } finally {
+            jdbc.execute("ALTER TABLE biuro_session_unavailable RENAME TO biuro_session");
+        }
+        assertEquals(200, request("GET", "/api/auth/me", token, null).statusCode());
+        assertEquals(1, jdbc.queryForObject("SELECT COUNT(*) FROM biuro_session", Integer.class));
+    }
 }
