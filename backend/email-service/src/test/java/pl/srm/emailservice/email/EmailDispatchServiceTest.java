@@ -14,6 +14,9 @@ import pl.srm.emailservice.email.template.TemplateRenderer;
 import java.util.Map;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
+import static org.junit.jupiter.api.Assertions.assertTrue;
+import static org.mockito.ArgumentMatchers.any;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -37,11 +40,12 @@ class EmailDispatchServiceTest {
                 Map.of("registrationCode", "UCZ-2026-00042")
         )).thenReturn("<html>ok</html>");
 
-        emailDispatchService.sendEmail(
+        when(emailSender.send(any())).thenReturn(true);
+        assertTrue(emailDispatchService.sendEmail(
                 "jan.kowalski@example.com",
                 "registration-confirmation-participant",
                 Map.of("registrationCode", "UCZ-2026-00042")
-        );
+        ));
 
         ArgumentCaptor<EmailMessage> captor =
                 ArgumentCaptor.forClass(EmailMessage.class);
@@ -66,11 +70,11 @@ class EmailDispatchServiceTest {
                 Map.of("registrationCode", "KAD-2026-00042")
         )).thenReturn("<html>ok</html>");
 
-        emailDispatchService.sendEmail(
+        assertFalse(emailDispatchService.sendEmail(
                 "kadra@example.com",
                 "registration-confirmation-staff",
                 Map.of("registrationCode", "KAD-2026-00042")
-        );
+        ));
 
         ArgumentCaptor<EmailMessage> captor =
                 ArgumentCaptor.forClass(EmailMessage.class);

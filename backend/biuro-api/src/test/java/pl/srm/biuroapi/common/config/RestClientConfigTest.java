@@ -2,6 +2,15 @@ package pl.srm.biuroapi.common.config;
 
 import com.sun.net.httpserver.HttpServer;
 import org.junit.jupiter.api.Test;
+import java.time.Duration;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
+import org.springframework.boot.test.context.runner.ApplicationContextRunner;
+import org.springframework.boot.test.context.ConfigDataApplicationContextInitializer;
+import org.springframework.boot.convert.ApplicationConversionService;
+import org.springframework.web.client.RestClient;
+import org.springframework.web.client.ResourceAccessException;
+
 import pl.srm.biuroapi.registration.api.StatusUpdateRequest;
 import pl.srm.biuroapi.registration.client.RegistrationApiClient;
 import java.net.InetSocketAddress;
@@ -29,7 +38,7 @@ class RestClientConfigTest {
         });
         server.start();
         try {
-            var client = new RegistrationApiClient(new RestClientConfig().restClientBuilder(),
+            var client = new RegistrationApiClient(new RestClientConfig().restClientBuilder(Duration.ofSeconds(60)),
                     "http://127.0.0.1:" + server.getAddress().getPort(), "test-service", "test-only");
             assertEquals("ACCEPTED", client.updateStatus("REG-1", new StatusUpdateRequest("ACCEPTED", null)).status());
             assertEquals("PATCH", method.get());
@@ -38,4 +47,36 @@ class RestClientConfigTest {
             assertTrue(payload.get().contains("ACCEPTED"));
         } finally { server.stop(0); }
     }
+
+    @Test
+    void configuredReadTimeoutIsAppliedToTheActualTransport() throws Exception {
+        var release = new CountDownLatch(1);
+        var connected = new CountDownLatch(1);
+        var server = HttpServer.create(new InetSocketAddress("127.0.0.1", 0), 0);
+        server.createContext("/slow", exchange -> {
+            connected.countDown();
+            try { release.await(5, TimeUnit.SECONDS); }
+            catch (InterruptedException ex) { Thread.currentThread().interrupt(); }
+            finally { exchange.close(); }
+        });
+        server.start();
+        try {
+            new ApplicationContextRunner()
+                    .withInitializer(new ConfigDataApplicationContextInitializer())
+                    .withInitializer(context -> context.getBeanFactory().setConversionService(
+                            ApplicationConversionService.getSharedInstance()))
+                    .withUserConfiguration(RestClientConfig.class)
+                    .withPropertyValues("registration.api.read-timeout=PT0.15S")
+                    .run(context -> {
+                        assertNull(context.getStartupFailure());
+                        var client = context.getBean(RestClient.Builder.class).build();
+                        assertTimeoutPreemptively(Duration.ofSeconds(2), () ->
+                                assertThrows(ResourceAccessException.class, () ->
+                                        client.get().uri("http://127.0.0.1:" + server.getAddress().getPort() + "/slow")
+                                                .retrieve().toBodilessEntity()));
+                        assertEquals(0, connected.getCount());
+                    });
+        } finally { release.countDown(); server.stop(0); }
+    }
+
 }
