@@ -1,5 +1,48 @@
 # Work in progress
 
+## 2026-10-17 — Careful recheck: concurrent-login cleanup fixed
+
+- Reproduced an additional MariaDB deadlock (error 1213): two different accounts
+  could log in concurrently, both range-delete expired sessions, then deadlock
+  inserting new sessions inside those same transactions. The earlier reset/disable
+  tests did not cover simultaneous users.
+- Login now commits expired-session cleanup in its own transaction before the
+  short account-lock/session-creation transaction. Password changes do not run
+  global cleanup. No write retry was introduced.
+- Added a deterministic simultaneous-user test, synchronizing both cleanup calls.
+  Added a session-creation failure test proving password changes roll back the
+  password hash, mandatory-change flag and deletion of previous sessions together.
+- Final verification: all 119 Biuro tests pass, zero failures/errors/skips. All 18
+  account/bootstrap/concurrency cases passed on disposable MariaDB 11.8.9 as well.
+  The disposable container was stopped/removed; diff whitespace check passes.
+- Earlier outage handling and principal identity fixes remain verified. No
+  frontend changes or repeat frontend checks. Fixes are recorded in separate
+  implementation, test and documentation commits; existing
+  later-phase scope and unrelated files are unchanged.
+
+## 2026-10-16 — Biuro account review fixes
+
+- Fixed the three backend review findings. Login verifies BCrypt without holding
+  a database transaction/account lock; a separate transactional session issuer
+  briefly locks the account and rechecks active state/hash before issuing a token.
+  Tests prove updates commit during paused verification, and concurrent password
+  reset/disable rejects the stale login without creating a session.
+- Authentication filter/controller database and transaction failures now return
+  safe JSON 503 rather than leaking details or proceeding without authentication.
+  Existing valid sessions survive storage outage/recovery. Other API exception
+  contracts are unchanged.
+- AccountPrincipal implements AuthenticatedPrincipal: Spring authentication name
+  is now the username rather than the record containing a session ID.
+- Verification: all 117 Biuro tests pass; 16 account/bootstrap/concurrency cases
+  also pass on disposable MariaDB 11.8.9. Includes real HTTP outage/recovery and
+  filter transaction-failure coverage. Test container stopped/removed; whitespace
+  check passes. Frontend unchanged; its checks were not repeated.
+- Fixes/tests/documentation are included in the follow-up checkpoint commits.
+  Frontend account/session integration,
+  administration, VIEWER assignments, last-admin protection and audit remain the
+  planned phase work. Login-abuse protection remains an outstanding review item;
+  shorter locks do not constitute rate limiting. Unrelated files remain untouched.
+
 ## 2026-10-16 — Biuro accounts Phase 1 backend implemented
 
 - Branch `feature/biuro-accounts`: Flyway V5 accounts/roles/sessions/setup lock,

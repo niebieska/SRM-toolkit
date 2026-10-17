@@ -11,6 +11,10 @@ Implemented on `feature/biuro-accounts`, 2026-10-16. Full requirement:
   normalized to lowercase, 3–64 ASCII letters/digits/dot/underscore/hyphen, starting
   with a letter/digit. Display name is independent. Optional email storage is not
   introduced in this phase.
+- Login password verification runs outside a transaction/account lock. Session
+  creation then takes a short account lock and verifies that the account remains
+  active and its password hash is unchanged. A concurrent reset/disable rejects
+  the stale login without creating a session.
 - BCrypt cost 12 hashes. New/temporary passwords require at least 12 Unicode code
   points and at most 72 UTF-8 bytes (BCrypt limit). Passwords are not trimmed.
 - A database session ID is signed into each JWT. Tokens have issuer/audience and
@@ -21,10 +25,16 @@ Implemented on `feature/biuro-accounts`, 2026-10-16. Full requirement:
   Operational APIs require OPERATOR. SYS_ADMIN alone does not grant operational
   access. VIEWER access is intentionally denied until assignment enforcement exists.
 - Own-password change revokes all previous sessions and returns a replacement
-  token; logout revokes the current session only. Expired session rows are cleaned
-  during successful authentication/password-change session creation.
+  token; logout revokes the current session only. After a successful password
+  verification, login cleans expired rows in a separate committed transaction
+  before locking the account and inserting a session. This avoids MariaDB range-lock
+  deadlocks between concurrent logins. Password changes do not run global cleanup.
 - Missing/invalid/revoked operator authentication returns 401; authenticated
   permission denial returns 403. Internal Turnus Basic authentication stays separate.
+- Account database/transaction failures return a safe JSON 503 from the JWT filter
+  and authentication controller; no request proceeds on failed authentication.
+  After recovery an otherwise valid session remains usable. Spring's authenticated
+  principal name is the username, not the principal record or session ID.
 - JWT_SECRET is required and must meet the signing library's minimum key strength.
   Old shared-user JWTs are deliberately invalid. No default operator or generated
   Spring Security user is used.
@@ -111,7 +121,7 @@ For only the MariaDB-capable account cases:
 
 ```bash
 mvn -pl backend/biuro-api -am test \
-  -Dtest=AccountAuthenticationTest,AccountBootstrapTest \
+  -Dtest=AccountAuthenticationTest,AccountBootstrapTest,LoginConcurrencyTest \
   -Dsurefire.failIfNoSpecifiedTests=false
 ```
 
@@ -119,4 +129,8 @@ Coverage includes hash-based/case-insensitive login, bootstrap validation/restar
 concurrency, username uniqueness, preserved Turnus seeds, mandatory password change,
 old-session invalidation, logout isolation, disabled-account rejection, current-role
 checks, missing/malformed/tampered/expired/unstored tokens, JWT secret startup checks
-and safe malformed/oversized input errors. Final run results are recorded in WIP.
+and safe malformed/oversized input errors. Review regressions additionally cover
+unlocked password verification, reset/disable races, simultaneous logins with
+expired-session cleanup, database outage/recovery,
+transaction-start failures, and principal identity. Final run results are recorded
+in WIP.
