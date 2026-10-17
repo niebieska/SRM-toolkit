@@ -26,6 +26,7 @@ Start with the registration workflow release plan for functional scope and the d
 - [Form field capacity review — deferred decisions](Form-field-capacity-review.md)
 - [Future product backlog](Future-product-backlog.md)
 - [Environment and deployment advice](Advises-for-future.md)
+- [Email reliability for controlled TEST](Email-test-reliability.md)
 
 ## Reviews and reference material
 

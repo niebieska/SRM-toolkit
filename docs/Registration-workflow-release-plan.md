@@ -85,15 +85,21 @@ Details: [catalogue](Turnus-catalogue-implementation.md),
   implementing transition restrictions; verify the agreed behavior explicitly.
 - [ ] Verify status persistence, rejection reasons and table/details refresh.
 - [ ] Agree participant/staff fees and recipient rules; remove placeholder bank data.
-- [ ] Verify SMTP outcomes and a practical recovery/resend path. Full editable
-  templates, group announcements and scheduling remain deferred.
+- [ ] Verify SMTP outcomes and a practical recovery/resend path. SMTP test
+  prerequisites are implemented in [Email TEST reliability](Email-test-reliability.md);
+  real mailbox acceptance remains pending. Manual resend controls are deferred in
+  [the future backlog](Future-product-backlog.md#communication), not a blocker for
+  controlled synthetic TEST. Full editable templates, group announcements and
+  scheduling remain deferred.
 - [x] Add automated confirmation-recipient and catalogue-metadata tests for
   adult/minor participants and staff; see [email metadata](Turnus-email-metadata.md).
 - [ ] Verify status-notification recipients and deployed mailbox outcomes separately.
 - [x] Configure Biuro-to-Registration and Registration-to-Biuro catalogue timeouts
   (15-second connect / 30-second read).
-- [ ] Configure Registration-to-email-service timeouts and complete upstream
-  business-error mapping. Preserve
+- [x] Configure Registration-to-email-service HTTP and SMTP timeouts; surface SMTP
+  failures and disabled sends accurately and log code/template/outcome safely.
+  No automatic retries or workflow response changes; see the Email TEST document.
+- [ ] Complete upstream business-error mapping. Preserve
   recognized upstream business errors through an explicit mapping; do not blindly
   forward response bodies or treat service-authentication errors as operator 401s.
   Test business errors, connection failures and timeouts. Do not blindly retry

@@ -42,6 +42,18 @@ explicitly promoted into Registration-workflow-release-plan.md and recorded in W
 
 ## Communication
 
+- Manual notification resend from Biuro registration details: deferred on
+  2026-10-17 while SMTP TEST prerequisites are completed. OPERATOR explicitly
+  chooses registration confirmation or current-status notification; backend
+  reconstructs recipient/content from saved registration/catalogue data. No
+  registration/status changes, automatic retries or browser-supplied templates.
+  Add confirmation, repeated-click protection, actor/code/type logs and honest
+  accepted/not-sent/unconfirmed feedback. SYS_ADMIN alone does not grant this
+  operational permission. No persistent notification history is assumed in the
+  minimal version; an uncertain SMTP outcome can still produce duplicate mail
+  on a deliberate retry. Outbox/idempotency/history remain separate decisions.
+  This is not a blocker for controlled synthetic-data TEST; current operator
+  screens do not expose notification outcomes or offer resend.
 - Editable email subjects/bodies with controlled placeholders, preview and versions.
 - Turnus group announcements with recipient preview, explicit send and delivery tracking.
 - Scheduled messages/reminders and durable outbox/retry improvements.

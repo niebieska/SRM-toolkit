@@ -1,5 +1,61 @@
 # Work in progress
 
+## 2026-10-17 — Email reliability committed for controlled TEST
+
+- Committed SMTP outcomes/timeouts, safe notification logging and coordinated HTTP waits in separate implementation commits, followed by regression tests, the commented environment template and documentation.
+- Current defaults supersede the earlier experiments below: SMTP 5s connect / 10s read / 10s write; Registration → email-service 5s connect / 30s read; Biuro upstream read 60s, defined in its production configuration and checked by the regression.
+- Verification: full backend reactor previously passed (332 passed, 11 optional database tests skipped); after the configuration regression fix, all 136 Biuro tests and five focused configuration/budget tests passed. Syntax and whitespace checks passed.
+- Real SMTP mailbox verification, deployment hardening and operator resend remain pending. Unrelated untracked files were excluded; no push performed.
+
+## 2026-10-17 — Effective SMTP settings and nested-timeout review fixes
+
+- Reproduced the timeout-validation bug for all three bracket-map overrides:
+  startup validated separate default values while JavaMail could use unlimited
+  timeouts. Removed the duplicate constructor settings; the sender now validates
+  the effective JavaMail Session and transport properties, including externally
+  supplied Session overrides. Invalid/missing/nonpositive/overflow values fail.
+- Revised Registration-to-email HTTP defaults to 5s connect / 15s read, leaving
+  10s headroom inside Biuro's unchanged 30s Registration read wait. Catalogue
+  timeouts and Biuro configuration remain unchanged. Custom overrides must review
+  enclosing deadlines; per-operation waits are not a total workflow deadline.
+- Regression tests failed before the fixes. The nested loopback HTTP test now
+  returns the saved ACCEPTED status despite stalled email-service; tests scale
+  actual configured defaults together. Added effective-session and positive/
+  invalid bracket-property cases, and updated the env template and TEST guidance.
+- Full Registration/email suites pass: 197 passed, zero failures/errors, 11 opt-in
+  MariaDB tests skipped. Bash syntax, all 39 backend variables and whitespace
+  checks pass. No persistence/frontend changes or external SMTP delivery attempts.
+  Fixes remain uncommitted alongside the current email reliability work.
+
+## 2026-10-17 — SMTP TEST reliability; manual resend deferred
+
+- Created `feature/email-reliability`. Recorded OPERATOR-driven confirmation/
+  current-status resend in the future communication backlog, including current
+  data, explicit confirmation, duplicate-click protection and uncertain-send
+  limits. No resend endpoints/buttons, notification history or outbox added now.
+- SMTP failures now reach the email controller; disabled sending returns
+  `success=false`. Success means SMTP acceptance, not inbox delivery. Failure
+  responses and logs omit provider messages, recipients and raw stack traces.
+- Added configurable positive SMTP connect/read/write waits (5s/10s/10s defaults)
+  and Registration-to-email HTTP connect/read waits (15s/30s). SMTP settings are
+  per socket operation, not an end-to-end deadline. No automatic retry added.
+- Registration reads email-service's response and logs code/template with
+  SMTP_ACCEPTED, NOT_SENT or UNCONFIRMED. Transport/5xx/invalid replies do not
+  become false success. Saved submission/status results and API contracts remain
+  unchanged. Minor staff's second recipient is still attempted after HTTP failure.
+- Full Registration/email suites: 190 passed, zero failures/errors, 11 opt-in
+  MariaDB cases skipped. Final targeted 30 cases also pass, including a real
+  loopback silent-SMTP timeout, real HTTP failure/timeout, log redaction, environment
+  property binding/invalid timeout rejection, and submission/status isolation.
+  No schema/persistence changes; no frontend changes or repeated frontend checks.
+- Updated `.env.example` for all 39 current backend variables and documented
+  [Email TEST reliability](Email-test-reliability.md). Bash syntax, variable coverage
+  and whitespace checks pass. No external SMTP connection or real mail attempted;
+  controlled mailbox acceptance remains pending. Biuro still has no notification
+  warning/history/resend controls. Email-service authentication/isolation and old
+  Compose overrides remain deployment work. All changes are uncommitted; existing
+  environment-template draft and unrelated files are preserved.
+
 ## 2026-10-17 — Password-response expiry review correction
 
 - Reproduced the review finding: expiry cleared the token while a successful
@@ -14,6 +70,20 @@
   checks. Existing PDF/font chunk warnings remain. Fix and regressions are recorded
   in a dedicated commit, separate from the environment-template draft; no backend
   or secret/config changes.
+
+## 2026-10-17 — Commented local environment template
+
+- Added root `.env.example` with purpose/consumer comments for all 34 environment
+  variables referenced by backend application configuration, plus optional MariaDB
+  root provisioning and the public Biuro Vite URL. Secrets are deliberately empty;
+  existing credentials and the tracked `.env` were not read/copied or changed.
+- Included the supplied SMTP host/login/sender and port 587, with STARTTLS assumed
+  pending provider verification. Real sending is disabled in the draft until
+  deliberately enabled. Documented private-file sourcing for Maven, one-time
+  bootstrap, matching service credentials, obsolete variables and Compose limits.
+- Verified Bash syntax, complete backend-variable coverage, empty template secrets
+  and whitespace. Documentation/configuration draft only; no SMTP connection or
+  delivery attempted, no application behaviour changed. Changes are uncommitted.
 
 ## 2026-10-17 — Initial browser verification
 
@@ -1343,3 +1413,22 @@ Moved project plans, progress notes and assessments into `docs/`. The root READM
   optional MariaDB cases skipped; nine Biuro and five Registration frontend test
   files and both builds pass. Diff checks clean. Browser acceptance pending.
   No commits made.
+
+
+### 2026-10-17 — Revised synchronous notification timeout budgets
+
+- Registration → email-service now defaults to 5 seconds connect and 30 seconds read.
+- Biuro → Registration now waits up to 60 seconds for the response (connection timeout remains 15 seconds), leaving nominal headroom for saving and returning a status update.
+- SMTP socket defaults remain 5 seconds connect and 10 seconds per read/write operation. These are individual operation limits, not an overall SMTP deadline.
+- Updated the scaled stalled-email regression, env template and email testing guide. Real SMTP timing and reverse-proxy deadlines still require deployment verification; no automatic retries were added.
+
+- Verification: full email-service, registration-api and biuro-api Maven test reactor passed; env shell syntax and whitespace checks passed. Tests use synthetic/local endpoints; no real SMTP delivery was attempted.
+
+
+### 2026-10-17 — Timeout regression uses production configuration
+
+- Moved Biuro's existing 60-second read timeout to `registration.api.read-timeout` in its application configuration and wired the HTTP transport to that property.
+- Registration's timeout-budget regression now loads Biuro's actual application configuration through a Maven test resource; removed its duplicate 60-second constant.
+- Added a real HTTP regression verifying that Biuro applies a configured short read timeout; kept startup test conversion consistent with Spring Boot.
+
+- Verification: focused timeout/configuration regressions passed (5 tests); full Biuro suite passed (136 tests), including credential startup checks. Whitespace checks passed. No real SMTP calls or commits.
