@@ -10,7 +10,6 @@ import pl.srm.biuroapi.auth.account.AccountPolicy;
 import pl.srm.biuroapi.auth.account.AccountPrincipal;
 import pl.srm.biuroapi.auth.account.AccountRepository;
 import pl.srm.biuroapi.auth.api.LoginResponse;
-import pl.srm.biuroapi.auth.config.JwtConfig;
 
 import java.nio.charset.StandardCharsets;
 import java.time.Clock;
@@ -21,24 +20,24 @@ import java.util.UUID;
 public class AuthService {
     private final AccountRepository accounts;
     private final PasswordEncoder encoder;
-    private final JwtConfig jwt;
+    private final AccountSessions sessions;
     private final Clock clock;
     private final String dummyHash;
 
-    public AuthService(AccountRepository accounts, PasswordEncoder encoder, JwtConfig jwt, Clock clock) {
-        this.accounts = accounts; this.encoder = encoder; this.jwt = jwt; this.clock = clock;
+    public AuthService(AccountRepository accounts, PasswordEncoder encoder, AccountSessions sessions, Clock clock) {
+        this.accounts = accounts; this.encoder = encoder; this.sessions = sessions; this.clock = clock;
         this.dummyHash = encoder.encode(UUID.randomUUID().toString());
     }
 
-    @Transactional
     public LoginResponse login(String username, String password) {
-        Optional<AccountCredentials> stored = accounts.lockByUsername(AccountPolicy.normalizeUsername(username));
+        Optional<AccountCredentials> stored = accounts.findByUsername(AccountPolicy.normalizeUsername(username));
         String hash = stored.map(AccountCredentials::passwordHash).orElse(dummyHash);
         // BCrypt has a 72-byte limit. Oversized input is rejected without invoking it.
         if (password == null || password.getBytes(StandardCharsets.UTF_8).length > 72
                 || !encoder.matches(password, hash) || stored.isEmpty() || !stored.get().active())
             throw invalidLogin();
-        return startSession(stored.get().id());
+        sessions.removeExpired();
+        return sessions.issueVerified(stored.get());
     }
 
     @Transactional(readOnly = true)
@@ -58,23 +57,14 @@ public class AuthService {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Obecne hasło jest nieprawidłowe.");
         if (encoder.matches(newPassword, stored.passwordHash()))
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Nowe hasło musi różnić się od obecnego.");
-        accounts.changePassword(principal.id(), encoder.encode(newPassword));
-        return startSession(principal.id());
+        String newHash = encoder.encode(newPassword);
+        accounts.changePassword(principal.id(), newHash);
+        return sessions.issueVerified(new AccountCredentials(principal.id(), newHash, true));
     }
 
     @Transactional
     public void logout(AccountPrincipal principal) {
         accounts.revokeSession(principal.id(), principal.sessionId());
-    }
-
-    private LoginResponse startSession(String accountId) {
-        var now = clock.instant();
-        String sessionId = UUID.randomUUID().toString();
-        String token = jwt.generateToken(accountId, sessionId, now);
-        accounts.removeExpiredSessions(now);
-        accounts.createSession(sessionId, accountId, jwt.expiresAt(now));
-        AccountPrincipal principal = accounts.findSession(accountId, sessionId, now).orElseThrow(AuthService::invalidLogin);
-        return new LoginResponse(token, LoginResponse.User.from(principal));
     }
 
     private static ResponseStatusException invalidLogin() {

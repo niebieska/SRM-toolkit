@@ -1,6 +1,7 @@
 package pl.srm.biuroapi.auth.account;
 
 import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.jdbc.core.RowMapper;
 import org.springframework.stereotype.Repository;
 
 import java.sql.Timestamp;
@@ -11,14 +12,25 @@ import java.util.Set;
 
 @Repository
 public class AccountRepository {
+    private static final RowMapper<AccountCredentials> CREDENTIALS = (rs, row) ->
+            new AccountCredentials(rs.getString("id"), rs.getString("password_hash"), rs.getBoolean("active"));
     private final JdbcTemplate jdbc;
 
     public AccountRepository(JdbcTemplate jdbc) { this.jdbc = jdbc; }
 
+    public Optional<AccountCredentials> findByUsername(String username) {
+        return jdbc.query("SELECT id, password_hash, active FROM biuro_account WHERE username = ?",
+                CREDENTIALS, username).stream().findFirst();
+    }
+
+    public Optional<AccountCredentials> lockById(String id) {
+        return jdbc.query("SELECT id, password_hash, active FROM biuro_account WHERE id = ? FOR UPDATE",
+                CREDENTIALS, id).stream().findFirst();
+    }
+
     public Optional<AccountCredentials> lockByUsername(String username) {
         return jdbc.query("SELECT id, password_hash, active FROM biuro_account WHERE username = ? FOR UPDATE",
-                (rs, row) -> new AccountCredentials(rs.getString("id"), rs.getString("password_hash"),
-                        rs.getBoolean("active")), username).stream().findFirst();
+                CREDENTIALS, username).stream().findFirst();
     }
 
     public Optional<AccountPrincipal> findSession(String accountId, String sessionId, Instant now) {
