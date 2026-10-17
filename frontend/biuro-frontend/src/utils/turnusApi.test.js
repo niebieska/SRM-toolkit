@@ -1,6 +1,6 @@
 import { test, afterEach } from 'node:test'
 import assert from 'node:assert/strict'
-import { fetchTurnuses, fetchTurnus, createTurnus, updateTurnus, fetchStaffingCategories } from '../api/turnusApi.js'
+import { fetchTurnuses, fetchTurnus, createTurnus, updateTurnus, fetchStaffingCategories, fetchViewerTurnuses, fetchViewerLists } from '../api/turnusApi.js'
 const originalFetch = globalThis.fetch
 afterEach(() => { globalThis.fetch = originalFetch })
 
@@ -56,4 +56,16 @@ test('staffing category lookup uses Bearer authentication and the selected seaso
     return new Response(JSON.stringify([{ code: 'animator', label: 'Animatorzy' }]))
   }
   assert.deepEqual(await fetchStaffingCategories('token', 'WINTER'), [{ code: 'animator', label: 'Animatorzy' }])
+})
+
+
+test('viewer navigation and lists use restricted routes, preserving list payload for local exports', async () => {
+  const payload = { turnus: { turnusCode: 'A/B', turnusName: 'Assigned' }, entries: [] }
+  const calls = []
+  globalThis.fetch = async (url, options) => { calls.push({ url, ...options }); return new Response(JSON.stringify(payload)) }
+  await fetchViewerTurnuses('viewer')
+  assert.deepEqual(await fetchViewerLists('viewer', 'A/B'), payload)
+  assert.ok(calls[0].url.endsWith('/api/viewer/turnuses'))
+  assert.ok(calls[1].url.endsWith('/api/viewer/turnuses/A%2FB/lists'))
+  assert.ok(calls.every(call => call.headers.Authorization === 'Bearer viewer' && call.method === 'GET'))
 })

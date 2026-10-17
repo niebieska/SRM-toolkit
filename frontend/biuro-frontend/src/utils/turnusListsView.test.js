@@ -9,7 +9,7 @@ const { descriptor } = parse(await readFile(file, 'utf8'))
 let source = compileScript(descriptor, { id: 'turnus-lists-test' }).content
 source = source.replace(/import .* from 'vue-router'/, 'const useRoute = () => globalThis.__listsTestRoute;')
 source = source.replace(/import BiuroHeader .*\n/, 'const BiuroHeader = {};\n')
-source = source.replace(/import .* from '..\/stores\/auth'/, "const useAuthStore = () => ({ token: 'operator-token' });")
+source = source.replace(/import .* from '..\/stores\/auth'/, "const useAuthStore = () => ({ token: 'operator-token', isOperator: true, isAuthenticated: true });")
 source = source.replace(/from '([^']+)'/g, (match, path) => {
   if (path === 'vue') return `from '${import.meta.resolve('vue')}'`
   return path.startsWith('.') ? `from '${new URL(path.endsWith('.js') ? path : path + '.js', file).href}'` : match
