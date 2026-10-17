@@ -1,5 +1,209 @@
 # Work in progress
 
+## 2026-10-17 — Password-response expiry review correction
+
+- Reproduced the review finding: expiry cleared the token while a successful
+  password-change response was pending, so the token-equality guard discarded
+  the replacement session. Switched the response guard to captured sessionVersion:
+  expiry preserves it; newer login or explicit clear supersedes the response.
+- Added a regression proving expiry recovery, password-field clearing, one request
+  and normal success navigation. Added explicit-clear rejection coverage; existing
+  newer-login and unmounted-screen regressions remain passing.
+- Verification: new expiry regression failed before the fix; all 16 account-view
+  cases now pass, as do all 18 frontend test files, production build and whitespace
+  checks. Existing PDF/font chunk warnings remain. Fix and regressions are recorded
+  in a dedicated commit, separate from the environment-template draft; no backend
+  or secret/config changes.
+
+## 2026-10-17 — Initial browser verification
+
+- User confirmed first administrator creation and additional-role management work
+  in the browser. Full VIEWER, session revocation/expiry, workflow and responsive
+  acceptance remain pending; this does not mark the release gate complete.
+
+## 2026-10-17 — Frontend review fixes
+
+- Fixed four reproduced issues in the account frontend. Logout now checks the
+  session version before clearing state, and the header redirects only when that
+  logout actually completed locally. Delayed success/401/503 responses cannot
+  clear or redirect a newer login; ordinary expiry during logout still completes.
+- Password changes block normal navigation while pending, release the guard on
+  errors/success, and never redirect after the screen unmounts. A changed session
+  can still leave safely; an old password response cannot overwrite its token.
+- Confirmed successful reload resets a new-account draft and its passwords.
+  Cancelling or a failed reload preserves the draft. Escaped the username input
+  pattern's hyphen so Unicode-set browser validation accepts the pattern.
+- Added regressions that failed before the fixes, plus header navigation, logout
+  response variants, reload failure and password-error recovery cases. Final
+  frontend suite passes all 18 test files; production build and whitespace check
+  pass. Existing PDF/font chunk warnings remain. No backend/dependency changes.
+- Real browser acceptance and previously recorded security/technical follow-ups
+  remain open. These fixes and the frontend phase are recorded in separate
+  implementation, test and documentation commits; unrelated files remain untouched.
+
+## 2026-10-17 — Biuro account frontend integrated
+
+- Added account administration, fixed-role/Turnus assignment controls, activation,
+  temporary-password resets and Polish audit history. Existing backend versions
+  protect edits/reset; conflicts preserve input and explicit reload confirms
+  discarding it. SYS_ADMIN retains no implicit operational access.
+- Added mandatory/optional own-password flow, replacement-session handling,
+  server logout and role-aware route/navigation checks. VIEWER has a minimal
+  assigned-Turnus index and reuses presets/custom lists and all three exports
+  through the restricted APIs; it cannot open the definition editor.
+- All Biuro APIs now share configurable base URL/error handling. Startup verifies
+  expiry/profile; outages preserve the token and show a retry screen. A 401 while
+  working opens a blocking reauthentication dialog with the current view retained
+  in memory. Same-user login preserves input when still authorized; changed users,
+  lost permissions and mandatory password changes leave the previous screen.
+  POST/PATCH requests are never replayed automatically. Old responses cannot clear
+  a newer token; abandoned login/password responses cannot restore old sessions.
+- Verification: the full frontend Node suite passes (18 test files), production
+  build and diff whitespace check pass. Added store, route, account/password view,
+  session-dialog and VIEWER API regressions; existing editor/list tests pass with
+  explicit role fixtures. No new dependencies, API/schema or backend changes.
+  Existing lazy PDF/font size warnings remain. No lint/type-check scripts exist.
+- Real browser layout/focus/download and integrated-backend acceptance were not
+  run in this environment. Scenarios and exact retention limits are preserved in
+  [frontend integration](Biuro-accounts-frontend.md). Release acceptance remains
+  open, alongside login-abuse protection, audit retention and deployment gates.
+  Changes are recorded in separate implementation, test and documentation commits;
+  unrelated `sth.java` and `Turnus-lists-plan.md` remain untouched.
+
+## 2026-10-17 — Biuro accounts Phase 2 backend implemented
+
+- Added account creation/editing, temporary-password reset, role management and
+  VIEWER Turnus assignments. SYS_ADMIN has no implicit operational access, but
+  can grant itself OPERATOR or VIEWER. Account versions reject stale edits.
+- Serialized administrative mutations protect the last active SYS_ADMIN during
+  concurrent edits. Disable/reset revoke sessions; role and assignment changes
+  apply on the next request. Mutations recheck the acting administrator's session.
+- Added minimal assigned-Turnus navigation and accepted-person list endpoints for
+  VIEWER; unassigned requests are denied before calling registration-api.
+- Flyway V6 adds assignments, account versions, the administrator lock and audit
+  storage. Account changes and successful authentication events are audited
+  transactionally without passwords or tokens. Registration DB is unchanged.
+- Verification: all 135 Biuro tests pass, zero failures/errors/skips. A targeted
+  34-case run passed on disposable MariaDB 11.8.9, including concurrent last-admin
+  protection, stale edits, session lifecycle and a populated V5-to-V6 upgrade.
+  The strengthened nine-case administration suite also passed on MariaDB.
+- Corrected the standalone H2 migration test to use a connection pool, matching
+  the application; its previous connection lifecycle caused a test-only failure.
+  The final full run passes. Disposable MariaDB was stopped/removed.
+- API contracts and boundaries: [Phase 2](Biuro-accounts-phase-2.md).
+  Frontend account/password screens, permission-aware navigation and session
+  integration remain next; browser acceptance is not complete. No frontend code
+  changed or checks repeated. Login-abuse protection and audit retention remain
+  follow-ups. This phase is recorded in separate implementation, test and
+  documentation commits; unrelated `sth.java` and
+  `Turnus-lists-plan.md` remain untouched.
+
+## 2026-10-17 — Careful recheck: concurrent-login cleanup fixed
+
+- Reproduced an additional MariaDB deadlock (error 1213): two different accounts
+  could log in concurrently, both range-delete expired sessions, then deadlock
+  inserting new sessions inside those same transactions. The earlier reset/disable
+  tests did not cover simultaneous users.
+- Login now commits expired-session cleanup in its own transaction before the
+  short account-lock/session-creation transaction. Password changes do not run
+  global cleanup. No write retry was introduced.
+- Added a deterministic simultaneous-user test, synchronizing both cleanup calls.
+  Added a session-creation failure test proving password changes roll back the
+  password hash, mandatory-change flag and deletion of previous sessions together.
+- Final verification: all 119 Biuro tests pass, zero failures/errors/skips. All 18
+  account/bootstrap/concurrency cases passed on disposable MariaDB 11.8.9 as well.
+  The disposable container was stopped/removed; diff whitespace check passes.
+- Earlier outage handling and principal identity fixes remain verified. No
+  frontend changes or repeat frontend checks. Fixes are recorded in separate
+  implementation, test and documentation commits; existing
+  later-phase scope and unrelated files are unchanged.
+
+## 2026-10-16 — Biuro account review fixes
+
+- Fixed the three backend review findings. Login verifies BCrypt without holding
+  a database transaction/account lock; a separate transactional session issuer
+  briefly locks the account and rechecks active state/hash before issuing a token.
+  Tests prove updates commit during paused verification, and concurrent password
+  reset/disable rejects the stale login without creating a session.
+- Authentication filter/controller database and transaction failures now return
+  safe JSON 503 rather than leaking details or proceeding without authentication.
+  Existing valid sessions survive storage outage/recovery. Other API exception
+  contracts are unchanged.
+- AccountPrincipal implements AuthenticatedPrincipal: Spring authentication name
+  is now the username rather than the record containing a session ID.
+- Verification: all 117 Biuro tests pass; 16 account/bootstrap/concurrency cases
+  also pass on disposable MariaDB 11.8.9. Includes real HTTP outage/recovery and
+  filter transaction-failure coverage. Test container stopped/removed; whitespace
+  check passes. Frontend unchanged; its checks were not repeated.
+- Fixes/tests/documentation are included in the follow-up checkpoint commits.
+  Frontend account/session integration,
+  administration, VIEWER assignments, last-admin protection and audit remain the
+  planned phase work. Login-abuse protection remains an outstanding review item;
+  shorter locks do not constitute rate limiting. Unrelated files remain untouched.
+
+## 2026-10-16 — Biuro accounts Phase 1 backend implemented
+
+- Branch `feature/biuro-accounts`: Flyway V5 accounts/roles/sessions/setup lock,
+  BCrypt passwords, database login, profile/own-password/logout APIs and two-hour
+  JWTs tied to stored sessions. Temporary-password accounts have no operational
+  authority; operational endpoints require OPERATOR. Current roles/active state
+  are checked per request. Password change revokes older sessions; logout revokes
+  the current session. Internal Turnus Basic authentication remains separate.
+- Removed the shared-user login and JWT-secret fallback. Explicit JWT_SECRET and
+  one-time first-SYS_ADMIN environment setup are required; old JWTs are invalid.
+  [Setup and phase boundary](Biuro-accounts-phase-1.md) document the API contracts.
+- Final Biuro suite: 111 tests, zero failures/errors/skips. All 12 account/bootstrap
+  integration tests also passed on disposable MariaDB 11.8.9, including fresh V5
+  migration, normalized username uniqueness, concurrent bootstrap, password/session
+  changes and preserved Turnus seeds. Disposable container stopped/removed.
+- Initial sandbox run could not attach Mockito/start local servers; successful
+  verification ran with the required execution permissions. No frontend code
+  changed, so frontend checks were not repeated. Diff whitespace check passed.
+- This is not deployment-ready alone: account administration/self-role assignment,
+  VIEWER assignments, last-admin protection, audit and frontend password/logout/
+  session flows remain. Existing frontend logout still only clears local state.
+  No account-management screen or automatic role-grant workaround was added.
+- Implementation, tests and documentation are recorded in separate checkpoint
+  commits. Unrelated sth.java and the empty untracked Turnus-lists-plan.md were
+  left untouched.
+
+## 2026-10-16 — Biuro accounts and access decisions
+
+- Recorded agreed scope in [accounts/access plan](Biuro-accounts-and-access-plan.md).
+  Unique username/password, hashed credentials, administrator-created accounts,
+  temporary-password change and multiple fixed roles; no public registration.
+- SYS_ADMIN manages access and may assign themselves OPERATOR/VIEWER. OPERATOR
+  has all Turnus/processing access. VIEWER has assigned-Turnus lists, all presets,
+  Własny and exports, plus minimal Turnus navigation; no operational changes.
+- Accepted initial defaults: two-hour sessions, current-session logout revocation,
+  reset/disable revocation, next-request role/assignment updates and protection
+  for the last active SYS_ADMIN. Preserve input on reauthentication; never replay
+  writes automatically. Implementation/schema decisions and tests remain pending.
+
+## 2026-10-16 — Release-plan status reconciled
+
+- Updated [functional release plan](Registration-workflow-release-plan.md) against
+  local `development` at `2cdac33` (PR #40). Turnus catalogue/cache/editor, seasonal
+  staff configuration, capacities/statistics, confirmation metadata and list/export
+  implementation are now recorded as delivered.
+- Kept operator/deployed acceptance pending. Distinguished implemented Biuro and
+  catalogue timeouts from remaining Registration-to-email timeout work. No new
+  full regression run, remote fetch or deployment was performed for this doc update.
+- Remaining focus: JWT/session handling, notification correctness/security,
+  deployment/secrets/configuration, and complete workflow acceptance. Registration
+  editing remains deferred; no new product scope added.
+
+## 2026-10-16 — Registration editing deferred
+
+- Recorded a possible Biuro-only editing feature in
+  [Future product backlog](Future-product-backlog.md). PESEL is assumed correct
+  and remains read-only; Turnus transfers create a separate linked registration.
+- Exact editable fields, consent handling and notification behavior remain to be
+  agreed. Validation, audit and protection against overwriting newer changes belong
+  in the implementation scope. No editing implementation started or release scope
+  expanded. Continue remaining release work, starting with reconciling plan status
+  and JWT/session-expiry handling, followed by email and deployment readiness.
+
 ## 2026-10-16 — Turnus list exports (Phase 3)
 
 - Implemented on `feature/turnus-list-exports`. XLSX, CSV and generated

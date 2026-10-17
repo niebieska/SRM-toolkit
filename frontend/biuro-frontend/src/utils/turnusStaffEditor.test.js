@@ -13,7 +13,7 @@ const onBeforeRouteLeave = () => {}, onBeforeRouteUpdate = () => {};`)
 source = source.replace(/import BiuroHeader .*\n/, 'const BiuroHeader = {};\n')
 source = source.replace(/import TurnusFormField .*\n/, 'const TurnusFormField = {};\n')
 source = source.replace(/import DiscardChangesDialog .*\n/, 'const DiscardChangesDialog = {};\n')
-source = source.replace(/import .* from '..\/stores\/auth'/, "const useAuthStore = () => ({ token: 'operator-token', isAuthenticated: true });")
+source = source.replace(/import .* from '..\/stores\/auth'/, "const useAuthStore = () => ({ token: 'operator-token', isAuthenticated: true, isOperator: true });")
 source = source.replace(/from '([^']+)'/g, (match, path) => {
   if (path === 'vue') return `from '${import.meta.resolve('vue')}'`
   return path.startsWith('.') ? `from '${new URL(path + '.js', file).href}'` : match
@@ -196,7 +196,8 @@ const headerFile = new URL('../components/BiuroHeader.vue', import.meta.url)
 const headerDescriptor = parse(await readFile(headerFile, 'utf8')).descriptor
 let headerSource = compileScript(headerDescriptor, { id: 'biuro-header-confirmation-test' }).content
 headerSource = headerSource.replace(/import .* from 'vue-router'/, 'const useRouter = () => globalThis.__headerConfirmationTest.router;')
-headerSource = headerSource.replace(/import .* from '..\/stores\/auth'/, 'const useAuthStore = () => globalThis.__headerConfirmationTest.auth;')
+headerSource = headerSource.replace(/import .* from '..\/stores\/auth(?:\.js)?'/, 'const useAuthStore = () => globalThis.__headerConfirmationTest.auth;')
+headerSource = headerSource.replace(/from 'vue'/g, `from '${import.meta.resolve('vue')}'`)
 headerSource = headerSource.replace('__expose();', '')
 headerSource = headerSource.replace('return __returned__', '__expose({ logout }); return __returned__')
 const { default: Header } = await import(`data:text/javascript;base64,${Buffer.from(headerSource).toString('base64')}`)
@@ -205,7 +206,7 @@ Header.render = () => null
 test('logout honors stay/discard and busy state before clearing authentication', async t => {
   const events = []
   const previous = globalThis.__headerConfirmationTest
-  globalThis.__headerConfirmationTest = { auth: { logout: () => events.push('clear-auth') },
+  globalThis.__headerConfirmationTest = { auth: { logout: () => { events.push('clear-auth'); return true } },
     router: { push: path => events.push(path) } }
   const apps = []
   t.after(() => { apps.forEach(app => app.unmount()); globalThis.__headerConfirmationTest = previous })

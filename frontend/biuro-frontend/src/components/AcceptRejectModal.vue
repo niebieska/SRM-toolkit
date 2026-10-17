@@ -74,7 +74,7 @@ async function confirm() {
     emit('updated')
     emit('close')
   } catch (error) {
-    errorMessage.value = 'Nie udało się zaktualizować statusu zgłoszenia'
+    errorMessage.value = error.message || 'Nie udało się zaktualizować statusu zgłoszenia'
   } finally {
     loading.value = false
   }

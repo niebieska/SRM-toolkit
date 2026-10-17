@@ -89,8 +89,8 @@ const SECTION_LABELS = {
 onMounted(async () => {
   try {
     detail.value = await fetchRegistrationDetail(authStore.token, props.code)
-  } catch {
-    errorMessage.value = 'Nie udało się pobrać szczegółów zgłoszenia'
+  } catch (error) {
+    errorMessage.value = error.message || 'Nie udało się pobrać szczegółów zgłoszenia'
   } finally {
     loading.value = false
   }

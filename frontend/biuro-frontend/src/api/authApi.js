@@ -1,15 +1,9 @@
-export async function loginRequest(username, password) {
-  const response = await fetch('http://localhost:8081/api/auth/login', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({ username, password }),
-  })
-
-  if (!response.ok) {
-    throw new Error('AUTH_FAILED')
-  }
-
-  return response.json()
-}
+import { request } from './http.js'
+export const loginRequest = (username, password) => request('/api/auth/login', {
+  method: 'POST', payload: { username, password }, session: false,
+})
+export const fetchProfile = token => request('/api/auth/me', { token })
+export const changePassword = (token, currentPassword, newPassword) => request('/api/auth/password', {
+  token, method: 'POST', payload: { currentPassword, newPassword },
+})
+export const logoutRequest = token => request('/api/auth/logout', { token, method: 'POST', session: false })

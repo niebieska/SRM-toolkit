@@ -13,6 +13,7 @@ import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import org.springframework.web.context.WebApplicationContext;
 import org.springframework.web.server.ResponseStatusException;
 import pl.srm.biuroapi.auth.config.JwtConfig;
+import pl.srm.biuroapi.auth.OperatorTestTokens;
 import pl.srm.biuroapi.season.StaffingCategories;
 import pl.srm.biuroapi.turnus.TurnusDefinition.SeasonType;
 
@@ -22,7 +23,6 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 @SpringBootTest(properties = {
         "registration.api.password=test-service-password", "turnus.lookup.password=test-lookup-password",
-        "biuro.auth.username=test-operator", "biuro.auth.password=test-only-password",
         "spring.datasource.url=jdbc:h2:mem:staff-requirements;MODE=MariaDB;DB_CLOSE_DELAY=-1",
         "spring.datasource.driver-class-name=org.h2.Driver",
         "spring.datasource.username=sa", "spring.datasource.password="})
@@ -39,7 +39,7 @@ class StaffRequirementsTest {
         jdbc.update("DELETE FROM turnus WHERE turnus_code LIKE 'STAFFTEST%'");
         mvc = MockMvcBuilders.webAppContextSetup(context)
                 .addFilters(context.getBean("springSecurityFilterChain", Filter.class)).build();
-        token = "Bearer " + jwt.generateToken("biuro");
+        token = "Bearer " + OperatorTestTokens.create(jdbc, jwt, "biuro");
     }
     TurnusRequest request(Long version, List<StaffRequirement> staffing) {
         return new TurnusRequest("STAFFTEST1", "Winter", null, "Place", SeasonType.WINTER,
@@ -93,7 +93,7 @@ class StaffRequirementsTest {
         assertEquals(8, categories.get(SeasonType.SUMMER).size());
     }
     @Test void categoryEndpointRequiresOperatorAndSupportsBothSeasons() throws Exception {
-        mvc.perform(get("/api/turnuses/staffing-categories").param("seasonType", "WINTER")).andExpect(status().isForbidden());
+        mvc.perform(get("/api/turnuses/staffing-categories").param("seasonType", "WINTER")).andExpect(status().isUnauthorized());
         mvc.perform(get("/api/turnuses/staffing-categories").param("seasonType", "WINTER")
                 .header("Authorization", token)).andExpect(status().isOk()).andExpect(jsonPath("$.length()").value(7));
         mvc.perform(get("/api/turnuses/staffing-categories").param("seasonType", "SUMMER")

@@ -12,6 +12,7 @@ import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 import org.springframework.web.context.WebApplicationContext;
 import pl.srm.biuroapi.auth.config.JwtConfig;
+import pl.srm.biuroapi.auth.OperatorTestTokens;
 import pl.srm.biuroapi.season.StaffingCategories;
 import pl.srm.biuroapi.season.StaffingCategories.Selection;
 import pl.srm.biuroapi.turnus.TurnusDefinition.SeasonType;
@@ -22,7 +23,6 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 @SpringBootTest(properties = {
         "registration.api.password=test-service-password", "turnus.lookup.password=test-lookup-password",
-        "biuro.auth.username=test-operator", "biuro.auth.password=test-only-password",
         "spring.datasource.url=jdbc:h2:mem:staff-requirements;MODE=MariaDB;DB_CLOSE_DELAY=-1",
         "spring.datasource.driver-class-name=org.h2.Driver",
         "spring.datasource.username=sa", "spring.datasource.password="})
@@ -38,7 +38,7 @@ class SummerStaffRequirementsTest {
         jdbc.update("DELETE FROM turnus WHERE turnus_code LIKE 'SUMMERSTAFF%'");
         mvc = MockMvcBuilders.webAppContextSetup(context)
                 .addFilters(context.getBean("springSecurityFilterChain", Filter.class)).build();
-        token = "Bearer " + jwt.generateToken("biuro");
+        token = "Bearer " + OperatorTestTokens.create(jdbc, jwt, "biuro");
     }
     private List<Selection> selections(String code) {
         return categories.get(SeasonType.SUMMER).stream().filter(c -> c.code().equals(code))

@@ -35,9 +35,26 @@ public class SecurityConfig {
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .authorizeHttpRequests(authorize -> authorize
                         .requestMatchers(HttpMethod.POST, "/api/auth/login").permitAll()
-                        .requestMatchers("/api/**").authenticated()
+                        .requestMatchers(HttpMethod.GET, "/api/auth/me").authenticated()
+                        .requestMatchers(HttpMethod.POST, "/api/auth/password", "/api/auth/logout").authenticated()
+                        .requestMatchers("/api/admin/**").hasRole("SYS_ADMIN")
+                        .requestMatchers(HttpMethod.GET, "/api/viewer/turnuses", "/api/viewer/turnuses/*/lists").hasAnyRole("OPERATOR", "VIEWER")
+                        .requestMatchers("/api/viewer/**").denyAll()
+                        .requestMatchers("/api/turnuses/**", "/api/biuro/**").hasRole("OPERATOR")
+                        .requestMatchers("/api/**").denyAll()
                         .anyRequest().permitAll()
                 )
+                .exceptionHandling(errors -> errors
+                        .authenticationEntryPoint((request, response, exception) -> {
+                            response.setStatus(401);
+                            response.setContentType("application/json;charset=UTF-8");
+                            response.getWriter().write("{\"status\":401,\"message\":\"Sesja wygasła lub wymagane jest logowanie.\"}");
+                        })
+                        .accessDeniedHandler((request, response, exception) -> {
+                            response.setStatus(403);
+                            response.setContentType("application/json;charset=UTF-8");
+                            response.getWriter().write("{\"status\":403,\"message\":\"Brak uprawnień do tej operacji.\"}");
+                        }))
                 .addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class);
 
         return http.build();
