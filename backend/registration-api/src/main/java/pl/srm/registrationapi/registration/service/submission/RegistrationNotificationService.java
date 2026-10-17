@@ -54,7 +54,8 @@ public class RegistrationNotificationService {
                     turnus
             );
         } catch (Exception exception) {
-            LOGGER.error("Failed to prepare participant registration confirmation email for {}", registrationCode, exception);
+            LOGGER.error("Email preparation failed code={} template=registration-confirmation-participant error={}",
+                    registrationCode, exception.getClass().getSimpleName());
         }
     }
 
@@ -92,7 +93,8 @@ public class RegistrationNotificationService {
                 );
             }
         } catch (Exception exception) {
-            LOGGER.error("Failed to prepare staff registration confirmation email for {}", registrationCode, exception);
+            LOGGER.error("Email preparation failed code={} template=registration-confirmation-staff error={}",
+                    registrationCode, exception.getClass().getSimpleName());
         }
     }
 

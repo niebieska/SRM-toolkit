@@ -52,9 +52,9 @@ public class StatusNotificationService {
             emailServiceClient.sendEmail(email, STATUS_UPDATE_TEMPLATE, variables);
         } catch (Exception exception) {
             LOGGER.error(
-                    "Failed to prepare status update email for {}",
+                    "Email preparation failed code={} template=status-update error={}",
                     registration.getRegistrationCode(),
-                    exception
+                    exception.getClass().getSimpleName()
             );
         }
     }
