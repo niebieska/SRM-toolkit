@@ -79,7 +79,8 @@ class InternalTurnusSecurityTest {
         for (String method : new String[]{"POST", "PATCH", "DELETE", "HEAD"})
             assertEquals(403, request(method, "/internal/turnuses", auth).statusCode());
         for (String path : new String[]{"/internal/turnuses/ZAGLE26T1", "/internal/unknown",
-                "/api/turnuses", "/api/turnuses/ZAGLE26T1/lists", "/api/biuro/registrations"})
+                "/api/turnuses", "/api/turnuses/ZAGLE26T1/lists", "/api/biuro/registrations",
+                "/api/admin/accounts", "/api/viewer/turnuses"})
             assertEquals(path.startsWith("/internal/") ? 403 : 401, request("GET", path, auth).statusCode());
         assertEquals(401, request("POST", "/api/turnuses", auth).statusCode());
     }

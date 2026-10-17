@@ -5,6 +5,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.web.server.ResponseStatusException;
 import pl.srm.biuroapi.auth.account.AccountCredentials;
+import pl.srm.biuroapi.auth.account.AccountAudit;
 import pl.srm.biuroapi.auth.account.AccountRepository;
 import java.time.Clock;
 import java.util.Optional;
@@ -15,7 +16,7 @@ class AuthServiceTest {
     private final AccountRepository accounts = mock(AccountRepository.class);
     private final BCryptPasswordEncoder encoder = new BCryptPasswordEncoder(4);
     private final AccountSessions sessions = mock(AccountSessions.class);
-    private final AuthService service = new AuthService(accounts, encoder, sessions, Clock.systemUTC());
+    private final AuthService service = new AuthService(accounts, encoder, sessions, Clock.systemUTC(), mock(AccountAudit.class));
 
     @Test void unknownWrongAndDisabledAccountsHaveSameResponseAndNoSession() {
         when(accounts.findByUsername("unknown")).thenReturn(Optional.empty());

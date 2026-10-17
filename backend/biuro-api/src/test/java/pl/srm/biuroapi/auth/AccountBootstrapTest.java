@@ -10,6 +10,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.transaction.PlatformTransactionManager;
 import pl.srm.biuroapi.auth.account.AccountBootstrap;
 import pl.srm.biuroapi.auth.account.AccountRepository;
+import pl.srm.biuroapi.auth.account.AccountAudit;
 
 import java.time.Clock;
 import java.util.concurrent.*;
@@ -38,6 +39,7 @@ class AccountBootstrapTest {
     @Autowired Clock clock;
     @Autowired PlatformTransactionManager manager;
     @Autowired JdbcTemplate jdbc;
+    @Autowired AccountAudit audit;
 
     @BeforeEach void reset() {
         jdbc.update("DELETE FROM biuro_session");
@@ -46,7 +48,7 @@ class AccountBootstrapTest {
         jdbc.update("UPDATE biuro_account_setup SET completed = FALSE WHERE id = 1");
     }
     AccountBootstrap bootstrap(boolean enabled, String username, String password) {
-        return new AccountBootstrap(accounts, encoder, clock, manager, enabled, username, "Administrator", password);
+        return new AccountBootstrap(accounts, encoder, clock, manager, audit, enabled, username, "Administrator", password);
     }
     void run(AccountBootstrap runner) { runner.run(new DefaultApplicationArguments()); }
 
