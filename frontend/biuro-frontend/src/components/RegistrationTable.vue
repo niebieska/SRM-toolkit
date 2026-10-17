@@ -70,7 +70,7 @@ async function loadRegistrations() {
       turnusCode: props.filters.turnusCode,
     })
   } catch (error) {
-    errorMessage.value = 'Nie udało się pobrać listy zgłoszeń'
+    errorMessage.value = error.message || 'Nie udało się pobrać listy zgłoszeń'
   } finally {
     loading.value = false
   }

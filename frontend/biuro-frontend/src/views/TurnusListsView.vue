@@ -3,7 +3,7 @@ import { computed, onBeforeUnmount, ref, watch } from 'vue'
 import { useRoute } from 'vue-router'
 import BiuroHeader from '../components/BiuroHeader.vue'
 import { useAuthStore } from '../stores/auth'
-import { fetchTurnusLists } from '../api/turnusApi'
+import { fetchTurnusLists, fetchViewerLists } from '../api/turnusApi'
 import { availableListColumns, columnsForList, filterAndSortList, listColumns, listValue, listViews, validateTurnusLists } from '../utils/turnusLists.js'
 import { downloadTurnusList, PdfLayoutError } from '../utils/turnusListExport.js'
 
@@ -65,7 +65,7 @@ async function exportList() {
   try {
     const downloaded = await downloadTurnusList({ turnus: data.value.turnus, groups: groups.value,
       viewKey: selectedView.value, viewLabel: listViews.find(view => view.key === selectedView.value).label },
-    format, () => request === exportRequest && String(route.params.code) === code)
+    format, () => auth.isAuthenticated && request === exportRequest && String(route.params.code) === code)
     if (downloaded && request === exportRequest) exportSuccess.value = `Przygotowano plik ${format.toUpperCase()}.`
   } catch (exception) {
     if (request === exportRequest) exportError.value = exception instanceof PdfLayoutError
@@ -78,7 +78,7 @@ async function load() {
   const request = ++sequence, code = String(route.params.code)
   data.value = null; error.value = ''; loading.value = true
   try {
-    const result = await fetchTurnusLists(auth.token, code)
+    const result = await (auth.isOperator ? fetchTurnusLists : fetchViewerLists)(auth.token, code)
     if (!validateTurnusLists(result, code)) throw new Error('Biuro zwróciło nieprawidłową listę turnusu.')
     if (request === sequence) data.value = result
   } catch (exception) {
@@ -107,7 +107,7 @@ function displayDate(value) {
     <div class="mx-auto max-w-6xl space-y-5">
       <BiuroHeader />
       <nav aria-label="Ścieżka nawigacji" class="text-sm text-slate-600">
-        <RouterLink to="/turnusy" class="rounded hover:text-slate-900 focus-visible:ring-2 focus-visible:ring-slate-500">Turnusy</RouterLink>
+        <RouterLink :to="auth.isOperator ? '/turnusy' : '/listy'" class="rounded hover:text-slate-900 focus-visible:ring-2 focus-visible:ring-slate-500">Turnusy</RouterLink>
         <span aria-hidden="true" class="mx-2">/</span><span aria-current="page">Listy</span>
       </nav>
       <header>
@@ -115,7 +115,7 @@ function displayDate(value) {
         <p v-if="data" class="mt-1 text-sm text-slate-600">{{ data.turnus.turnusCode }} · {{ displayDate(data.turnus.startDate) }} – {{ displayDate(data.turnus.endDate) }}</p>
       </header>
       <nav aria-label="Sekcje turnusu" class="flex gap-1 border-b border-slate-200 text-sm">
-        <RouterLink :to="{ name: 'turnus-detail', params: { code: route.params.code } }" class="rounded-t px-4 py-2 text-slate-600 hover:bg-white focus-visible:ring-2 focus-visible:ring-slate-500">Definicja</RouterLink>
+        <RouterLink v-if="auth.isOperator" :to="{ name: 'turnus-detail', params: { code: route.params.code } }" class="rounded-t px-4 py-2 text-slate-600 hover:bg-white focus-visible:ring-2 focus-visible:ring-slate-500">Definicja</RouterLink>
         <RouterLink :to="{ name: 'turnus-lists', params: { code: route.params.code } }" aria-current="page" class="border-b-2 border-slate-800 px-4 py-2 font-semibold text-slate-900">Listy</RouterLink>
       </nav>
       <p v-if="loading" role="status" class="text-sm text-slate-600">Wczytywanie list…</p>

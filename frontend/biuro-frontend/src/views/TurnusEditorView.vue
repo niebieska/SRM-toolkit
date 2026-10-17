@@ -52,7 +52,7 @@ function isCreatedDetail(to) {
 }
 function canLeave(to) {
   if (isCreatedDetail(to)) return true
-  if (to.path === '/login' && !auth.isAuthenticated) return true
+  if (!auth.isOperator || (to.path === '/login' && !auth.isAuthenticated)) return true
   if (saving.value) return false
   return !dirty.value || confirmDiscard('leave')
 }
