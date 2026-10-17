@@ -4,6 +4,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.boot.env.YamlPropertySourceLoader;
+import org.springframework.boot.convert.ApplicationConversionService;
 import org.springframework.boot.test.context.runner.WebApplicationContextRunner;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -21,6 +22,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 class ServiceCredentialsStartupTest {
     private final WebApplicationContextRunner runner = new WebApplicationContextRunner()
             .withInitializer(context -> {
+                context.getBeanFactory().setConversionService(ApplicationConversionService.getSharedInstance());
                 // Isolate configuration tests from credentials set on the developer/CI machine.
                 var sources = context.getEnvironment().getPropertySources();
                 sources.remove(StandardEnvironment.SYSTEM_ENVIRONMENT_PROPERTY_SOURCE_NAME);

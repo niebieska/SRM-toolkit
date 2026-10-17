@@ -27,6 +27,9 @@ management:
 email:
   service:
     url: ${EMAIL_SERVICE_URL:http://localhost:8082}
+    # Leave headroom inside Biuro's 60-second upstream wait for status updates.
+    connect-timeout: ${EMAIL_CONNECT_TIMEOUT:PT5S}
+    read-timeout: ${EMAIL_READ_TIMEOUT:PT30S}
   organizer:
     email: ${ORGANIZER_EMAIL:}
 

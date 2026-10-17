@@ -32,14 +32,17 @@ public class EmailController {
         }
 
         try {
-            emailDispatchService.sendEmail(request.to(), request.templateName(), request.variables());
-            return ResponseEntity.ok(new SendEmailResponse(true, "Email sent."));
+            boolean accepted = emailDispatchService.sendEmail(request.to(), request.templateName(), request.variables());
+            return ResponseEntity.ok(new SendEmailResponse(accepted, accepted
+                    ? "Message accepted by SMTP server." : "Email sending disabled; no message sent."));
         } catch (IllegalArgumentException exception) {
-            return ResponseEntity.badRequest().body(new SendEmailResponse(false, exception.getMessage()));
+            return ResponseEntity.badRequest().body(new SendEmailResponse(false, "Invalid email request or template."));
         } catch (Exception exception) {
-            LOGGER.error("Failed to send email", exception);
+            // SMTP exception text can contain recipients, server responses or credentials.
+            LOGGER.error("Email request failed; SMTP delivery may be uncertain (error={})",
+                    exception.getClass().getSimpleName());
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
-                    .body(new SendEmailResponse(false, "Failed to send email."));
+                    .body(new SendEmailResponse(false, "Email sending failed; delivery may be uncertain."));
         }
     }
 }
