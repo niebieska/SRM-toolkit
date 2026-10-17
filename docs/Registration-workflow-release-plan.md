@@ -102,9 +102,11 @@ Details: [catalogue](Turnus-catalogue-implementation.md),
   on operator 401 with a Polish explanation; check expiry when restoring a session.
   Parse safe backend error details. Test missing, expired and tampered JWTs and
   public/protected routes, including session behavior in the frontend.
-  Apply this consistently to Zgłoszenia and Turnusy. The current backend may
-  return 403 for expired/missing operator credentials; distinguish authentication
-  failure from a genuine permission denial rather than logging out on every 403.
+  Implemented centrally for Zgłoszenia and Turnusy in the
+  [frontend phase](Biuro-accounts-frontend.md), including blocking reauthentication
+  during editing. The account backend returns 401 for invalid sessions and 403
+  for permission denial; ordinary 403 must not clear a valid session.
+  Browser acceptance remains pending.
   Make login reachable after expiry and agree how unsaved editor inputs survive
   reauthentication. Never automatically replay a POST/PATCH after login.
   Cover expiry on startup and during list loading/edit saving, retained inputs,
@@ -115,8 +117,9 @@ Details: [catalogue](Turnus-catalogue-implementation.md),
   for OPERATOR, assigned-Turnus lists/custom columns/exports for VIEWER, two-hour
   sessions, revocation and last-administrator protection. Agreed 2026-10-16;
   backend implementation is recorded in [Phase 1](Biuro-accounts-phase-1.md) and
-  [Phase 2](Biuro-accounts-phase-2.md). Account UI/session integration and release
-  acceptance remain pending.
+  [Phase 2](Biuro-accounts-phase-2.md). Account UI/session integration is
+  implemented in the [frontend phase](Biuro-accounts-frontend.md); browser/release
+  acceptance remains pending.
 
 ### 4. Deliver usable Turnus lists
 

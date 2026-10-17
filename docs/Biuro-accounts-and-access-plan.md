@@ -3,8 +3,8 @@
 Agreed 2026-10-16. Extends the release-plan JWT/session task into individual
 accounts and access management. The [Phase 1 backend](Biuro-accounts-phase-1.md)
 and [Phase 2 management/access backend](Biuro-accounts-phase-2.md) are implemented
-on `feature/biuro-accounts`. UI/session integration and full acceptance remain
-pending. This document describes the complete target scope.
+on `feature/biuro-accounts`. [Frontend integration](Biuro-accounts-frontend.md)
+is implemented; full browser/deployment acceptance remains pending. This document describes the complete target scope.
 
 ## Accounts and login
 
@@ -55,7 +55,8 @@ SYS_ADMIN assigns roles; this does not introduce a configurable permission build
 - Prevent disabling the last active SYS_ADMIN or removing their SYS_ADMIN role,
   including through self-management. Enforce the rule safely for concurrent edits.
 - Detect expired/invalid sessions on app startup and during requests. Return to
-  login with a clear Polish explanation; distinguish 401 authentication failures
+  login with a clear Polish explanation (a blocking reauthentication dialog
+  while editing, preserving the mounted form); distinguish 401 authentication failures
   from genuine 403 permission denials and upstream service-auth failures.
 - Preserve unsaved form input through reauthentication without automatically
   replaying POST/PATCH operations. Avoid persisting sensitive drafts unnecessarily.
@@ -81,7 +82,8 @@ SYS_ADMIN assigns roles; this does not introduce a configurable permission build
 Each phase must have a documented migration/startup path. Phase 1 uses stored
 session IDs in signed JWTs and checks current account state/roles per request.
 Management and VIEWER assignment contracts are documented in Phase 2. Frontend
-integration and complete deployment acceptance remain pending.
+integration is implemented and tested; complete browser/deployment acceptance
+remains pending. See the frontend document for manual scenarios and limitations.
 
 Test username uniqueness/case handling, password hashing/reset, temporary-password
 restrictions, role combinations/self-assignment, assigned/unassigned Turnusy,

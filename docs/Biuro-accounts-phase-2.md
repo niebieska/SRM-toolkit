@@ -2,7 +2,7 @@
 
 Implemented 2026-10-17 on `feature/biuro-accounts`. Extends the
 [Phase 1 backend](Biuro-accounts-phase-1.md) under the agreed
-[account/access plan](Biuro-accounts-and-access-plan.md). UI work is still pending.
+[account/access plan](Biuro-accounts-and-access-plan.md). [Frontend integration](Biuro-accounts-frontend.md) now consumes these APIs.
 
 ## Accounts and administrative permissions
 
@@ -130,9 +130,9 @@ audit rollback/redaction and existing-data migration. Results are recorded in WI
 
 ## Remaining phases
 
-- Account-management and own-password UI, plus VIEWER navigation and list wiring.
-- Frontend server logout, expiry/re-authentication handling and retained unsaved input.
+- Account/password UI, VIEWER navigation and centralized session handling are
+  implemented in the linked frontend phase; real browser acceptance remains.
 - Deployment configuration/secrets/login-abuse protection and full operator E2E.
 
-The backend can be checked through authenticated API requests. The existing browser
-flow has not been adapted yet; this checkpoint is not a complete account rollout.
+The backend can be checked through authenticated API requests. The integrated
+browser flow is available for manual acceptance; deployment approval is still pending.

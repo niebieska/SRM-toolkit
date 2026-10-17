@@ -1,5 +1,60 @@
 # Work in progress
 
+## 2026-10-17 — Initial browser verification
+
+- User confirmed first administrator creation and additional-role management work
+  in the browser. Full VIEWER, session revocation/expiry, workflow and responsive
+  acceptance remain pending; this does not mark the release gate complete.
+
+## 2026-10-17 — Frontend review fixes
+
+- Fixed four reproduced issues in the account frontend. Logout now checks the
+  session version before clearing state, and the header redirects only when that
+  logout actually completed locally. Delayed success/401/503 responses cannot
+  clear or redirect a newer login; ordinary expiry during logout still completes.
+- Password changes block normal navigation while pending, release the guard on
+  errors/success, and never redirect after the screen unmounts. A changed session
+  can still leave safely; an old password response cannot overwrite its token.
+- Confirmed successful reload resets a new-account draft and its passwords.
+  Cancelling or a failed reload preserves the draft. Escaped the username input
+  pattern's hyphen so Unicode-set browser validation accepts the pattern.
+- Added regressions that failed before the fixes, plus header navigation, logout
+  response variants, reload failure and password-error recovery cases. Final
+  frontend suite passes all 18 test files; production build and whitespace check
+  pass. Existing PDF/font chunk warnings remain. No backend/dependency changes.
+- Real browser acceptance and previously recorded security/technical follow-ups
+  remain open. These fixes and the frontend phase are recorded in separate
+  implementation, test and documentation commits; unrelated files remain untouched.
+
+## 2026-10-17 — Biuro account frontend integrated
+
+- Added account administration, fixed-role/Turnus assignment controls, activation,
+  temporary-password resets and Polish audit history. Existing backend versions
+  protect edits/reset; conflicts preserve input and explicit reload confirms
+  discarding it. SYS_ADMIN retains no implicit operational access.
+- Added mandatory/optional own-password flow, replacement-session handling,
+  server logout and role-aware route/navigation checks. VIEWER has a minimal
+  assigned-Turnus index and reuses presets/custom lists and all three exports
+  through the restricted APIs; it cannot open the definition editor.
+- All Biuro APIs now share configurable base URL/error handling. Startup verifies
+  expiry/profile; outages preserve the token and show a retry screen. A 401 while
+  working opens a blocking reauthentication dialog with the current view retained
+  in memory. Same-user login preserves input when still authorized; changed users,
+  lost permissions and mandatory password changes leave the previous screen.
+  POST/PATCH requests are never replayed automatically. Old responses cannot clear
+  a newer token; abandoned login/password responses cannot restore old sessions.
+- Verification: the full frontend Node suite passes (18 test files), production
+  build and diff whitespace check pass. Added store, route, account/password view,
+  session-dialog and VIEWER API regressions; existing editor/list tests pass with
+  explicit role fixtures. No new dependencies, API/schema or backend changes.
+  Existing lazy PDF/font size warnings remain. No lint/type-check scripts exist.
+- Real browser layout/focus/download and integrated-backend acceptance were not
+  run in this environment. Scenarios and exact retention limits are preserved in
+  [frontend integration](Biuro-accounts-frontend.md). Release acceptance remains
+  open, alongside login-abuse protection, audit retention and deployment gates.
+  Changes are recorded in separate implementation, test and documentation commits;
+  unrelated `sth.java` and `Turnus-lists-plan.md` remain untouched.
+
 ## 2026-10-17 — Biuro accounts Phase 2 backend implemented
 
 - Added account creation/editing, temporary-password reset, role management and

@@ -81,25 +81,19 @@ Login retains the token response field and adds user. No password/hash is return
 Unknown/wrong/disabled-account login uses the same generic 401 message. Password
 validation failures are 400. A malformed JSON body is also a safe 400.
 
-## Deliberate phase boundary — updated after Phase 2
+## Phase boundary — updated after frontend integration
 
-This is a backend checkpoint, not a standalone deployment-ready account feature.
-The existing frontend has not been migrated to the temporary-password/profile/
-server-logout contracts yet. In particular, its old logout only clears local state.
-A SYS_ADMIN can now authenticate/change password and assign themselves OPERATOR
-using the [Phase 2 administration API](Biuro-accounts-phase-2.md). No direct SQL or
-implicit operational grant is needed. The account-management UI remains pending.
+Phase 1 provides the authentication/storage foundation. Account management,
+assignments, last-admin protection and authentication/account audit are implemented
+in [Phase 2](Biuro-accounts-phase-2.md). The
+[frontend phase](Biuro-accounts-frontend.md) now provides account/audit screens,
+VIEWER navigation, mandatory password change, server logout and centralized
+session handling with in-memory input preservation.
 
-Still required in subsequent phases:
-
-- Account-management UI and VIEWER navigation. The account management APIs,
-  assignments, last-admin protection and reset/disable revocation are implemented
-  in Phase 2, including prevention of old-session revival after reactivation.
-- Audit presentation and review of login-abuse protection; backend management and
-  authentication audit records are implemented in Phase 2.
-- Mandatory-password-change UI, server logout, central session handling and
-  preserving unsaved input through reauthentication.
-- Full workflow and deployment acceptance. No refresh tokens or public signup.
+A SYS_ADMIN can change password and assign themselves OPERATOR through the UI;
+no direct SQL or implicit operational grant is needed. Full browser/workflow and
+deployment acceptance, login-abuse protection and audit retention remain open.
+No refresh tokens or public signup are introduced.
 
 ## Verification
 

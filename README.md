@@ -40,7 +40,8 @@ On `feature/biuro-accounts`, the backend replaces the shared configured login wi
 stored accounts and revocable sessions. `JWT_SECRET` is required; first SYS_ADMIN
 setup and API contracts are documented in [Phase 1](docs/Biuro-accounts-phase-1.md).
 Account-management APIs, VIEWER assignments and audit are documented in
-[Phase 2](docs/Biuro-accounts-phase-2.md). This checkpoint is not a standalone
-rollout: the management UI and frontend password/session flows are still pending.
+[Phase 2](docs/Biuro-accounts-phase-2.md). Account management, VIEWER navigation and
+password/session UI are implemented in the [frontend phase](docs/Biuro-accounts-frontend.md);
+manual browser/deployment acceptance remains pending.
 Existing shared-user tokens
 are invalidated; `BIURO_USERNAME`/`BIURO_PASSWORD` no longer configure operator login.
