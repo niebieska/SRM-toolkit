@@ -2,6 +2,17 @@
 
 Project plans, progress notes, reviews and deployment guidance are in [docs/](docs/README.md).
 
+## Local environment configuration
+
+[.env.example](.env.example) documents the current backend variables, database and
+service credentials, first-admin setup, supplied SMTP settings and public Biuro
+frontend URL. Copy it to a private file outside the repository, fill required
+secrets, and explicitly export it in each backend's startup terminal as described
+in the template. Maven does not load `.env` automatically. The existing tracked
+root `.env` is not a place for new secrets. Real SMTP sending is disabled in the
+draft until deliberately enabled. The template also documents the existing
+Compose variable/mapping limitations; it does not repair deployment packaging.
+
 
 ## Registration management security
 
