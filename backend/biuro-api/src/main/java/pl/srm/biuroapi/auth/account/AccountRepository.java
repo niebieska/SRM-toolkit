@@ -66,12 +66,16 @@ public class AccountRepository {
         jdbc.update("DELETE FROM biuro_session WHERE expires_at <= ?", Timestamp.from(now));
     }
 
-    public void revokeSession(String accountId, String sessionId) {
-        jdbc.update("DELETE FROM biuro_session WHERE account_id = ? AND id = ?", accountId, sessionId);
+    public int revokeSession(String accountId, String sessionId) {
+        return jdbc.update("DELETE FROM biuro_session WHERE account_id = ? AND id = ?", accountId, sessionId);
+    }
+
+    public void revokeAllSessions(String accountId) {
+        jdbc.update("DELETE FROM biuro_session WHERE account_id = ?", accountId);
     }
 
     public void changePassword(String accountId, String hash) {
-        jdbc.update("UPDATE biuro_account SET password_hash = ?, password_change_required = FALSE WHERE id = ?",
+        jdbc.update("UPDATE biuro_account SET password_hash = ?, password_change_required = FALSE, version = version + 1 WHERE id = ?",
                 hash, accountId);
         jdbc.update("DELETE FROM biuro_session WHERE account_id = ?", accountId);
     }

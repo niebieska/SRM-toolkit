@@ -6,6 +6,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 import pl.srm.biuroapi.auth.account.AccountCredentials;
+import pl.srm.biuroapi.auth.account.AccountAudit;
 import pl.srm.biuroapi.auth.account.AccountPolicy;
 import pl.srm.biuroapi.auth.account.AccountPrincipal;
 import pl.srm.biuroapi.auth.account.AccountRepository;
@@ -15,6 +16,7 @@ import java.nio.charset.StandardCharsets;
 import java.time.Clock;
 import java.util.Optional;
 import java.util.UUID;
+import java.util.Map;
 
 @Service
 public class AuthService {
@@ -23,9 +25,11 @@ public class AuthService {
     private final AccountSessions sessions;
     private final Clock clock;
     private final String dummyHash;
+    private final AccountAudit audit;
 
-    public AuthService(AccountRepository accounts, PasswordEncoder encoder, AccountSessions sessions, Clock clock) {
+    public AuthService(AccountRepository accounts, PasswordEncoder encoder, AccountSessions sessions, Clock clock, AccountAudit audit) {
         this.accounts = accounts; this.encoder = encoder; this.sessions = sessions; this.clock = clock;
+        this.audit = audit;
         this.dummyHash = encoder.encode(UUID.randomUUID().toString());
     }
 
@@ -34,8 +38,10 @@ public class AuthService {
         String hash = stored.map(AccountCredentials::passwordHash).orElse(dummyHash);
         // BCrypt has a 72-byte limit. Oversized input is rejected without invoking it.
         if (password == null || password.getBytes(StandardCharsets.UTF_8).length > 72
-                || !encoder.matches(password, hash) || stored.isEmpty() || !stored.get().active())
+                || !encoder.matches(password, hash) || stored.isEmpty() || !stored.get().active()) {
+            audit.record(AccountAudit.Event.LOGIN_FAILED, null, stored.map(AccountCredentials::id).orElse(null), Map.of());
             throw invalidLogin();
+        }
         sessions.removeExpired();
         return sessions.issueVerified(stored.get());
     }
@@ -59,12 +65,13 @@ public class AuthService {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "Nowe hasło musi różnić się od obecnego.");
         String newHash = encoder.encode(newPassword);
         accounts.changePassword(principal.id(), newHash);
-        return sessions.issueVerified(new AccountCredentials(principal.id(), newHash, true));
+        return sessions.issueAfterPasswordChange(new AccountCredentials(principal.id(), newHash, true));
     }
 
     @Transactional
     public void logout(AccountPrincipal principal) {
-        accounts.revokeSession(principal.id(), principal.sessionId());
+        if (accounts.revokeSession(principal.id(), principal.sessionId()) > 0)
+            audit.record(AccountAudit.Event.LOGOUT, principal, principal.id(), Map.of());
     }
 
     private static ResponseStatusException invalidLogin() {
