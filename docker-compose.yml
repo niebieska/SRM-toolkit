@@ -1,131 +1,168 @@
-version: "3.9"
-
+# Local container verification only: loopback ports and MailHog, no real SMTP.
+# Use Compose v2 with an explicit private --env-file; see docs/Local-container-testing.md.
 services:
-
-  # ─── Database: MariaDB ────────────────────────────────────────────────────
   mariadb:
-    image: mariadb:11
-    container_name: mariadb
-    ports:
-      - "3306:3306"
+    image: mariadb:11.4
     environment:
-      MYSQL_ROOT_PASSWORD: ${DB_ROOT_PASSWORD:-root_password}
-      MYSQL_DATABASE: registration_db
-      MYSQL_USER: ${DB_USER:-registration_user}
-      MYSQL_PASSWORD: ${DB_PASSWORD:-strong_password}
+      MARIADB_ROOT_PASSWORD: ${DB_ROOT_PASSWORD:?Set DB_ROOT_PASSWORD}
+      MARIADB_DATABASE: registration_db
+      MARIADB_USER: ${DB_USER:-registration_user}
+      MARIADB_PASSWORD: ${DB_PASSWORD:?Set DB_PASSWORD}
+      BIURO_DB_USER: ${BIURO_DB_USER:-biuro_user}
+      BIURO_DB_PASSWORD: ${BIURO_DB_PASSWORD:?Set BIURO_DB_PASSWORD}
     volumes:
       - mariadb-data:/var/lib/mysql
+      - ./deploy/mariadb/10-biuro-db.sh:/docker-entrypoint-initdb.d/10-biuro-db.sh:ro
+    healthcheck:
+      test:
+        - CMD
+        - healthcheck.sh
+        - --connect
+        - --innodb_initialized
+      interval: 5s
+      timeout: 5s
+      retries: 30
+      start_period: 30s
     networks:
       - srm-net
     restart: unless-stopped
+  biuro-api:
+    build:
+      context: .
+      dockerfile: backend/biuro-api/Dockerfile
+    environment:
+      TURNUS_LOOKUP_USERNAME: ${TURNUS_LOOKUP_USERNAME:-registration-turnus-reader}
+      TURNUS_LOOKUP_PASSWORD: ${TURNUS_LOOKUP_PASSWORD:?Set TURNUS_LOOKUP_PASSWORD}
+      REGISTRATION_SERVICE_USERNAME: ${REGISTRATION_SERVICE_USERNAME:-biuro-service}
+      REGISTRATION_SERVICE_PASSWORD: ${REGISTRATION_SERVICE_PASSWORD:?Set REGISTRATION_SERVICE_PASSWORD}
+      BIURO_PORT: '8081'
+      BIURO_DB_URL: jdbc:mariadb://mariadb:3306/biuro_db
+      BIURO_DB_USER: ${BIURO_DB_USER:-biuro_user}
+      BIURO_DB_PASSWORD: ${BIURO_DB_PASSWORD:?Set BIURO_DB_PASSWORD}
+      JWT_SECRET: ${JWT_SECRET:?Set JWT_SECRET}
+      REGISTRATION_API_URL: http://registration-api:8080
+      BIURO_BOOTSTRAP_ENABLED: ${BIURO_BOOTSTRAP_ENABLED:-false}
+      BIURO_BOOTSTRAP_USERNAME: ${BIURO_BOOTSTRAP_USERNAME:-}
+      BIURO_BOOTSTRAP_DISPLAY_NAME: ${BIURO_BOOTSTRAP_DISPLAY_NAME:-}
+      BIURO_BOOTSTRAP_PASSWORD: ${BIURO_BOOTSTRAP_PASSWORD:-}
+    depends_on:
+      mariadb:
+        condition: service_healthy
     healthcheck:
-      test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-
-  # ─── Backend: Registration API (port 8080) ────────────────────────────────
+      test:
+        - CMD
+        - bash
+        - -c
+        - exec 3<>/dev/tcp/127.0.0.1/8081
+      interval: 5s
+      timeout: 3s
+      retries: 30
+      start_period: 30s
+    networks:
+      - srm-net
+    restart: unless-stopped
+  email-service:
+    build:
+      context: .
+      dockerfile: backend/email-service/Dockerfile
+    environment:
+      MAIL_HOST: mailhog
+      MAIL_PORT: '1025'
+      MAIL_USER: ''
+      MAIL_PASSWORD: ''
+      MAIL_SMTP_AUTH: 'false'
+      MAIL_STARTTLS: 'false'
+      MAIL_ENABLED: 'true'
+      MAIL_FROM: noreply@srm.test
+      MAIL_CONNECT_TIMEOUT_MS: ${MAIL_CONNECT_TIMEOUT_MS:-5000}
+      MAIL_READ_TIMEOUT_MS: ${MAIL_READ_TIMEOUT_MS:-10000}
+      MAIL_WRITE_TIMEOUT_MS: ${MAIL_WRITE_TIMEOUT_MS:-10000}
+    depends_on:
+      mailhog:
+        condition: service_started
+    healthcheck:
+      test:
+        - CMD
+        - bash
+        - -c
+        - exec 3<>/dev/tcp/127.0.0.1/8082
+      interval: 5s
+      timeout: 3s
+      retries: 30
+      start_period: 30s
+    networks:
+      - srm-net
+    restart: unless-stopped
   registration-api:
     build:
       context: .
-      dockerfile: registration-api/Dockerfile
-    image: srm/registration-api:latest
-    container_name: registration-api
-    ports:
-      - "8080:8080"
+      dockerfile: backend/registration-api/Dockerfile
     environment:
-      BIURO_TURNUS_URL: http://biuro-api:8081
       TURNUS_LOOKUP_USERNAME: ${TURNUS_LOOKUP_USERNAME:-registration-turnus-reader}
       TURNUS_LOOKUP_PASSWORD: ${TURNUS_LOOKUP_PASSWORD:?Set TURNUS_LOOKUP_PASSWORD}
-      SPRING_PROFILES_ACTIVE: docker
       REGISTRATION_SERVICE_USERNAME: ${REGISTRATION_SERVICE_USERNAME:-biuro-service}
       REGISTRATION_SERVICE_PASSWORD: ${REGISTRATION_SERVICE_PASSWORD:?Set REGISTRATION_SERVICE_PASSWORD}
       DB_URL: jdbc:mariadb://mariadb:3306/registration_db
       DB_USER: ${DB_USER:-registration_user}
-      DB_PASSWORD: ${DB_PASSWORD:-strong_password}
+      DB_PASSWORD: ${DB_PASSWORD:?Set DB_PASSWORD}
+      BIURO_TURNUS_URL: http://biuro-api:8081
+      EMAIL_SERVICE_URL: http://email-service:8082
+      EMAIL_CONNECT_TIMEOUT: ${EMAIL_CONNECT_TIMEOUT:-PT5S}
+      EMAIL_READ_TIMEOUT: ${EMAIL_READ_TIMEOUT:-PT30S}
+      TURNUS_REFRESH_INTERVAL: ${TURNUS_REFRESH_INTERVAL:-PT1H}
     depends_on:
       mariadb:
+        condition: service_healthy
+      biuro-api:
+        condition: service_healthy
+      email-service:
+        condition: service_healthy
+    healthcheck:
+      test:
+        - CMD
+        - bash
+        - -c
+        - exec 3<>/dev/tcp/127.0.0.1/8080
+      interval: 5s
+      timeout: 3s
+      retries: 30
+      start_period: 30s
+    networks:
+      - srm-net
+    restart: unless-stopped
+  registration-frontend:
+    build:
+      context: .
+      dockerfile: frontend/registration-frontend/Dockerfile
+    ports:
+      - 127.0.0.1:5173:80
+    depends_on:
+      registration-api:
         condition: service_healthy
     networks:
       - srm-net
     restart: unless-stopped
-
-  # ─── Backend: Biuro API (port 8081) ───────────────────────────────────────
-  biuro-api:
-    build:
-      context: .
-      dockerfile: biuro-api/Dockerfile
-    image: srm/biuro-api:latest
-    container_name: biuro-api
-    ports:
-      - "8081:8081"
-    environment:
-      BIURO_PORT: 8081
-      BIURO_USERNAME: ${BIURO_USERNAME:-biuro}
-      BIURO_PASSWORD: ${BIURO_PASSWORD:-biuro123}
-      JWT_SECRET: ${JWT_SECRET:-changeme-very-long-secret-key-at-least-32-chars}
-      REGISTRATION_API_URL: http://registration-api:8080
-      TURNUS_LOOKUP_USERNAME: ${TURNUS_LOOKUP_USERNAME:-registration-turnus-reader}
-      TURNUS_LOOKUP_PASSWORD: ${TURNUS_LOOKUP_PASSWORD:?Set TURNUS_LOOKUP_PASSWORD}
-      REGISTRATION_SERVICE_USERNAME: ${REGISTRATION_SERVICE_USERNAME:-biuro-service}
-      REGISTRATION_SERVICE_PASSWORD: ${REGISTRATION_SERVICE_PASSWORD:?Set REGISTRATION_SERVICE_PASSWORD}
-    depends_on:
-      - registration-api
-    networks:
-      - srm-net
-    restart: unless-stopped
-
-  # ─── Backend: Email Service (port 8082) ───────────────────────────────────
-  email-service:
-    build:
-      context: .
-      dockerfile: email-service/Dockerfile
-    image: srm/email-service:latest
-    container_name: email-service
-    ports:
-      - "8082:8082"
-    environment:
-      SPRING_MAIL_HOST: ${MAIL_HOST:-mailhog}
-      SPRING_MAIL_PORT: ${MAIL_PORT:-1025}
-      SPRING_MAIL_USERNAME: ${MAIL_USERNAME:-}
-      SPRING_MAIL_PASSWORD: ${MAIL_PASSWORD:-}
-      SPRING_MAIL_PROPERTIES_MAIL_SMTP_AUTH: "false"
-      SPRING_MAIL_PROPERTIES_MAIL_SMTP_STARTTLS_ENABLE: "false"
-    depends_on:
-      - mailhog
-    networks:
-      - srm-net
-    restart: unless-stopped
-
-  # ─── Frontend: Biuro Vue 3 App (port 5174) ────────────────────────────────
   biuro-frontend:
     build:
-      context: biuro-frontend
-      dockerfile: Dockerfile
-    image: srm/biuro-frontend:latest
-    container_name: biuro-frontend
+      context: .
+      dockerfile: frontend/biuro-frontend/Dockerfile
     ports:
-      - "5174:80"
+      - 127.0.0.1:5174:80
     depends_on:
-      - biuro-api
+      biuro-api:
+        condition: service_healthy
     networks:
       - srm-net
     restart: unless-stopped
-
-  # ─── Dev tool: MailHog (SMTP catch-all) ───────────────────────────────────
   mailhog:
-    image: mailhog/mailhog:latest
-    container_name: mailhog
+    image: mailhog/mailhog:v1.0.1
     ports:
-      - "1025:1025"   # SMTP
-      - "8025:8025"   # Web UI
+      - 127.0.0.1:8025:8025
     networks:
       - srm-net
     restart: unless-stopped
-
 networks:
   srm-net:
     driver: bridge
-
 volumes:
-  mariadb-data:
+  mariadb-data: null
