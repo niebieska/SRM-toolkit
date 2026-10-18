@@ -1,4 +1,4 @@
-const API_BASE = 'http://localhost:8080'
+import { API_BASE } from './config.js'
 
 export async function fetchTurnusy(registrationType = 'PARTICIPANT') {
   const response = await fetch(`${API_BASE}/api/turnusy?registrationType=${encodeURIComponent(registrationType)}`)
