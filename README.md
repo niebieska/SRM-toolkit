@@ -10,8 +10,8 @@ frontend URL. Copy it to a private file outside the repository, fill required
 secrets, and explicitly export it in each backend's startup terminal as described
 in the template. Maven does not load `.env` automatically. The existing tracked
 root `.env` is not a place for new secrets. Real SMTP sending is disabled in the
-draft until deliberately enabled. The template also documents the existing
-Compose variable/mapping limitations; it does not repair deployment packaging.
+draft until deliberately enabled. For the local Docker stack, see
+[local container testing](docs/Local-container-testing.md); that stack uses MailHog.
 
 
 ## Registration management security
@@ -40,7 +40,8 @@ Compose passes them to both backends and requires the password to be set.
 Use TLS or an isolated trusted container network for backend service traffic:
 HTTP Basic credentials are encoded, not encrypted. Production routing should expose
 public registration routes only and keep management routes internal as an additional
-boundary. Existing Compose packaging issues are handled separately.
+boundary. The local Compose stack binds frontends/MailHog to loopback and keeps
+backend/database ports unpublished; external TEST deployment remains separate.
 
 This change does not rotate existing admin/JWT credentials or remove the previously
 tracked `.env`; those require the separate secrets-hardening change.

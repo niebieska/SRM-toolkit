@@ -20,13 +20,18 @@ real registrations or a change to the agreed first-release scope.
 
 ### Build and runtime
 
-- [ ] Dockerfiles/Compose contexts match the repository layout and include both frontends and all required services.
+- [x] Dockerfiles/Compose contexts match the repository layout and include both frontends and all required services (local Phase 1 verified).
 - [ ] Maven wrapper execution and complete backend/frontend builds succeed from a clean checkout.
-- [ ] `docker compose build` succeeds; required images and runtime versions are documented.
+- [x] Compose v2 build succeeds for all five application images; runtime versions and local commands are documented in [Local container testing](Local-container-testing.md).
 - [ ] Frontend API URLs and backend CORS match the deployed environment.
-- [ ] Frontend hosting supports SPA refresh/deep links.
+- [x] Container frontend hosting supports SPA refresh/deep links (HTTP smoke checks passed).
 - [ ] Service URLs, database and SMTP variables match application configuration.
 - [ ] Document a reproducible local/server startup path without GUI terminal assumptions.
+
+Local container build/startup, same-origin proxy routing, MailHog delivery and
+volume persistence were verified on 2026-10-17. The server-specific items above
+and security/recovery gates below remain open. Builds invoke Maven directly in
+the builder image; host Maven-wrapper permissions were not changed.
 
 ### Security and access
 

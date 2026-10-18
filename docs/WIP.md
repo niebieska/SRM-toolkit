@@ -193,6 +193,23 @@
 - This enables diagnosis of real SMTP failures; it does not itself resolve the
   provider/network issue or add automatic retries.
 
+## 2026-10-18 — Local deployment packaging committed
+
+- Committed Phase 1 on `feature/test-deployment-packaging` in separate backend-build, frontend-container/routing, Compose/database-startup and documentation commits.
+- Verification results from 2026-10-17 remain recorded below; commit preparation rechecked shell syntax, whitespace and blank template secrets. No implementation changes or repeated full build/smoke tests were needed.
+- This is local/controlled synthetic-data packaging. External TEST security, HTTPS, secret rotation and backup/restore remain pending. No push or server deployment performed.
+
+## 2026-10-17 — Local container packaging, deployment Phase 1
+
+- Created `feature/test-deployment-packaging` from merged development. Repaired root-context multi-stage backend builds and parent POM paths (`../../pom.xml`); the clean container build exposed the previously cache-masked parent-resolution error. Maven builder images avoid wrapper execute-permission assumptions.
+- Added the missing Registration frontend image and nginx same-origin API proxies/SPA fallback for both apps. Registration API helpers now share Vite-configurable API base selection; existing localhost Vite defaults and Maven/Vite startup remain available.
+- Compose now starts both schemas on a project-scoped MariaDB volume, with separate users and Biuro-before-Registration startup. Added initial Biuro schema/user provisioning; corrected strict unset-variable incompatibility found on the first fresh initialization, then verified a fresh volume including a quote/backslash password.
+- Local packaging uses MailHog only, loopback frontend/MailHog ports and no published API/database/SMTP ports. Required Compose secrets have no defaults; Java images run as UID 10001. Added a build-context ignore file, private-env guidance and reproducible Compose v2 commands.
+- Verification: all five application images built from container dependency caches initially empty; seven-service stack started successfully. Registration's five existing Node test files pass. HTTP smoke checks covered both app shells/deep links, denied anonymous management, bootstrap/forced password change/self-role grant, catalogue/staff options, valid registration, duplicate 409, acceptance, Turnus lists and confirmation/status mail in MailHog.
+- Recreated containers without deleting the volume: account credentials/roles, Turnus and accepted registration remained. Verified nginx syntax, built frontend URL replacement, non-root backend users, unpublished backend/database ports and failure on missing required Compose credentials. Bash syntax, Compose config and whitespace checks pass.
+- Used temporary standalone Compose v2.39.4 because installed Compose 1.25 is unsupported; did not replace system tooling. Synthetic credentials stayed in private `/tmp` files; no host database or external SMTP was used. Verification containers stopped; test volumes retained. No commits made.
+- Remaining phases: secret removal/rotation and service authentication, external TEST HTTPS/routing, backup/restore and full browser/operator/permission acceptance. Existing npm dependency advisories remain; package versions and UI styling were not changed.
+
 ## 2026-10-17 — Email reliability committed for controlled TEST
 
 - Committed SMTP outcomes/timeouts, safe notification logging and coordinated HTTP waits in separate implementation commits, followed by regression tests, the commented environment template and documentation.
