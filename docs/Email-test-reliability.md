@@ -25,6 +25,11 @@ implementation. Manual resend from Biuro is tracked in
   separate intended notifications; failure of the first HTTP email call does not
   prevent the second recipient attempt.
 
+Registration → email-service now requires a dedicated `EMAIL_SERVICE_PASSWORD`
+on both services, including when sending is disabled; the default username is
+`registration-email-sender`. This differs from SMTP authentication. Missing/blank
+service credentials prevent startup; wrong HTTP credentials cannot dispatch mail.
+
 Deploy the updated Registration and email-service versions together: older
 email-service code could report success after swallowing an SMTP failure.
 
@@ -129,7 +134,6 @@ Manual test sequence:
 ## Still separate
 
 Operator warning/resend controls, persisted notification history, transactional
-outbox/idempotency, automatic retries, Sent-folder copies, email-service caller
-authentication/network isolation, rate limiting and external deployment
+outbox/idempotency, automatic retries, Sent-folder copies, rate limiting and external deployment
 hardening remain separate work. This phase is not approval for public exposure or
 real registration collection.

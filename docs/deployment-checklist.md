@@ -38,14 +38,17 @@ the builder image; host Maven-wrapper permissions were not changed.
 - [ ] Management endpoints require service authentication; Biuro endpoints require valid operator authentication.
 - [ ] Public submission and Turnus lookup remain usable; unauthenticated management access is rejected.
 - [ ] Database and internal services, including email-service, are not publicly exposed.
-- [ ] Authenticate email-service callers; allowlist template identifiers and prevent
-  caller variables from overriding trusted link/contact configuration. Verify
-  intended template escaping rather than assuming all rendering is unsafe.
+- [x] Authenticate email-service callers; allowlist template identifiers and prevent
+  caller variables from overriding trusted link/contact configuration. Actual-template
+  escaping and negative authentication are covered by automated tests (local TEST verified).
+- [x] Restrict public Registration proxy routes to submissions and catalogue reads;
+  management paths remain blocked even with valid service credentials.
 - [ ] Remove unnecessary published ports; bind development-only database/MailHog
   access to localhost when host access is needed.
 - [ ] HTTPS/reverse proxy and network exposure are configured and checked.
 - [ ] Use non-default operator credentials, JWT signing secret and shared service credentials.
-- [ ] Remove tracked secret files, rotate exposed credentials, and document required variables in `.env.example` without secrets.
+- [x] Untrack root `.env` and document required variables in `.env.example` without secrets.
+- [ ] Rotate all exposed credentials in active environments; use new private credentials for GCP. Git history still contains old values.
 - [ ] Required release credentials fail startup when missing/blank; validate JWT
   signing-key strength. Do not retain known JWT/operator/database password fallbacks.
 - [ ] Actuator exposes only intended health information; secrets and detailed environment data are not public.

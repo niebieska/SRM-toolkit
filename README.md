@@ -8,9 +8,10 @@ Project plans, progress notes, reviews and deployment guidance are in [docs/](do
 service credentials, first-admin setup, supplied SMTP settings and public Biuro
 frontend URL. Copy it to a private file outside the repository, fill required
 secrets, and explicitly export it in each backend's startup terminal as described
-in the template. Maven does not load `.env` automatically. The existing tracked
-root `.env` is not a place for new secrets. Real SMTP sending is disabled in the
-draft until deliberately enabled. For the local Docker stack, see
+in the template. Maven does not load `.env` automatically. The local root `.env`
+is ignored and no longer tracked; do not use it for deployment. Previously committed
+values remain in history and require rotation. Real SMTP sending is disabled in
+the draft until deliberately enabled. For the local Docker stack, see
 [local container testing](docs/Local-container-testing.md); that stack uses MailHog.
 
 
@@ -43,8 +44,9 @@ public registration routes only and keep management routes internal as an additi
 boundary. The local Compose stack binds frontends/MailHog to loopback and keeps
 backend/database ports unpublished; external TEST deployment remains separate.
 
-This change does not rotate existing admin/JWT credentials or remove the previously
-tracked `.env`; those require the separate secrets-hardening change.
+The tracked `.env` has been removed from the current tree while preserving the
+local ignored copy. No history rewrite or automatic credential rotation is performed.
+See [deployment security preparation](docs/Deployment-security-preparation.md).
 
 ## Biuro account implementation checkpoint
 
@@ -57,3 +59,12 @@ password/session UI are implemented in the [frontend phase](docs/Biuro-accounts-
 manual browser/deployment acceptance remains pending.
 Existing shared-user tokens
 are invalidated; `BIURO_USERNAME`/`BIURO_PASSWORD` no longer configure operator login.
+
+## Internal email authentication
+
+Registration and email-service both require the same `EMAIL_SERVICE_PASSWORD` and
+`EMAIL_SERVICE_USERNAME` (default `registration-email-sender`). This is a dedicated
+service credential, separate from Biuro management, catalogue lookup and SMTP.
+Deploy both APIs together and update the private environment even when SMTP sending
+is disabled. The public Registration proxy exposes submissions and catalogue reads
+only; management calls stay between the backend services.

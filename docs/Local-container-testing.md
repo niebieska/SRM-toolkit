@@ -16,7 +16,7 @@ Copy `.env.example` to a private file outside the repository. Fill these values
 with new local test credentials:
 
 - `DB_ROOT_PASSWORD`, `DB_PASSWORD`, `BIURO_DB_PASSWORD`
-- `REGISTRATION_SERVICE_PASSWORD`, `TURNUS_LOOKUP_PASSWORD`
+- `REGISTRATION_SERVICE_PASSWORD`, `TURNUS_LOOKUP_PASSWORD`, `EMAIL_SERVICE_PASSWORD`
 - `JWT_SECRET` (at least 32 UTF-8 bytes)
 
 For a fresh database also set `BIURO_BOOTSTRAP_ENABLED=true`,
@@ -34,7 +34,7 @@ existing volume. Each application runs its own Flyway migrations. There is no
 automatic baseline of an existing database.
 
 Use an explicit `--env-file` on every invocation; do not rely on the tracked root
-`.env`. Exported shell variables take precedence over an env file, so use a clean
+`.env` (now ignored; historical values must be rotated). Exported shell variables take precedence over an env file, so use a clean
 terminal if you previously exported credentials. Do not print resolved `config`
 output with real secrets; use `config --quiet`.
 
@@ -57,6 +57,8 @@ frontend regression suites separately before release.
 - No database, SMTP or backend API ports are published to the host.
 - Both frontend images build with `VITE_API_BASE_URL=/`. Nginx proxies `/api/`
   to the respective API, preserving authentication and HTTP status codes.
+  The Registration proxy allows POST participant/staff and GET catalogue/staff-options
+  only; management paths return 404 even with service credentials.
   Browser calls remain on the same origin. SPA deep links return the app shell.
 - MariaDB must be healthy before Biuro starts. Registration then waits for Biuro
   and email-service; this avoids a circular startup dependency. Biuro needs
@@ -92,11 +94,25 @@ Do not use `down --volumes` unless deliberately discarding that project's test
 database. Backup/restore and any existing-data migration need their own reviewed
 procedure.
 
+## Repeatable public proxy regression
+
+With the local synthetic stack running and Node 22 available:
+
+```bash
+PUBLIC_REGISTRATION_TEST_URL=http://localhost:5173 node --test deploy/tests/public-registration-proxy.test.mjs
+```
+
+This checks the public allowlist and method restrictions without saving registrations
+or sending messages. To include the credentialed management-denial case, export
+`REGISTRATION_SERVICE_USERNAME` and `REGISTRATION_SERVICE_PASSWORD` from the
+private environment in that terminal. Credentials are never printed; that case
+requires HTTPS unless the target is loopback. Without an explicit target URL the
+operational tests are skipped. Do not target a real production registration form.
+
 ## Remaining deployment phases
 
-Private env files and unpublished ports are a local packaging baseline. Before
-external access: remove tracked secrets/rotate exposed values, authenticate
-email-service callers, configure HTTPS and deployed origins/routing, verify proxy
+Private env files, authenticated email-service calls and unpublished ports are a local packaging baseline. Before
+external access: remove tracked secrets/rotate exposed values, configure HTTPS and deployed origins/routing, verify proxy
 timeouts, establish backups/restore and run full permissions/workflow acceptance.
 Image tags are version-family tags; digest pinning and an upgrade policy remain
 deployment follow-up work. No data from host MariaDB is mounted into this stack.

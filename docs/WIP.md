@@ -192,6 +192,17 @@
   separation of diagnostic details from the HTTP response.
 - This enables diagnosis of real SMTP failures; it does not itself resolve the
   provider/network issue or add automatic retries.
+## 2026-10-18 — Application security preparation for external TEST
+
+- Kept work on `feature/test-deployment-packaging`. Untracked root `.env` with `git rm --cached`; local file remains intact and ignored. No secret contents were copied or displayed, no history rewrite, and no real/external credentials were automatically rotated.
+- Removed Registration/Biuro database-password fallbacks. Added dedicated Basic authentication for Registration → email-service (`EMAIL_SERVICE_USERNAME`, required `EMAIL_SERVICE_PASSWORD`), positive credential validation and default-deny routing. SMTP disabled mode still requires service authentication. Compose maps the new credential only to its caller/server; existing service roles remain distinct.
+- Restricted the public Registration nginx proxy to POST participant/staff and GET catalogue/staff-options, preserving both Turnus aliases. Other API paths return 404; wrong methods return 405. Trusted Biuro processing retains its direct private Registration connection.
+- Protected reserved template link/contact variables from caller overrides and corrected the existing properties-prefix mismatch (`templates` YAML versus `email.templates` binding). Added actual-configuration binding and actual-template HTML escaping tests. Existing email text/layout was not changed.
+- Final full backend suites: 363 passed, zero failures/errors, 11 optional MariaDB tests skipped (Registration 196 total, Biuro 136, email 42). New coverage includes missing/blank credentials, malformed/wrong/other-service authentication, response preservation, authenticated HTTP headers without credential logging, missing DB-password fallback and status-save isolation on email 401/500.
+- All five container images rebuilt. Four checked-in opt-in public-proxy regressions passed against the synthetic stack, including valid-service-credential management denial and preserved catalogue/validation responses. Live smoke checks rejected unauthenticated/malformed/other-service email calls without sending; valid Registration → email calls produced confirmation/status messages in MailHog. Public registration, duplicate 409, Biuro acceptance and Turnus lists still work.
+- Final rebuilt email image also passed an authenticated MailHog send with actual escaped HTML and no caller link/contact override. Template secrets remain empty; local `.env` retention and untracking were verified. Compose configuration, shell/Node syntax and whitespace checks pass.
+- Updated private-env guidance, deployment checklist and security/rotation instructions. Real credential rotation, public HTTPS by static IP with renewal/proxy handling, rate controls, firewall and backup/restore remain deployment gates. No public server, external SMTP or host database was used. Verification containers were stopped; test volumes retained. Work is recorded in separate implementation, regression-test and documentation commits on this branch; no push or public deployment performed.
+
 
 ## 2026-10-18 — Local deployment packaging committed
 
