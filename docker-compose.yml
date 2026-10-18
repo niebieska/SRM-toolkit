@@ -66,6 +66,8 @@ services:
       context: .
       dockerfile: backend/email-service/Dockerfile
     environment:
+      EMAIL_SERVICE_USERNAME: ${EMAIL_SERVICE_USERNAME:-registration-email-sender}
+      EMAIL_SERVICE_PASSWORD: ${EMAIL_SERVICE_PASSWORD:?Set EMAIL_SERVICE_PASSWORD}
       MAIL_HOST: mailhog
       MAIL_PORT: '1025'
       MAIL_USER: ''
@@ -107,6 +109,8 @@ services:
       DB_PASSWORD: ${DB_PASSWORD:?Set DB_PASSWORD}
       BIURO_TURNUS_URL: http://biuro-api:8081
       EMAIL_SERVICE_URL: http://email-service:8082
+      EMAIL_SERVICE_USERNAME: ${EMAIL_SERVICE_USERNAME:-registration-email-sender}
+      EMAIL_SERVICE_PASSWORD: ${EMAIL_SERVICE_PASSWORD:?Set EMAIL_SERVICE_PASSWORD}
       EMAIL_CONNECT_TIMEOUT: ${EMAIL_CONNECT_TIMEOUT:-PT5S}
       EMAIL_READ_TIMEOUT: ${EMAIL_READ_TIMEOUT:-PT30S}
       TURNUS_REFRESH_INTERVAL: ${TURNUS_REFRESH_INTERVAL:-PT1H}

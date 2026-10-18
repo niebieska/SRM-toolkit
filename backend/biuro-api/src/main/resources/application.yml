@@ -31,7 +31,7 @@ spring:
   datasource:
     url: ${BIURO_DB_URL:jdbc:mariadb://localhost:3306/biuro_db}
     username: ${BIURO_DB_USER:biuro_user}
-    password: ${BIURO_DB_PASSWORD:strong_password}
+    password: ${BIURO_DB_PASSWORD}
     driver-class-name: org.mariadb.jdbc.Driver
   flyway:
     enabled: true
