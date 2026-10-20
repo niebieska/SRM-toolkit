@@ -32,6 +32,7 @@ public class EmailDispatchService {
         }
 
         String htmlBody = templateRenderer.render(templateName, variables == null ? Map.of() : variables);
-        return emailSender.send(new EmailMessage(to, subject, htmlBody));
+        return emailSender.send(new EmailMessage(to, subject, htmlBody, templateName,
+                variables == null ? null : variables.get("registrationCode")));
     }
 }

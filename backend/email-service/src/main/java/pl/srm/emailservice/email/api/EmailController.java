@@ -38,9 +38,9 @@ public class EmailController {
         } catch (IllegalArgumentException exception) {
             return ResponseEntity.badRequest().body(new SendEmailResponse(false, "Invalid email request or template."));
         } catch (Exception exception) {
-            // SMTP exception text can contain recipients, server responses or credentials.
-            LOGGER.error("Email request failed; SMTP delivery may be uncertain (error={})",
-                    exception.getClass().getSimpleName());
+            // Provider details belong in restricted server logs, never in the API response.
+            LOGGER.error("Email request failed; SMTP delivery may be uncertain (to={}, template={})",
+                    request.to(), request.templateName(), exception);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                     .body(new SendEmailResponse(false, "Email sending failed; delivery may be uncertain."));
         }

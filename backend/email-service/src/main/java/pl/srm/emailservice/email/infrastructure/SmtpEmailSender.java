@@ -61,10 +61,21 @@ public class SmtpEmailSender implements EmailSender {
             helper.setSubject(message.subject());
             helper.setText(message.htmlBody(), true);
             mailSender.send(mimeMessage);
-            LOGGER.info("Message accepted by SMTP server");
+            LOGGER.info("Message accepted by SMTP server (to={}, template={}, registrationCode={}, messageId={})",
+                    message.to(), message.templateName(), message.registrationCode(), messageId(mimeMessage));
             return true;
         } catch (MessagingException exception) {
             throw new MailPreparationException("Cannot prepare email message", exception);
+        }
+    }
+
+    private String messageId(MimeMessage message) {
+        try {
+            return message.getMessageID();
+        } catch (MessagingException exception) {
+            // Diagnostic metadata must not turn an accepted send into a reported failure.
+            LOGGER.warn("Cannot read Message-ID after SMTP acceptance", exception);
+            return null;
         }
     }
 }
