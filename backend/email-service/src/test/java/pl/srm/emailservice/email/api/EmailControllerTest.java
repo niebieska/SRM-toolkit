@@ -8,6 +8,7 @@ import ch.qos.logback.core.read.ListAppender;
 import org.springframework.mail.MailSendException;
 import pl.srm.emailservice.email.service.EmailDispatchService;
 import java.util.Map;
+import java.net.UnknownHostException;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
@@ -30,9 +31,10 @@ class EmailControllerTest {
         assertFalse(response.getBody().success());
         assertTrue(response.getBody().message().contains("disabled"));
     }
-    @Test void smtpFailureProducesNonSuccessAndDoesNotExposeProviderDetails() {
+    @Test void smtpFailureLogsProviderDetailsButKeepsResponseGeneric() {
         when(service.sendEmail(request.to(), request.templateName(), request.variables()))
-                .thenThrow(new MailSendException("private recipient@example.test credential=secret"));
+                .thenThrow(new MailSendException("SMTP connection failed",
+                        new UnknownHostException("smtp.example.test")));
         Logger logger = (Logger) LoggerFactory.getLogger(EmailController.class);
         var logs = new ListAppender<ILoggingEvent>(); logs.start(); logger.addAppender(logs);
         try {
@@ -44,10 +46,15 @@ class EmailControllerTest {
             assertFalse(response.getBody().message().contains("recipient@"));
             assertEquals(1, logs.list.size());
             var event = logs.list.getFirst();
-            assertTrue(event.getFormattedMessage().contains("MailSendException"));
-            assertFalse(event.getFormattedMessage().contains("secret"));
-            assertFalse(event.getFormattedMessage().contains("recipient@"));
-            assertNull(event.getThrowableProxy());
+            assertTrue(event.getFormattedMessage().contains(request.to()));
+            assertTrue(event.getFormattedMessage().contains(request.templateName()));
+            assertNotNull(event.getThrowableProxy());
+            assertEquals(MailSendException.class.getName(), event.getThrowableProxy().getClassName());
+            var cause = event.getThrowableProxy().getCause();
+            assertNotNull(cause);
+            assertEquals(UnknownHostException.class.getName(), cause.getClassName());
+            assertEquals("smtp.example.test", cause.getMessage());
+            assertFalse(response.getBody().message().contains("smtp.example.test"));
         } finally { logger.detachAppender(logs); logs.stop(); }
     }
     @Test void malformedOrUnsupportedRequestsNeverClaimSuccess() {

@@ -52,6 +52,9 @@ class EmailDispatchServiceTest {
 
         verify(emailSender).send(captor.capture());
 
+        assertEquals("registration-confirmation-participant", captor.getValue().templateName());
+        assertEquals("UCZ-2026-00042", captor.getValue().registrationCode());
+
         assertEquals(
                 "jan.kowalski@example.com",
                 captor.getValue().to()

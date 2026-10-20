@@ -8,6 +8,10 @@ import org.springframework.mail.MailSendException;
 import org.springframework.mail.javamail.JavaMailSenderImpl;
 import pl.srm.emailservice.email.domain.EmailMessage;
 import java.util.Properties;
+import org.slf4j.LoggerFactory;
+import ch.qos.logback.classic.Logger;
+import ch.qos.logback.classic.spi.ILoggingEvent;
+import ch.qos.logback.core.read.ListAppender;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
@@ -54,6 +58,32 @@ class SmtpEmailSenderTest {
         assertEquals("Żagle — potwierdzenie", mime.getSubject());
         assertEquals("sender@example.test", mime.getFrom()[0].toString());
     }
+    @Test void logsDeliveryContextAndMessageIdOnlyAfterSmtpAcceptance() throws Exception {
+        MimeMessage mime = message();
+        doAnswer(invocation -> {
+            mime.setHeader("Message-ID", "<accepted@example.test>");
+            return null;
+        }).when(mailSender).send(mime);
+        Logger logger = (Logger) LoggerFactory.getLogger(SmtpEmailSender.class);
+        var logs = new ListAppender<ILoggingEvent>();
+        logs.start(); logger.addAppender(logs);
+        try {
+            assertTrue(sender(true).send(new EmailMessage("user@example.test", "Subject", "private body",
+                    "status-update", "REG-P-T1-1")));
+            assertEquals(1, logs.list.size());
+            String entry = logs.list.getFirst().getFormattedMessage();
+            assertTrue(entry.contains("Message accepted by SMTP server"));
+            assertTrue(entry.contains("to=user@example.test"));
+            assertTrue(entry.contains("template=status-update"));
+            assertTrue(entry.contains("registrationCode=REG-P-T1-1"));
+            assertTrue(entry.contains("messageId=<accepted@example.test>"));
+            assertFalse(entry.contains("private body"));
+            logs.list.clear();
+            doThrow(new MailSendException("SMTP down")).when(mailSender).send(mime);
+            assertThrows(MailSendException.class, () -> sender(true).send(MESSAGE));
+            assertTrue(logs.list.isEmpty());
+        } finally { logger.detachAppender(logs); logs.stop(); }
+    }
     @Test void refusesInvalidEffectiveSmtpTimeouts() {
         for (String property : new String[]{"connectiontimeout", "timeout", "writetimeout"}) {
             for (String value : new String[]{"0", "-1", "invalid", "2147483648"}) {
@@ -63,6 +93,13 @@ class SmtpEmailSenderTest {
                 assertThrows(IllegalArgumentException.class, () -> new SmtpEmailSender(mail, "s@example.test", true));
             }
         }
+    }
+    @Test void unavailableMessageIdDoesNotTurnAcceptedSendIntoFailure() throws Exception {
+        MimeMessage mime = spy(message());
+        when(mailSender.createMimeMessage()).thenReturn(mime);
+        doThrow(new jakarta.mail.MessagingException("Header unavailable")).when(mime).getMessageID();
+        assertTrue(sender(true).send(MESSAGE));
+        verify(mailSender).send(mime);
     }
     @Test void validatesTheEffectiveSessionInsteadOfUnusedSenderProperties() {
         var mail = new JavaMailSenderImpl(); mail.setJavaMailProperties(boundedProperties());
