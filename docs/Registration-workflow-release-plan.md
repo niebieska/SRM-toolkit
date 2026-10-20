@@ -75,6 +75,12 @@ Details: [catalogue](Turnus-catalogue-implementation.md),
 
 ### 3. Make decision and notification outcomes dependable
 
+- [ ] Required for MVP (agreed 2026-10-20): add **Historia statusów** in registration
+  details with previous/new status, time, authenticated acting account and rejection
+  reason. Persist the change/history atomically, preserve existing permissions and
+  do not invent historical entries. See [status history scope](Registration-status-history.md).
+  This promotes status history from stabilization into MVP functional acceptance;
+  notification history/resend remain separate follow-ups.
 - [x] Implement agreed capacity policy: separate positive limits; reject reductions
   below the accepted count of the affected type. Acceptance remains enabled
   at/beyond capacity; opening/closure is manual under the single-operator assumption.
@@ -172,10 +178,20 @@ Details: [catalogue](Turnus-catalogue-implementation.md),
 
 ## Scope guard and tracking
 
-Manual payment tracking is deferred from the deadline plan unless core acceptance
-passes with time remaining. Rich UI, Person management, transfer/edit expansion,
-PESEL exceptions, editable email templates and group announcements are not required
-for this release. Dataset cleanup remains separate and deferred.
+As of 2026-10-20, manual **Wpłaty** tracking is probably required for MVP, pending
+prioritization; it is not yet a confirmed release gate. See [agreed scope and open
+decisions](Manual-payments.md): Turnus participant/role-based staff fees, operator
+payment recording, PLN discounts and Wpłaty next to Listy. This supersedes the
+earlier optional-only classification. Balance columns/exports remain deferred.
+
+Turnus informational emails are **nice to have for MVP**, not a release gate:
+predefined templates, custom text and preview, accepted participant/staff selection
+and optional copies to minors. See [scope](Turnus-informational-emails.md).
+This does not promote general editable-template management into MVP.
+
+Rich UI, Person management, transfer/edit expansion, PESEL exceptions and editable
+template management remain outside required release scope. Dataset cleanup remains
+separate and deferred.
 
 Track actual time and accepted outcomes per work package in WIP.md. Re-estimate
 weekly from completed end-to-end behavior; code presence or a successful build

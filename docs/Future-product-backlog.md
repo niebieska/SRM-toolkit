@@ -6,8 +6,10 @@ explicitly promoted into Registration-workflow-release-plan.md and recorded in W
 
 ## Optional after core acceptance, if time remains
 
-- Manual payment tracking: amount, date, note and total per registration.
-  Agree deposit/balance and correction rules first.
+- Manual payment tracking was reassessed on 2026-10-20 as **probably required for
+  MVP**, pending prioritization. Current scope and unresolved decisions live in
+  [Wpłaty](Manual-payments.md) and the registration workflow release plan;
+  the earlier optional-only classification no longer applies.
 - Staff statistics against required roles/subroles.
 - Additional loading/empty/error polish and email-client appearance refinements.
 
@@ -34,7 +36,8 @@ explicitly promoted into Registration-workflow-release-plan.md and recorded in W
   into the committed MVP scope.
 - Turnus transfer remains a separate workflow creating a linked new registration
   and preserving the original registration/code/history, as detailed in WIP.
-- Soft delete, status/history audit and operational notes.
+- Soft delete and operational notes. Registration status history is now a required
+  MVP task; see [status history](Registration-status-history.md).
 - Person model, identity/deduplication and cross-season registration history.
 - Bulk actions and additional Excel/PDF formats beyond agreed release exports.
 - Staff requirement planning beyond configured role/certificate selection.
@@ -55,7 +58,11 @@ explicitly promoted into Registration-workflow-release-plan.md and recorded in W
   This is not a blocker for controlled synthetic-data TEST; current operator
   screens do not expose notification outcomes or offer resend.
 - Editable email subjects/bodies with controlled placeholders, preview and versions.
-- Turnus group announcements with recipient preview, explicit send and delivery tracking.
+- Turnus informational emails: **nice to have for MVP**, agreed 2026-10-20.
+  Predefined templates with a custom message area and preview; accepted participant
+  or staff groups, selected people or one person; guardian-first routing for minors
+  with optional minor copy. See [scope and open decisions](Turnus-informational-emails.md).
+  Sending outcomes do not imply confirmed inbox delivery.
 - Scheduled messages/reminders and durable outbox/retry improvements.
 - See WIP for the detailed decisions and reliability prerequisites.
 

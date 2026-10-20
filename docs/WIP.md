@@ -1,5 +1,65 @@
 # Work in progress
 
+## 2026-10-20 — SMTP logging review and bugfix branch
+
+- Reviewed changes on `bugfix/email-delivery-logging`. Prevented Message-ID lookup
+  failure after SMTP acceptance from changing the send result to failure; added
+  a regression. All 23 email-service tests pass, including socket timeout,
+  metadata propagation, failure diagnostics and generic HTTP error responses.
+- SMTP exception details and recipients are intentionally logged in restricted
+  server logs. HTTP contracts and email content remain unchanged.
+- Credential-file changes are excluded from commits; local `.env` is untouched.
+  Planning documents distinguish required history, probable payments and optional
+  informational emails. No push or deployment performed.
+
+## 2026-10-20 — Informational emails recorded as MVP nice to have
+
+- Recorded [Turnus informational emails](Turnus-informational-emails.md): predefined
+  templates with custom message text and preview; accepted staff/participants
+  selected separately as a group, several people or one person. Minor participants
+  use guardian-first routing with optional copy to their provided own address.
+- Optional for MVP, not a release blocker; no implementation claimed. Initial
+  scope excludes attachments, scheduling and template-structure editing. Shared
+  guardian-address behavior and sending/history design remain open. Existing
+  confirmation/status recipient rules remain unchanged.
+
+## 2026-10-20 — Manual payments considered for MVP
+
+- Recorded [Wpłaty scope](Manual-payments.md) as **probably required for MVP**,
+  pending prioritization, not a confirmed release gate or implemented feature.
+  Includes Turnus participant/selected staff-role fees, PLN discounts, predefined
+  payment names/methods, operator management and a Wpłaty tab next to Listy.
+- Fee precedence for role/subrole overlap remains open. Balance placement in lists
+  and percentage discounts remain deferred. Earlier payment-only nice-to-have
+  notes are superseded by this probable-MVP assessment, not a delivery commitment.
+
+## 2026-10-20 — Status history promoted to MVP requirement
+
+- Required, not implemented: read-only **Historia statusów** in registration
+  details, with old/new status, server time, authenticated account attribution and
+  rejection reason. Status/history writes must be atomic. Existing records begin
+  collecting history after implementation; no invented backfill.
+- Scope recorded in [Registration status history](Registration-status-history.md)
+  and the functional release plan. This supersedes earlier notes placing status
+  audit solely in later stabilization. Account audit already exists; registration
+  decision history does not. Notification history/resend remain separate follow-ups.
+- Documentation only; no implementation or acceptance completion claimed.
+
+## 2026-10-19 — SMTP failure diagnostics
+
+- Successful sends now include recipient, template, registration code and MIME
+  Message-ID in the SMTP acceptance log. Metadata stays internal; HTTP contracts
+  and delivery semantics are unchanged. Added metadata propagation and logging
+  regressions, including no acceptance log when sending fails.
+
+- Restored full exception logging for email-service failures, including recipient,
+  template and nested causes, following the decision to restrict log access.
+  API error responses remain generic; request variables and SMTP configuration
+  are not explicitly logged. Added a regression for DNS cause preservation and
+  separation of diagnostic details from the HTTP response.
+- This enables diagnosis of real SMTP failures; it does not itself resolve the
+  provider/network issue or add automatic retries.
+
 ## 2026-10-17 — Email reliability committed for controlled TEST
 
 - Committed SMTP outcomes/timeouts, safe notification logging and coordinated HTTP waits in separate implementation commits, followed by regression tests, the commented environment template and documentation.
