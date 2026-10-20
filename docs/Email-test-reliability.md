@@ -77,10 +77,15 @@ Registration logs the registration code and allowlisted notification template:
 - `outcome=UNCONFIRMED`: transport/server error, timeout or invalid response.
   Investigate before any deliberate resend; duplication remains possible.
 
-Logs omit recipients, rendered HTML, payload variables, provider response bodies
-and raw exception messages/stack traces that can contain personal data. Preparation
-failures identify code/template and exception type. Email-service logs the safe
-failure class; Registration provides the code/template correlation.
+Registration logs omit recipients, rendered HTML, payload variables, provider
+response bodies and raw exception messages/stack traces. Preparation failures
+identify code/template and exception type. Email-service failure logs include the
+recipient, template and full exception with nested causes for SMTP diagnosis.
+These restricted server logs may contain provider details and personal data;
+API error responses remain generic. Passwords and rendered payloads are not
+explicitly logged. Registration provides the code/template correlation.
+Successful SMTP sends log recipient, template, registration code and the MIME
+Message-ID when available. This records server acceptance, not inbox delivery.
 
 Operators still have no failure marker/history/resend action in Biuro. During
 controlled TEST, technical support monitors logs and mailbox/provider evidence.
