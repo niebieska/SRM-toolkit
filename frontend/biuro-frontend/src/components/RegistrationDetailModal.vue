@@ -42,7 +42,7 @@ function requestStatusAction(action) {
 
 <template>
   <div class="fixed inset-0 bg-black/40 flex items-start justify-center p-4 overflow-y-auto z-50">
-    <div class="w-full max-w-2xl bg-white rounded-xl p-6 space-y-5 my-8">
+    <div class="w-full max-w-2xl bg-white rounded-xl px-6 pt-5 pb-6 space-y-5 my-8">
 
       <div class="flex items-center justify-between">
         <h2 class="text-lg font-semibold">Szczegóły zgłoszenia</h2>
@@ -76,6 +76,16 @@ function requestStatusAction(action) {
             </div>
           </dl>
           </div>
+          <dl v-if="detail.registrationType === 'STAFF' && (detail.payload?.role || detail.payload?.subrole)" class="flex flex-wrap gap-x-6 gap-y-2 text-sm">
+            <div v-if="detail.payload?.role" class="flex min-w-0 items-baseline gap-2">
+              <dt class="text-slate-500">Rola</dt>
+              <dd class="min-w-0 break-words">{{ formatFieldValue(detail.payload.role) }}</dd>
+            </div>
+            <div v-if="detail.payload?.subrole" class="flex min-w-0 items-baseline gap-2">
+              <dt class="text-slate-500">Funkcja</dt>
+              <dd class="min-w-0 break-words">{{ formatFieldValue(detail.payload.subrole) }}</dd>
+            </div>
+          </dl>
           <div v-if="detail.rejectionReason" class="border-t border-slate-200 pt-3 text-sm">
             <p class="font-medium text-slate-700">Powód odrzucenia</p>
             <p class="mt-1 whitespace-pre-wrap break-words text-slate-600">{{ detail.rejectionReason }}</p>
@@ -87,25 +97,52 @@ function requestStatusAction(action) {
           <h3 class="text-sm font-semibold text-slate-500 uppercase tracking-wide mb-2">Dane zgłoszenia</h3>
           <div class="space-y-3">
             <div
-              v-for="section in registrationSections(detail)"
+              v-for="section in registrationSections(detail).filter(section => detail.registrationType !== 'STAFF' || section.key !== 'role')"
               :key="section.key"
               class="bg-slate-50 border border-slate-200 rounded-lg p-3"
             >
               <h4 class="text-xs font-semibold uppercase tracking-wide text-slate-500 mb-2">
                 {{ section.label }}
               </h4>
-              <div v-if="section.questions" class="space-y-4">
-                <div v-for="question in section.questions" :key="question.key" class="space-y-2">
-                  <p class="whitespace-pre-wrap break-words text-sm font-medium text-slate-800">{{ question.question }}</p>
-                  <dl class="grid grid-cols-2 gap-x-4 gap-y-1 text-sm">
-                    <template v-for="field in question.fields" :key="field.path">
-                      <dt class="min-w-0 break-words text-slate-500">{{ field.label }}</dt>
-                      <dd class="min-w-0 whitespace-pre-wrap break-words">{{ formatFieldValue(field.value, field.path) }}</dd>
-                    </template>
-                  </dl>
-                </div>
+              <div v-if="section.questions" class="space-y-3">
+                <article v-for="question in section.questions" :key="question.key" class="rounded-md border border-slate-200 bg-white px-3 py-3">
+                  <p class="whitespace-pre-wrap break-words text-sm font-medium leading-5 text-slate-800">{{ question.question }}</p>
+
+                  <template v-if="question.key === 'additionalInfo'">
+                    <p
+                      v-for="field in question.fields.filter(field => field.path.endsWith('.value') || field.path === 'health.additionalInfo')"
+                      :key="field.path"
+                      class="mt-2 whitespace-pre-wrap break-words text-sm leading-5 text-slate-700"
+                    >{{ formatFieldValue(field.value, field.path) }}</p>
+                    <dl v-if="question.fields.some(field => !field.path.endsWith('.value') && field.path !== 'health.additionalInfo')" class="mt-2 grid grid-cols-[minmax(0,0.4fr)_minmax(0,0.6fr)] gap-x-3 gap-y-1 text-sm">
+                      <template v-for="field in question.fields.filter(field => !field.path.endsWith('.value') && field.path !== 'health.additionalInfo')" :key="field.path">
+                        <dt class="min-w-0 break-words text-slate-500">{{ field.label }}</dt>
+                        <dd class="min-w-0 whitespace-pre-wrap break-words">{{ formatFieldValue(field.value, field.path) }}</dd>
+                      </template>
+                    </dl>
+                  </template>
+
+                  <template v-else>
+                    <div class="mt-2 flex flex-wrap items-center gap-2 text-sm">
+                      <span class="text-slate-500">Odpowiedź</span>
+                      <span class="rounded-full bg-slate-100 px-2 py-0.5 text-xs font-medium text-slate-700">
+                        {{ formatFieldValue(question.fields.find(field => field.path === `health.${question.key}.answer`)?.value, `health.${question.key}.answer`) }}
+                      </span>
+                    </div>
+                    <div v-for="field in question.fields.filter(field => field.path === `health.${question.key}.detail`)" :key="field.path" class="mt-2 border-l-2 border-slate-200 pl-3">
+                      <p class="text-xs font-medium text-slate-500">Szczegóły</p>
+                      <p class="mt-0.5 whitespace-pre-wrap break-words text-sm leading-5 text-slate-700">{{ formatFieldValue(field.value, field.path) }}</p>
+                    </div>
+                    <dl v-if="question.fields.some(field => ![`health.${question.key}.answer`, `health.${question.key}.detail`].includes(field.path))" class="mt-2 grid grid-cols-[minmax(0,0.4fr)_minmax(0,0.6fr)] gap-x-3 gap-y-1 text-sm">
+                      <template v-for="field in question.fields.filter(field => ![`health.${question.key}.answer`, `health.${question.key}.detail`].includes(field.path))" :key="field.path">
+                        <dt class="min-w-0 break-words text-slate-500">{{ field.label }}</dt>
+                        <dd class="min-w-0 whitespace-pre-wrap break-words">{{ formatFieldValue(field.value, field.path) }}</dd>
+                      </template>
+                    </dl>
+                  </template>
+                </article>
               </div>
-              <dl v-else class="grid grid-cols-2 gap-x-4 gap-y-1 text-sm">
+              <dl v-else class="grid grid-cols-[minmax(0,0.4fr)_minmax(0,0.6fr)] gap-x-3 gap-y-1 text-sm">
                 <template v-for="field in section.fields" :key="field.path">
                   <dt class="text-slate-500">{{ field.label }}</dt>
                   <dd class="min-w-0 whitespace-pre-wrap break-words">{{ formatFieldValue(field.value, field.path) }}</dd>

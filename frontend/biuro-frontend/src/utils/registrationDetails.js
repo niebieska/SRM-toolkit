@@ -70,6 +70,10 @@ function isPlainObject(value) {
   return value !== null && typeof value === 'object' && !Array.isArray(value)
 }
 
+function isAffirmative(value) {
+  return value === true || (typeof value === 'string' && ['tak', 'yes'].includes(value.trim().toLocaleLowerCase('pl-PL')))
+}
+
 function toLabel(path, key) {
   const pathKey = path.join('.')
   if (FIELD_LABELS[pathKey]) return FIELD_LABELS[pathKey]
@@ -95,13 +99,20 @@ export function registrationSections(registration) {
     if (section.key === 'ice' && minor === true) continue
     if (type === 'PARTICIPANT' && ['certificates', 'certificateDetails'].includes(section.key)) continue
     if (section.key === 'basic') {
-      section.fields = section.fields.filter(field => {
+      for (const field of section.fields) {
         const key = field.path
-        if (key === 'guardian' && minor === false || key === 'ice' && minor === true) return false
-        if (type === 'PARTICIPANT' && ['role', 'subrole'].includes(key)) return false
-        if (!known.has(key)) { other.push(field); return false }
-        return true
-      })
+        if (key === 'guardian' && minor === false || key === 'ice' && minor === true) continue
+        if (type === 'PARTICIPANT' && ['role', 'subrole'].includes(key)) continue
+        if (key === 'turnusCode' && field.value === registration.turnusCode) continue
+        if (['role', 'subrole'].includes(key)) {
+          let role = result.find(item => item.key === 'role')
+          if (!role) { role = { key: 'role', label: 'Rola i funkcja', fields: [] }; result.push(role) }
+          role.fields.push(field)
+        } else if (known.has(key) && key !== 'turnusCode') {
+          result.push({ key, label: SECTION_LABELS[key] || field.label, fields: [field] })
+        } else other.push(field)
+      }
+      continue
     } else if (!known.has(section.key) && section.key !== 'payload') {
       other.push(...section.fields)
       continue
@@ -112,6 +123,7 @@ export function registrationSections(registration) {
           ? value.question : /^q\d+$/.test(key) ? `Pytanie ${key.slice(1)}` : toLabel(['health', key], key)
         const fields = flattenFields(value, ['health', key])
           .filter(field => field.path !== `health.${key}.question` || typeof field.value !== 'string' || !field.value.trim())
+          .filter(field => field.path !== `health.${key}.detail` || isAffirmative(value?.answer))
         if (!fields.length) fields.push({ path: `health.${key}.answer`, label: 'Odpowiedź', value: null })
         return { key, question, fields }
       })
@@ -119,7 +131,8 @@ export function registrationSections(registration) {
     if (section.fields.length) result.push(section)
   }
   if (other.length) result.push({ key: 'other', label: 'Pozostałe informacje', fields: other })
-  return result
+  const order = ['person', 'address', 'guardian', 'ice', 'role', 'certificates', 'certificateDetails', 'health', 'consents', 'payload', 'other']
+  return result.sort((a, b) => order.indexOf(a.key) - order.indexOf(b.key))
 }
 
 function flattenFields(node, path = []) {

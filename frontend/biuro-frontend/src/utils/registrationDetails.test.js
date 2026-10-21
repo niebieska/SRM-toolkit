@@ -68,3 +68,15 @@ test('non-object legacy payload and unanswered health questions retain a fallbac
   assert.equal(formatFieldValue(onlyQuestion[0].questions[0].fields[0].value), 'Brak danych')
   assert.equal(registrationSections({ payload: { health: {} } })[0].questions, undefined)
 })
+
+test('summary Turnus is not repeated and staff role fields have their own section', () => {
+  const data = registration('STAFF', false)
+  data.turnusCode = 'T1'
+  data.payload.turnusCode = 'T1'
+  const sections = registrationSections(data)
+  assert.ok(!sections.some(section => section.key === 'basic'))
+  assert.ok(!paths(sections).includes('turnusCode'))
+  assert.deepEqual(sections.find(section => section.key === 'role').fields.map(field => field.path), ['role', 'subrole'])
+  data.payload.turnusCode = 'LEGACY'
+  assert.ok(registrationSections(data).find(section => section.key === 'other').fields.some(field => field.value === 'LEGACY'))
+})
