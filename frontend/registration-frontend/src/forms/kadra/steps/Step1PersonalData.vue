@@ -38,6 +38,27 @@
         <label class="block text-sm font-medium text-gray-700 mb-1">Nazwisko *</label>
         <input v-model="local.lastName" type="text" :class="fieldClass('lastName')"/>
         <p v-if="errors.lastName" class="text-red-500 text-xs mt-1">{{ errors.lastName }}</p>
+        <label class="mt-2 flex items-start gap-2 text-sm text-gray-700">
+          <input v-model="local.birthSurnameDifferent" type="checkbox" class="mt-1" />
+          Nazwisko rodowe inne niż nazwisko
+        </label>
+      </div>
+    </div>
+    <div class="grid grid-cols-1 gap-4 sm:grid-cols-3">
+      <div>
+        <label for="staff-mother-name" class="block text-sm font-medium text-gray-700 mb-1">Imię matki *</label>
+        <input id="staff-mother-name" v-model="local.motherName" type="text" maxlength="100" :class="fieldClass('motherName')" />
+        <p v-if="errors.motherName" class="text-red-500 text-xs mt-1">{{ errors.motherName }}</p>
+      </div>
+      <div>
+        <label for="staff-father-name" class="block text-sm font-medium text-gray-700 mb-1">Imię ojca *</label>
+        <input id="staff-father-name" v-model="local.fatherName" type="text" maxlength="100" :class="fieldClass('fatherName')" />
+        <p v-if="errors.fatherName" class="text-red-500 text-xs mt-1">{{ errors.fatherName }}</p>
+      </div>
+      <div v-if="local.birthSurnameDifferent">
+          <label for="staff-birth-surname" class="block text-sm font-medium text-gray-700 mb-1">Nazwisko rodowe *</label>
+          <input id="staff-birth-surname" v-model="local.birthSurname" type="text" maxlength="150" :class="fieldClass('birthSurname')" />
+          <p v-if="errors.birthSurname" class="text-red-500 text-xs mt-1">{{ errors.birthSurname }}</p>
       </div>
     </div>
     <!-- PESEL -->
@@ -239,6 +260,7 @@ const props = defineProps({
 const emit = defineEmits(['update:formData', 'next'])
 
 const local = ref({...props.formData})
+const birthSurname = computed(() => local.value.birthSurnameDifferent ? local.value.birthSurname : local.value.lastName)
 const {pesel, isAdult, gender} = usePesel()
 pesel.value = local.value.pesel || ''
 
@@ -315,6 +337,9 @@ function validate() {
   if (!local.value.turnusCode) errors.turnusCode = 'Wybierz turnus.'
   if (!local.value.firstName?.trim()) errors.firstName = 'Podaj imię.'
   if (!local.value.lastName?.trim()) errors.lastName = 'Podaj nazwisko.'
+  if (!local.value.motherName?.trim() || local.value.motherName.length > 100) errors.motherName = 'Podaj imię matki (maks. 100 znaków).'
+  if (!local.value.fatherName?.trim() || local.value.fatherName.length > 100) errors.fatherName = 'Podaj imię ojca (maks. 100 znaków).'
+  if (!birthSurname.value?.trim() || birthSurname.value.length > 150) errors.birthSurname = 'Podaj nazwisko rodowe (maks. 150 znaków).'
 
   if (pesel.value.length !== 11) {
     errors.pesel = 'PESEL musi mieć 11 cyfr.'

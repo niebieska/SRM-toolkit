@@ -3,6 +3,9 @@ const FIELD_LABELS = {
 
   'person.firstName': 'Imię',
   'person.lastName': 'Nazwisko',
+  'person.motherName': 'Imię matki',
+  'person.fatherName': 'Imię ojca',
+  'person.birthSurname': 'Nazwisko rodowe',
   'person.pesel': 'PESEL',
   'person.gender': 'Płeć',
   'person.isAdult': 'Osoba pełnoletnia',
