@@ -149,18 +149,18 @@ async function save() {
         <ol class="flex flex-wrap items-center gap-2">
           <li><RouterLink to="/turnusy" class="rounded hover:text-slate-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-500">Turnusy</RouterLink></li>
           <li aria-hidden="true" class="text-slate-400">/</li>
-          <li aria-current="page" class="font-medium text-slate-800">{{ isNew ? 'Nowy turnus' : 'Definicja turnusu' }}</li>
+          <li aria-current="page" class="font-medium text-slate-800">{{ isNew ? 'Nowy turnus' : 'Szczegóły turnusu' }}</li>
         </ol>
       </nav>
       <header class="flex flex-wrap items-start justify-between gap-3">
         <div>
-          <h2 class="text-2xl font-semibold tracking-tight text-slate-900">{{ isNew ? 'Nowy turnus' : form.turnusName || 'Definicja turnusu' }}</h2>
+          <h2 class="text-2xl font-semibold tracking-tight text-slate-900">{{ isNew ? 'Nowy turnus' : form.turnusName || 'Szczegóły turnusu' }}</h2>
           <p class="mt-1 text-sm text-slate-600">{{ isNew ? 'Uzupełnij informacje i skonfiguruj nowy turnus.' : `${form.turnusCode || ''} · Edytuj informacje i ustawienia turnusu.` }}</p>
         </div>
         <span v-if="loaded" class="rounded-full border px-3 py-1 text-xs font-medium" :class="form.active ? 'border-slate-400 bg-slate-200 text-slate-900' : 'border-slate-200 bg-white text-slate-600'">{{ status }}</span>
       </header>
       <nav v-if="!isNew && loaded" aria-label="Sekcje turnusu" class="flex gap-1 border-b border-slate-200 text-sm">
-        <RouterLink :to="{ name: 'turnus-detail', params: { code: form.turnusCode } }" aria-current="page" class="border-b-2 border-slate-800 px-4 py-2 font-semibold text-slate-900">Definicja</RouterLink>
+        <RouterLink :to="{ name: 'turnus-detail', params: { code: form.turnusCode } }" aria-current="page" class="border-b-2 border-slate-800 px-4 py-2 font-semibold text-slate-900">Szczegóły</RouterLink>
         <RouterLink :to="{ name: 'turnus-lists', params: { code: form.turnusCode } }" class="rounded-t px-4 py-2 text-slate-600 hover:bg-white focus-visible:ring-2 focus-visible:ring-slate-500">Listy</RouterLink>
       </nav>
       <p v-if="loading" role="status" class="turnus-card text-center text-sm text-slate-600">Wczytywanie turnusu…</p>
@@ -171,7 +171,7 @@ async function save() {
       <p v-if="success" role="status" class="rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800">{{ success }}</p>
       <form v-if="loaded && !loading" ref="formElement" novalidate class="space-y-5" :aria-busy="saving" @submit.prevent="save" @input="onFieldInput" @focusout="event => event.target.name && validateField(event.target.name)">
         <fieldset :disabled="saving" class="grid min-w-0 grid-cols-1 items-start gap-5 lg:grid-cols-3">
-          <legend class="sr-only">Definicja turnusu</legend>
+          <legend class="sr-only">Szczegóły turnusu</legend>
           <div class="min-w-0 space-y-4 lg:col-span-2">
             <section aria-labelledby="turnus-information-heading" class="turnus-card min-w-0">
               <div class="mb-5 flex flex-wrap items-baseline justify-between gap-2">
