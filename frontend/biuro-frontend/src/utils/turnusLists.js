@@ -23,8 +23,8 @@ export const listColumns = availableListColumns.filter(column => generalColumnKe
 
 export const listViews = [
   { key: 'general', label: 'Ogólny', columns: listColumns.map(column => column.key), sortKey: 'lastName' },
-  { key: 'insurance', label: 'Ubezpieczenie', columns: ['firstName', 'lastName', 'pesel', 'address'], sortKey: 'lastName' },
-  { key: 'onsite', label: 'Rejestracja', columns: ['firstName', 'lastName', 'pesel', 'personPhone', 'contactPhone'], sortKey: 'lastName' },
+  { key: 'insurance', label: 'Ubezpieczenie', columns: ['firstName', 'lastName', 'pesel'], sortKey: 'lastName' },
+  { key: 'onsite', label: 'Lista na turnus', columns: ['firstName', 'lastName', 'address', 'age', 'personPhone', 'contactPhone'], sortKey: 'lastName' },
   { key: 'groups', label: 'Podział na grupy', columns: ['firstName', 'lastName', 'birthDate', 'gender', 'age'], sortKey: 'age' },
   { key: 'custom', label: 'Własny' },
 ]
@@ -33,10 +33,11 @@ export function columnsForList(view, customKeys, type) {
   const definition = listViews.find(item => item.key === view) || listViews[0]
   const selected = definition.key === 'custom' ? customKeys : definition.columns
   const columns = availableListColumns.filter(column => {
+    if (definition.key === 'onsite' && type === 'STAFF' && ['address', 'age'].includes(column.key)) return false
     if (column.key === 'qualifications' && type !== 'STAFF') return false
     return selected.includes(column.key)
   })
-  if (type !== 'STAFF' || !columns.length) return columns
+  if (type !== 'STAFF' || !columns.length || definition.key === 'insurance') return columns
   const surname = columns.findIndex(column => column.key === 'lastName')
   const position = surname < 0 ? Math.min(2, columns.length) : surname + 1
   return [...columns.slice(0, position), { key: 'roleLabel', label: 'Rola / funkcja' }, ...columns.slice(position)]
