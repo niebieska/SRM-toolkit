@@ -117,6 +117,10 @@ async function confirm() {
         />
       </div>
 
+      <p class="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-700">
+        Zmiana statusu spowoduje wysłanie powiadomienia e-mail.
+      </p>
+
       <p v-if="errorMessage" class="text-sm text-red-600">{{ errorMessage }}</p>
 
       <div class="flex justify-end gap-2">
