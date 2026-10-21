@@ -76,8 +76,8 @@ watch(
     <div class="max-w-6xl mx-auto space-y-4">
       <BiuroHeader />
 
-       <section class="bg-white rounded-xl shadow p-4 grid grid-cols-1 md:grid-cols-4 gap-3">
-        <select aria-label="Status zgłoszenia" v-model="filters.status" class="rounded border border-slate-300 px-3 py-2">
+       <section class="bg-white rounded-xl shadow p-4 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-[repeat(4,minmax(0,1fr))_auto] gap-3">
+        <select aria-label="Status zgłoszenia" v-model="filters.status" class="min-w-0 rounded border border-slate-300 px-3 py-2">
           <option value="">Wszystkie statusy</option>
           <option value="NEW">Nowe</option>
           <option value="ACCEPTED">Zaakceptowane</option>
@@ -85,12 +85,12 @@ watch(
           <option value="REJECTED">Odrzucone</option>
         </select>
 
-        <select aria-label="Typ zgłoszenia" v-model="filters.registrationType" class="rounded border border-slate-300 px-3 py-2">
+        <select aria-label="Typ zgłoszenia" v-model="filters.registrationType" class="min-w-0 rounded border border-slate-300 px-3 py-2">
           <option value="">Wszystkie typy</option>
           <option value="PARTICIPANT">Uczestnik</option>
           <option value="STAFF">Kadra</option>
         </select>
-        <select aria-label="Turnus" v-model="filters.turnusCode" class="rounded border border-slate-300 px-3 py-2">
+        <select aria-label="Turnus" v-model="filters.turnusCode" class="min-w-0 rounded border border-slate-300 px-3 py-2">
           <option value="">Wszystkie turnusy</option>
           <option
               v-for="turnus in turnusOptions"
@@ -100,7 +100,7 @@ watch(
             {{ turnus.turnusName }}
           </option>
         </select>
-         <div class="relative">
+         <div class="relative min-w-0">
            <input
                aria-label="Wyszukaj zgłoszenia"
                v-model="filters.search"
@@ -117,10 +117,10 @@ watch(
              ×
            </button>
          </div>
-         <div class="md:col-span-4 flex justify-end">
+         <div class="md:col-span-2 lg:col-span-1 flex justify-end">
            <button
                type="button"
-               class="rounded border border-slate-300 px-4 py-2 text-sm hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
+               class="whitespace-nowrap rounded border border-slate-300 px-4 py-2 text-sm hover:bg-slate-50 disabled:cursor-not-allowed disabled:opacity-50"
                :disabled="!hasActiveFilters"
                @click="clearFilters"
            >
