@@ -30,6 +30,22 @@
   with a small right inset and rejection reason below. All 19 Biuro frontend test
   files and production build passed before committing; whitespace checks passed.
 
+## 2026-10-21 — Staff family names and birth surname
+
+- Added required Imię matki, Imię ojca and Nazwisko rodowe for new staff
+  submissions, including adults and minors. The checkbox **Nazwisko rodowe inne
+  niż nazwisko** sits below Nazwisko; only checking it reveals the separate field
+  beside parent names. Otherwise the current surname is submitted as birth surname.
+  Toggling retains previously entered manual text; parent/guardian fields remain
+  separate and participant submissions are unchanged.
+- Stored in the existing person JSON as motherName, fatherName and birthSurname;
+  Biuro details have Polish labels. No database migration or historical backfill.
+  Update Registration frontend and API together: the API now requires these fields
+  on new staff submissions; an older already-open form may need to be reloaded.
+- Registration API: 186 passed, 11 optional database tests skipped. All six
+  Registration frontend test files and production build passed, including payload
+  mapping and Vue checkbox/toggle/remount validation. Manual visual review pending.
+
 ## 2026-10-21 — Full-hour catalogue refresh deferred
 
 - Added full-hour Turnus cache refresh to the later-work backlog. Intended schedule
