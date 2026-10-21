@@ -108,8 +108,8 @@ test('presets and custom columns reuse the loaded people and preserve filters', 
   try {
     await settle()
     view.selectView('insurance'); await settle()
-    assert.deepEqual(view.groups[0].columns.map(column => column.key), ['firstName', 'lastName', 'pesel', 'address'])
-    assert.ok(view.groups[1].columns.some(column => column.key === 'roleLabel'))
+    assert.deepEqual(view.groups[0].columns.map(column => column.key), ['firstName', 'lastName', 'pesel'])
+    assert.deepEqual(view.groups[1].columns.map(column => column.key), ['firstName', 'lastName', 'pesel'])
     view.selectView('groups'); await settle()
     assert.deepEqual(view.groups[0].rows.map(entry => entry.age), [15, 17])
     assert.equal(view.sortKey, 'age')
@@ -127,7 +127,7 @@ test('presets and custom columns reuse the loaded people and preserve filters', 
     assert.equal(view.groups[0].columns.length, 0)
     assert.equal(view.groups[1].columns.length, 0)
     view.selectView('onsite'); await settle()
-    assert.equal(view.groups[0].columns.length, 5)
+    assert.equal(view.groups[0].columns.length, 6)
     assert.equal(requests, 1)
   } finally { app.unmount(); globalThis.fetch = previousFetch }
 })

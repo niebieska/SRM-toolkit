@@ -65,11 +65,13 @@ test('formats complete and partial addresses without undefined or invented value
 
 test('presets select agreed fields and keep staff role/function in the staff section', () => {
   const keys = (view, type = 'PARTICIPANT') => columnsForList(view, [], type).map(column => column.key)
-  assert.deepEqual(keys('insurance'), ['firstName', 'lastName', 'pesel', 'address'])
-  assert.deepEqual(keys('onsite'), ['firstName', 'lastName', 'pesel', 'personPhone', 'contactPhone'])
+  assert.deepEqual(keys('insurance'), ['firstName', 'lastName', 'pesel'])
+  assert.deepEqual(keys('insurance', 'STAFF'), ['firstName', 'lastName', 'pesel'])
+  assert.deepEqual(keys('onsite'), ['firstName', 'lastName', 'address', 'age', 'personPhone', 'contactPhone'])
+  assert.deepEqual(keys('onsite', 'STAFF'), ['firstName', 'lastName', 'roleLabel', 'personPhone', 'contactPhone'])
   assert.deepEqual(keys('groups'), ['firstName', 'lastName', 'birthDate', 'gender', 'age'])
   assert.ok(!keys('general').includes('gender'))
-  for (const view of ['general', 'insurance', 'onsite', 'groups']) {
+  for (const view of ['general', 'onsite', 'groups']) {
     assert.ok(keys(view, 'STAFF').includes('roleLabel'))
     assert.ok(!keys(view).includes('roleLabel'))
   }

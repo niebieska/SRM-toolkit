@@ -25,12 +25,12 @@ test('snapshot includes only supplied visible rows and columns and does not chan
   const snapshot = createListExport(source)
   assert.equal(snapshot.count, 1)
   assert.equal(snapshot.sections.length, 2)
-  assert.deepEqual(snapshot.sections[0].rows[0], ['Łucja', 'Żółć', '00210112345', 'Żółta 2, 00-001 Łódź'])
+  assert.deepEqual(snapshot.sections[0].rows[0], ['Łucja', 'Żółć', '00210112345'])
   assert.ok(!JSON.stringify(snapshot).includes('not-for-export'))
   source.groups[0].rows[0].person.firstName = 'Changed'
   source.groups[0].columns.length = 0
   assert.equal(snapshot.sections[0].rows[0][0], 'Łucja')
-  assert.equal(snapshot.sections[0].columns.length, 4)
+  assert.equal(snapshot.sections[0].columns.length, 3)
   assert.equal(exportFileName(snapshot, 'xlsx'), 'listy_T1_insurance_2026-10-15.xlsx')
   assert.equal(exportFileName({ ...snapshot, generatedAt: '2026-10-15T23:00:00Z' }, 'pdf'), 'listy_T1_insurance_2026-10-16.pdf')
 })
@@ -108,7 +108,7 @@ test('real export engines produce XLSX, CSV and PDF blobs without downloading', 
   const zipHeader = new Uint8Array(await xlsx.arrayBuffer()).slice(0, 2)
   assert.deepEqual([...zipHeader], [0x50, 0x4b])
   const csv = await generateListFile(snapshot, 'csv')
-  assert.ok((await csv.text()).includes('Łódź'))
+  assert.ok((await csv.text()).includes('Łucja'))
   const pdf = await generateListFile(snapshot, 'pdf')
   assert.equal(new TextDecoder().decode((await pdf.arrayBuffer()).slice(0, 5)), '%PDF-')
 })
