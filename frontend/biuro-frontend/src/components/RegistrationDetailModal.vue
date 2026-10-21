@@ -150,13 +150,13 @@ function visibleRegistrationSections(registration) {
           <h3 class="text-sm font-semibold text-slate-500 uppercase tracking-wide mb-2">Dane zgłoszenia</h3>
           <div
             :class="detail.registrationType === 'PARTICIPANT'
-              ? 'columns-1 gap-x-8 sm:columns-2'
-              : 'grid grid-cols-1 gap-x-8 gap-y-4 sm:grid-cols-2'"
+              ? 'columns-1 gap-x-5 rounded-lg border border-slate-200 bg-slate-50/70 p-4 sm:columns-2'
+              : 'grid grid-cols-1 gap-x-5 gap-y-4 rounded-lg border border-slate-200 bg-slate-50/70 p-4 sm:grid-cols-2'"
           >
             <div
               v-for="section in visibleRegistrationSections(detail)"
               :key="section.key"
-              class="min-w-0"
+              class="min-w-0 rounded-md border border-slate-200 bg-white p-3"
               :class="detail.registrationType === 'PARTICIPANT'
                 ? 'mb-4 break-inside-avoid'
                 : section.questions || section.key === 'consents' ? 'sm:col-span-2' : ''"
