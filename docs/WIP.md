@@ -1,5 +1,17 @@
 # Work in progress
 
+## 2026-10-21 — Full-hour catalogue refresh deferred
+
+- Added full-hour Turnus cache refresh to the later-work backlog. Intended schedule
+  is every full hour in `Europe/Warsaw`, with startup load, failure retries and
+  last-good cache retained. Biuro save feedback should show the next planned time.
+- Discussion only: implementation has not changed. Current cache waits one hour
+  after the previous completed attempt when a catalogue exists; without an initial
+  catalogue it retries every 30 seconds. No automatic reload of open forms.
+- Keep this separate from the current client-adjustments PR. Modal improvements
+  and staffing-capacity validation were discussed as the next separate changes;
+  full-hour scheduling remains for later.
+
 ## 2026-10-20 — SMTP logging review and bugfix branch
 
 - Reviewed changes on `bugfix/email-delivery-logging`. Prevented Message-ID lookup
