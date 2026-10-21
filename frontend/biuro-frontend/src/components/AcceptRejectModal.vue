@@ -21,6 +21,10 @@ const rejectionReason = ref('')
 const selectedReasons = ref([])
 const loading = ref(false)
 const errorMessage = ref('')
+const personName = computed(() => {
+  const person = props.registration.payload?.person || props.registration
+  return [person.firstName, person.lastName].filter(Boolean).join(' ') || 'Brak imienia i nazwiska'
+})
 
 const otherReason = 'Inny powód'
 const predefinedRejectionReasons = computed(() => [
@@ -93,12 +97,14 @@ async function confirm() {
 <template>
   <div class="fixed inset-0 bg-black/40 flex items-center justify-center p-4">
     <div class="w-full max-w-lg bg-white rounded-xl p-5 space-y-4">
-      <h2 class="text-lg font-semibold">
-        {{ actionConfig.title }}
-      </h2>
-      <p>
-        Zgłoszenie: <strong>{{ registration.registrationCode }}</strong>
-      </p>
+      <h2 class="text-lg font-semibold text-slate-900">{{ actionConfig.title }}</h2>
+      <div class="space-y-1">
+        <div class="flex flex-wrap items-center gap-2">
+          <p class="min-w-0 break-words font-semibold text-slate-900">{{ personName }}</p>
+          <span class="rounded-full border border-slate-300 px-2 py-0.5 text-xs font-medium text-slate-600">{{ registration.registrationType === 'STAFF' ? 'Kadra' : 'Uczestnik' }}</span>
+        </div>
+        <p class="break-all text-sm text-slate-500">Zgłoszenie: {{ registration.registrationCode }}</p>
+      </div>
 
       <div v-if="action === 'REJECT'" class="space-y-3">
         <div class="space-y-2">
