@@ -25,7 +25,6 @@ export const listViews = [
   { key: 'general', label: 'Ogólny', columns: listColumns.map(column => column.key), sortKey: 'lastName' },
   { key: 'insurance', label: 'Ubezpieczenie', columns: ['firstName', 'lastName', 'pesel'], sortKey: 'lastName' },
   { key: 'onsite', label: 'Lista na turnus', columns: ['firstName', 'lastName', 'address', 'age', 'personPhone', 'contactPhone'], sortKey: 'lastName' },
-  { key: 'groups', label: 'Podział na grupy', columns: ['firstName', 'lastName', 'birthDate', 'gender', 'age'], sortKey: 'age' },
   { key: 'custom', label: 'Własny' },
 ]
 
