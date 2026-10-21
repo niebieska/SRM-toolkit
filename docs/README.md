@@ -5,6 +5,7 @@ Start with the registration workflow release plan for functional scope and the d
 ## Active plans and progress
 
 - [Registration workflow release plan](Registration-workflow-release-plan.md)
+- [Registration details modal UI and acceptance checks](Registration-details-ui.md)
 - [Registration status history — required for MVP](Registration-status-history.md)
 - [Wpłaty — probable MVP scope](Manual-payments.md)
 - [Turnus informational emails — nice to have for MVP](Turnus-informational-emails.md)
