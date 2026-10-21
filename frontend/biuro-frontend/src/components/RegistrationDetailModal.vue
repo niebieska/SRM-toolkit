@@ -38,6 +38,59 @@ onMounted(async () => {
 function requestStatusAction(action) {
   emit('status-action', detail.value, action)
 }
+
+function addressValue(fields, paths) {
+  const parts = paths
+    .map(path => fields.find(field => field.path === path)?.value)
+    .filter(value => value !== null && value !== undefined && String(value).trim() !== '')
+    .map(value => String(value).trim())
+  return parts.join(' ') || 'Brak danych'
+}
+
+function hasAddressValue(fields, prefix) {
+  return fields.some(field => field.path.startsWith(prefix)
+    && field.value !== null && field.value !== undefined && String(field.value).trim() !== '')
+}
+
+function addressFieldsToKeep(fields) {
+  const addressPaths = new Set([
+    'address.street', 'address.houseNumber', 'address.postalCode', 'address.city',
+    'address.sameAddress', 'address.guardianAddress',
+    'address.guardianAddress.street', 'address.guardianAddress.houseNumber',
+    'address.guardianAddress.postalCode', 'address.guardianAddress.city',
+  ])
+  return fields.filter(field => !addressPaths.has(field.path))
+}
+
+function iceFields(fields) {
+  const relation = fields.find(field => field.path === 'ice.relation')
+  const relationDetail = fields.find(field => field.path === 'ice.relationOther')
+  const customRelation = relation?.value === 'inna'
+    && relationDetail?.value !== null
+    && relationDetail?.value !== undefined
+    && String(relationDetail.value).trim() !== ''
+
+  return fields
+    .filter(field => field.path !== 'ice.relationOther')
+    .map(field => field.path === 'ice.relation' && customRelation
+      ? { ...field, value: relationDetail.value }
+      : field)
+}
+
+function visibleRegistrationSections(registration) {
+  const sections = registrationSections(registration)
+    .filter(section => registration.registrationType !== 'STAFF' || section.key !== 'role')
+  const certificateSection = sections.find(section => section.key === 'certificates')
+  const certificateDetails = sections.find(section => section.key === 'certificateDetails')
+
+  if (certificateDetails) {
+    if (certificateSection) certificateSection.fields.push(...certificateDetails.fields)
+    else sections.push({ ...certificateDetails, key: 'certificates', label: 'Uprawnienia' })
+    return sections.filter(section => section.key !== 'certificateDetails')
+  }
+
+  return sections
+}
 </script>
 
 <template>
@@ -95,17 +148,27 @@ function requestStatusAction(action) {
         <!-- Payload as dedicated fields -->
         <section v-if="detail.payload">
           <h3 class="text-sm font-semibold text-slate-500 uppercase tracking-wide mb-2">Dane zgłoszenia</h3>
-          <div class="space-y-3">
+          <div
+            :class="detail.registrationType === 'PARTICIPANT'
+              ? 'columns-1 gap-x-8 sm:columns-2'
+              : 'grid grid-cols-1 gap-x-8 gap-y-4 sm:grid-cols-2'"
+          >
             <div
-              v-for="section in registrationSections(detail).filter(section => detail.registrationType !== 'STAFF' || section.key !== 'role')"
+              v-for="section in visibleRegistrationSections(detail)"
               :key="section.key"
-              class="bg-slate-50 border border-slate-200 rounded-lg p-3"
+              class="min-w-0"
+              :class="detail.registrationType === 'PARTICIPANT'
+                ? 'mb-4 break-inside-avoid'
+                : section.questions || section.key === 'consents' ? 'sm:col-span-2' : ''"
+              :style="detail.registrationType === 'PARTICIPANT' && (section.questions || section.key === 'consents')
+                ? { columnSpan: 'all' }
+                : undefined"
             >
-              <h4 class="text-xs font-semibold uppercase tracking-wide text-slate-500 mb-2">
+              <h4 class="mb-2 border-b border-slate-200 pb-2 text-xs font-semibold uppercase tracking-wide text-slate-500">
                 {{ section.label }}
               </h4>
               <div v-if="section.questions" class="space-y-3">
-                <article v-for="question in section.questions" :key="question.key" class="rounded-md border border-slate-200 bg-white px-3 py-3">
+                <article v-for="question in section.questions" :key="question.key" class="border-b border-slate-100 pb-3 last:border-0 last:pb-0">
                   <p class="whitespace-pre-wrap break-words text-sm font-medium leading-5 text-slate-800">{{ question.question }}</p>
 
                   <template v-if="question.key === 'additionalInfo'">
@@ -142,6 +205,40 @@ function requestStatusAction(action) {
                   </template>
                 </article>
               </div>
+              <dl v-else-if="section.key === 'person'" class="grid grid-cols-1 gap-y-2 text-sm">
+                <div v-for="field in section.fields" :key="field.path" class="flex min-w-0 items-baseline gap-2">
+                  <dt class="shrink-0 text-slate-500">{{ field.label }}:</dt>
+                  <dd class="min-w-0 break-words">{{ formatFieldValue(field.value, field.path) }}</dd>
+                </div>
+              </dl>
+              <div v-else-if="section.key === 'address'" class="space-y-3 text-sm">
+                <address class="space-y-1 not-italic text-slate-700">
+                  <p>{{ addressValue(section.fields, ['address.street', 'address.houseNumber']) }}</p>
+                  <p>{{ addressValue(section.fields, ['address.postalCode', 'address.city']) }}</p>
+                </address>
+                <p v-if="section.fields.find(field => field.path === 'address.sameAddress')?.value === true" class="text-slate-600">
+                  Adres opiekuna: taki sam jak powyżej
+                </p>
+                <div v-else-if="section.fields.find(field => field.path === 'address.sameAddress')?.value === false || hasAddressValue(section.fields, 'address.guardianAddress.')" class="border-t border-slate-200 pt-2">
+                  <h5 class="mb-1 text-xs font-medium text-slate-500">Adres opiekuna</h5>
+                  <address class="space-y-1 not-italic text-slate-700">
+                    <p>{{ addressValue(section.fields, ['address.guardianAddress.street', 'address.guardianAddress.houseNumber']) }}</p>
+                    <p>{{ addressValue(section.fields, ['address.guardianAddress.postalCode', 'address.guardianAddress.city']) }}</p>
+                  </address>
+                </div>
+                <dl v-if="addressFieldsToKeep(section.fields).length" class="grid grid-cols-[minmax(0,0.4fr)_minmax(0,0.6fr)] gap-x-3 gap-y-1">
+                  <template v-for="field in addressFieldsToKeep(section.fields)" :key="field.path">
+                    <dt class="min-w-0 break-words text-slate-500">{{ field.label }}</dt>
+                    <dd class="min-w-0 whitespace-pre-wrap break-words">{{ formatFieldValue(field.value, field.path) }}</dd>
+                  </template>
+                </dl>
+              </div>
+              <dl v-else-if="section.key === 'ice'" class="grid grid-cols-[minmax(0,0.4fr)_minmax(0,0.6fr)] gap-x-3 gap-y-1 text-sm">
+                <template v-for="field in iceFields(section.fields)" :key="field.path">
+                  <dt class="min-w-0 break-words text-slate-500">{{ field.label }}</dt>
+                  <dd class="min-w-0 whitespace-pre-wrap break-words">{{ formatFieldValue(field.value, field.path) }}</dd>
+                </template>
+              </dl>
               <dl v-else class="grid grid-cols-[minmax(0,0.4fr)_minmax(0,0.6fr)] gap-x-3 gap-y-1 text-sm">
                 <template v-for="field in section.fields" :key="field.path">
                   <dt class="text-slate-500">{{ field.label }}</dt>

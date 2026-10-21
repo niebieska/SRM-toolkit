@@ -26,11 +26,11 @@ const FIELD_LABELS = {
   'guardian.contact.email': 'E-mail opiekuna',
   'guardian.contact.phone': 'Telefon opiekuna',
 
-  'ice.firstName': 'Imię osoby kontaktowej',
-  'ice.lastName': 'Nazwisko osoby kontaktowej',
-  'ice.relationOther': 'Relacja (inne)',
-  'ice.relation': 'Relacja (kontakt awaryjny)',
-  'ice.phone': 'Telefon (kontakt awaryjny)',
+  'ice.firstName': 'Imię',
+  'ice.lastName': 'Nazwisko',
+  'ice.relationOther': 'Doprecyzowanie relacji',
+  'ice.relation': 'Relacja',
+  'ice.phone': 'Telefon',
 
   role: 'Rola',
   subrole: 'Funkcja',
