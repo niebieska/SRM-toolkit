@@ -8,7 +8,7 @@ const STAFF_HEALTH_QUESTIONS = {
 const PARTICIPANT_HEALTH_QUESTIONS = {
     q1: 'Czy uczestnik/uczestniczka posiada choroby przewlekłe, o których organizator powinien wiedzieć?',
     q2: 'Czy u uczestnika/uczestniczki występują alergie lub nietolerancje pokarmowe, które powinny zostać uwzględnione przy przygotowywaniu posiłków?',
-    q3: 'Czy uczestnik/uczestniczka ma specjalne potrzeby edukacyjne lub inne ważne informacje, o których organizator powinien wiedzieć?',
+    q3: 'Czy uczestnik/uczestniczka ma specjalne potrzeby edukacyjne, w tym potrzeby wynikające z niepełnosprawności, niedostosowania społecznego lub zagrożenia niedostosowaniem społecznym?',
 }
 
 
