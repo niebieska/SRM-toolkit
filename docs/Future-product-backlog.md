@@ -6,6 +6,13 @@ explicitly promoted into Registration-workflow-release-plan.md and recorded in W
 
 ## Optional after core acceptance, if time remains
 
+- Full-hour Turnus catalogue refresh — deferred, discussed 2026-10-21. Replace
+  elapsed-hour refresh with a full-hour schedule in `Europe/Warsaw`, retaining
+  asynchronous startup loading, last-good cache and separate failed-fetch retries.
+  After saving a Turnus, show the next planned refresh time (not a guarantee of
+  successful propagation). Update configuration, Compose/env guidance and tests.
+  Already-open forms do not automatically reload. Implement in a separate PR;
+  this is not part of the current client UI adjustments or an MVP release gate.
 - Manual payment tracking was reassessed on 2026-10-20 as **probably required for
   MVP**, pending prioritization. Current scope and unresolved decisions live in
   [Wpłaty](Manual-payments.md) and the registration workflow release plan;

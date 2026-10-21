@@ -21,13 +21,21 @@ const rejectionReason = ref('')
 const selectedReasons = ref([])
 const loading = ref(false)
 const errorMessage = ref('')
+const personName = computed(() => {
+  const person = props.registration.payload?.person || props.registration
+  return [person.firstName, person.lastName].filter(Boolean).join(' ') || 'Brak imienia i nazwiska'
+})
 
-const predefinedRejectionReasons = [
+const otherReason = 'Inny powód'
+const predefinedRejectionReasons = computed(() => [
   'Brak wolnych miejsc',
-  'Nie spełnia kryteriów wieku dla wybranego turnusu',
-  'Niekompletne dane w zgłoszeniu',
-  'Brak wymaganych zgód',
-]
+  'Niezgodność z wymaganiami turnusu',
+  'Rezygnacja zgłaszającego',
+  'Zgłoszenie omyłkowe',
+  ...(props.registration.registrationType === 'STAFF' ? ['Brak zapotrzebowania na wybraną rolę'] : []),
+  otherReason,
+])
+const hasOtherReason = computed(() => selectedReasons.value.includes(otherReason))
 
 const actionConfig = computed(() => {
   if (props.action === 'ACCEPT') {
@@ -52,13 +60,18 @@ const actionConfig = computed(() => {
 })
 
 const combinedRejectionReason = computed(() => {
-  return [...selectedReasons.value, rejectionReason.value.trim()]
+  return [...selectedReasons.value.filter(reason => reason !== otherReason),
+    hasOtherReason.value ? rejectionReason.value.trim() : '']
     .filter(Boolean)
     .join('; ')
 })
 
 async function confirm() {
   errorMessage.value = ''
+  if (props.action === 'REJECT' && hasOtherReason.value && !rejectionReason.value.trim()) {
+    errorMessage.value = 'Opisz inny powód odrzucenia'
+    return
+  }
   if (props.action === 'REJECT' && !combinedRejectionReason.value) {
     errorMessage.value = 'Powód odrzucenia jest wymagany'
     return
@@ -84,12 +97,14 @@ async function confirm() {
 <template>
   <div class="fixed inset-0 bg-black/40 flex items-center justify-center p-4">
     <div class="w-full max-w-lg bg-white rounded-xl p-5 space-y-4">
-      <h2 class="text-lg font-semibold">
-        {{ actionConfig.title }}
-      </h2>
-      <p>
-        Zgłoszenie: <strong>{{ registration.registrationCode }}</strong>
-      </p>
+      <h2 class="text-lg font-semibold text-slate-900">{{ actionConfig.title }}</h2>
+      <div class="space-y-1">
+        <div class="flex flex-wrap items-center gap-2">
+          <p class="min-w-0 break-words font-semibold text-slate-900">{{ personName }}</p>
+          <span class="rounded-full border border-slate-300 px-2 py-0.5 text-xs font-medium text-slate-600">{{ registration.registrationType === 'STAFF' ? 'Kadra' : 'Uczestnik' }}</span>
+        </div>
+        <p class="break-all text-sm text-slate-500">Zgłoszenie: {{ registration.registrationCode }}</p>
+      </div>
 
       <div v-if="action === 'REJECT'" class="space-y-3">
         <div class="space-y-2">
@@ -108,14 +123,22 @@ async function confirm() {
             <span>{{ reason }}</span>
           </label>
         </div>
-        <label class="block text-sm">Dodatkowy powód</label>
-        <textarea
-          v-model="rejectionReason"
-          rows="4"
-          class="w-full rounded border border-slate-300 px-3 py-2"
-          placeholder="Opcjonalny komentarz"
-        />
+        <div v-if="hasOtherReason" class="space-y-1">
+          <label for="rejection-other-reason" class="block text-sm">Inny powód *</label>
+          <textarea
+            id="rejection-other-reason"
+            v-model="rejectionReason"
+            rows="2"
+            class="w-full rounded border border-slate-300 px-3 py-2 text-sm"
+            placeholder="Krótko opisz powód"
+            required
+          />
+        </div>
       </div>
+
+      <p class="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-700">
+        Zmiana statusu spowoduje wysłanie powiadomienia e-mail.
+      </p>
 
       <p v-if="errorMessage" class="text-sm text-red-600">{{ errorMessage }}</p>
 

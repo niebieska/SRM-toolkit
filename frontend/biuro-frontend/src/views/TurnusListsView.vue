@@ -110,12 +110,12 @@ function displayDate(value) {
         <RouterLink :to="auth.isOperator ? '/turnusy' : '/listy'" class="rounded hover:text-slate-900 focus-visible:ring-2 focus-visible:ring-slate-500">Turnusy</RouterLink>
         <span aria-hidden="true" class="mx-2">/</span><span aria-current="page">Listy</span>
       </nav>
-      <header>
-        <h2 class="text-2xl font-semibold text-slate-900">{{ data?.turnus.turnusName || 'Listy turnusu' }}</h2>
-        <p v-if="data" class="mt-1 text-sm text-slate-600">{{ data.turnus.turnusCode }} · {{ displayDate(data.turnus.startDate) }} – {{ displayDate(data.turnus.endDate) }}</p>
+      <header class="space-y-1">
+        <h2 class="min-w-0 break-words text-xl font-semibold text-slate-900">{{ data?.turnus.turnusName || 'Listy turnusu' }}</h2>
+        <p v-if="data" class="text-xs text-slate-500">{{ data.turnus.turnusCode }} · {{ displayDate(data.turnus.startDate) }} – {{ displayDate(data.turnus.endDate) }}</p>
       </header>
       <nav aria-label="Sekcje turnusu" class="flex gap-1 border-b border-slate-200 text-sm">
-        <RouterLink v-if="auth.isOperator" :to="{ name: 'turnus-detail', params: { code: route.params.code } }" class="rounded-t px-4 py-2 text-slate-600 hover:bg-white focus-visible:ring-2 focus-visible:ring-slate-500">Definicja</RouterLink>
+        <RouterLink v-if="auth.isOperator" :to="{ name: 'turnus-detail', params: { code: route.params.code } }" class="rounded-t px-4 py-2 text-slate-600 hover:bg-white focus-visible:ring-2 focus-visible:ring-slate-500">Szczegóły</RouterLink>
         <RouterLink :to="{ name: 'turnus-lists', params: { code: route.params.code } }" aria-current="page" class="border-b-2 border-slate-800 px-4 py-2 font-semibold text-slate-900">Listy</RouterLink>
       </nav>
       <p v-if="loading" role="status" class="text-sm text-slate-600">Wczytywanie list…</p>

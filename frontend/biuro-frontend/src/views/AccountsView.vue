@@ -122,9 +122,17 @@ onBeforeUnmount(() => { historySequence++; decide(false); window.removeEventList
       <section class="overflow-hidden rounded-xl border bg-white">
         <div class="border-b p-4"><input v-model="search" aria-label="Wyszukaj konto" placeholder="Wyszukaj" class="w-full rounded border px-3 py-2" /></div>
         <ul class="divide-y"><li v-for="account in filtered" :key="account.id">
-          <button :disabled="busy || loading" class="w-full p-4 text-left hover:bg-slate-50 disabled:opacity-50" :class="selected === account.id ? 'bg-slate-100' : ''" @click="select(account)">
-            <span class="block font-medium">{{ account.displayName }}</span><span class="text-sm text-slate-600">{{ account.username }} · {{ account.active ? 'Aktywne' : 'Wyłączone' }}</span>
-            <span class="mt-1 block text-xs text-slate-600">{{ account.roles.map(role => roleLabels[role]).join(', ') }}</span>
+          <button :disabled="busy || loading" :aria-pressed="selected === account.id" class="w-full border-l-4 p-4 text-left hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-inset focus-visible:ring-slate-500 disabled:opacity-50" :class="selected === account.id ? 'border-slate-800 bg-slate-100' : 'border-transparent'" @click="select(account)">
+            <span class="flex flex-wrap items-center gap-2">
+              <span class="min-w-0 break-words font-medium">{{ account.displayName }}</span>
+              <span class="shrink-0 rounded-full border px-2 py-0.5 text-xs font-medium" :class="account.active ? 'border-slate-400 bg-slate-200 text-slate-900' : 'border-slate-200 bg-white text-slate-600'">{{ account.active ? 'Aktywne' : 'Wyłączone' }}</span>
+            </span>
+            <span class="mt-1 block break-all text-xs text-slate-500">Login: {{ account.username }}</span>
+            <span class="mt-2 flex flex-wrap gap-1">
+              <span v-for="role in account.roles" :key="role" class="rounded bg-slate-100 px-2 py-1 text-xs font-medium text-slate-700">{{ roleLabels[role] || role }}</span>
+            </span>
+            <span v-if="account.roles.includes('OPERATOR')" class="mt-2 block text-xs text-slate-600">Dostęp operacyjny: wszystkie turnusy</span>
+            <span v-else-if="account.roles.includes('VIEWER')" class="mt-2 block text-xs text-slate-600">Przypisane turnusy: {{ account.turnusCodes?.length || 0 }}</span>
             <span v-if="account.passwordChangeRequired" class="mt-1 block text-xs text-amber-800">Wymagana zmiana hasła</span>
           </button>
         </li></ul><p v-if="!filtered.length && !loading" class="p-4 text-sm text-slate-600">Brak kont pasujących do wyszukiwania.</p>
@@ -138,11 +146,11 @@ onBeforeUnmount(() => { historySequence++; decide(false); window.removeEventList
             <label v-if="!isNew" class="flex items-center gap-2 text-sm"><input v-model="form.active" type="checkbox" />Konto aktywne</label>
             <fieldset class="space-y-2 rounded border p-3"><legend class="px-1 text-sm font-semibold">Role</legend>
               <label v-for="(label, role) in roleLabels" :key="role" class="flex items-center gap-2 text-sm"><input v-model="form.roles" :value="role" type="checkbox" />{{ label }}</label>
-              <p class="text-xs text-slate-600">Administrator zarządza kontami. Operator ma pełny dostęp do obsługi turnusów i zgłoszeń. Podgląd list obejmuje przypisane turnusy.</p>
+              <p class="text-xs text-slate-600">Administrator zarządza kontami. Operator ma pełny dostęp do obsługi turnusów i zgłoszeń. Operator-Podgląd list obejmuje przypisane turnusy.</p>
             </fieldset>
             <fieldset class="space-y-2 rounded border p-3"><legend class="px-1 text-sm font-semibold">Przypisane turnusy</legend>
               <p v-if="form.roles.includes('OPERATOR')" class="text-xs text-slate-600">Operator widzi wszystkie turnusy niezależnie od przypisań.</p>
-              <p v-else-if="!form.roles.includes('VIEWER')" class="text-xs text-slate-600">Przypisania dają dostęp wyłącznie z rolą Podgląd list.</p>
+              <p v-else-if="!form.roles.includes('VIEWER')" class="text-xs text-slate-600">Przypisania dają dostęp wyłącznie z rolą Operator-Podgląd list.</p>
               <div class="max-h-48 space-y-2 overflow-auto"><label v-for="turnus in turnuses" :key="turnus.turnusCode" class="flex items-start gap-2 text-sm"><input v-model="form.turnusCodes" :value="turnus.turnusCode" type="checkbox" class="mt-1" /><span>{{ turnus.turnusName }} <span class="text-xs text-slate-500">({{ turnus.turnusCode }})</span></span></label></div>
               <p v-if="!turnuses.length" class="text-sm text-slate-600">Brak zdefiniowanych turnusów.</p>
             </fieldset>

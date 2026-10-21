@@ -65,11 +65,12 @@ test('formats complete and partial addresses without undefined or invented value
 
 test('presets select agreed fields and keep staff role/function in the staff section', () => {
   const keys = (view, type = 'PARTICIPANT') => columnsForList(view, [], type).map(column => column.key)
-  assert.deepEqual(keys('insurance'), ['firstName', 'lastName', 'pesel', 'address'])
-  assert.deepEqual(keys('onsite'), ['firstName', 'lastName', 'pesel', 'personPhone', 'contactPhone'])
-  assert.deepEqual(keys('groups'), ['firstName', 'lastName', 'birthDate', 'gender', 'age'])
+  assert.deepEqual(keys('insurance'), ['firstName', 'lastName', 'pesel'])
+  assert.deepEqual(keys('insurance', 'STAFF'), ['firstName', 'lastName', 'pesel'])
+  assert.deepEqual(keys('onsite'), ['firstName', 'lastName', 'address', 'age', 'personPhone', 'contactPhone'])
+  assert.deepEqual(keys('onsite', 'STAFF'), ['firstName', 'lastName', 'roleLabel', 'personPhone', 'contactPhone'])
   assert.ok(!keys('general').includes('gender'))
-  for (const view of ['general', 'insurance', 'onsite', 'groups']) {
+  for (const view of ['general', 'onsite']) {
     assert.ok(keys(view, 'STAFF').includes('roleLabel'))
     assert.ok(!keys(view).includes('roleLabel'))
   }
@@ -115,7 +116,7 @@ test('additional optional columns format contact names relationships city qualif
 
 test('additional fields are optional in custom view and do not expand general or other presets', () => {
   const extras = ['email', 'contactName', 'guardianEmail', 'contactRelation', 'city', 'qualifications', 'imageConsent']
-  for (const view of ['general', 'insurance', 'onsite', 'groups']) {
+  for (const view of ['general', 'insurance', 'onsite']) {
     assert.ok(columnsForList(view, [], 'PARTICIPANT').every(column => !extras.includes(column.key)))
   }
   assert.deepEqual(columnsForList('custom', extras, 'PARTICIPANT').map(column => column.key), extras.filter(key => key !== 'qualifications'))

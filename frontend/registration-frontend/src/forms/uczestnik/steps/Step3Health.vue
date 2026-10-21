@@ -26,7 +26,7 @@
       <HealthQuestion
         :number="3"
         :question="q3Text"
-        placeholder =" Informacje o potrzebach wynikających z niepełnosprawności, niedostosowania społecznego lub zagrożenia niedostosowaniem społecznym"
+        placeholder="Jakie? Proszę krótko opisać."
         :multiline="true"
         :answerError="errors.q3Answer"
         :detailError="errors.q3Detail"
@@ -89,7 +89,7 @@ const q2Text = computed(() =>
 )
 
 const q3Text = computed(() =>
-    `Czy ${participant.value} ma specjalne potrzeby edukacyjne?`
+    `Czy ${participant.value} ma specjalne potrzeby edukacyjne, w tym potrzeby wynikające z niepełnosprawności, niedostosowania społecznego lub zagrożenia niedostosowaniem społecznym?`
 )
 
 const errors = reactive({})
