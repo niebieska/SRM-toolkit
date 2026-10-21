@@ -1,9 +1,10 @@
 <script setup>
-import { onMounted, ref } from 'vue'
+import { computed, onMounted, ref } from 'vue'
 import { useAuthStore } from '../stores/auth'
 import { fetchRegistrationDetail } from '../api/registrationApi'
 import StatusBadge from './StatusBadge.vue'
 import { formatDateTime } from '../utils/dateUtils'
+import { registrationSections, formatFieldValue } from '../utils/registrationDetails'
 
 const props = defineProps({
   code: {
@@ -18,73 +19,11 @@ const authStore = useAuthStore()
 const detail = ref(null)
 const loading = ref(true)
 const errorMessage = ref('')
-
-const FIELD_LABELS = {
-  turnusCode: 'Turnus',
-
-  'person.firstName': 'Imię',
-  'person.lastName': 'Nazwisko',
-  'person.pesel': 'PESEL',
-  'person.gender': 'Płeć',
-  'person.isAdult': 'Osoba pełnoletnia',
-  'person.contact.email': 'E-mail',
-  'person.contact.phone': 'Telefon',
-
-  'address.street': 'Ulica',
-  'address.houseNumber': 'Nr domu',
-  'address.postalCode': 'Kod pocztowy',
-  'address.city': 'Miasto',
-  'address.sameAddress': 'Adres opiekuna taki sam',
-  'address.guardianAddress.street': 'Ulica (opiekun)',
-  'address.guardianAddress.houseNumber': 'Nr domu (opiekun)',
-  'address.guardianAddress.postalCode': 'Kod pocztowy (opiekun)',
-  'address.guardianAddress.city': 'Miasto (opiekun)',
-
-  'guardian.firstName': 'Imię opiekuna',
-  'guardian.lastName': 'Nazwisko opiekuna',
-  'guardian.relation': 'Relacja',
-  'guardian.names': 'Imiona i nazwiska rodziców/opiekunów',
-  'guardian.contact.email': 'E-mail opiekuna',
-  'guardian.contact.phone': 'Telefon opiekuna',
-
-  'ice.firstName': 'Imię osoby kontaktowej',
-  'ice.lastName': 'Nazwisko osoby kontaktowej',
-  'ice.relationOther': 'Relacja (inne)',
-  'ice.relation': 'Relacja (kontakt awaryjny)',
-  'ice.phone': 'Telefon (kontakt awaryjny)',
-
-  role: 'Rola',
-  subrole: 'Funkcja',
-
-  'consents.dataProcessing': 'Zgoda na przetwarzanie danych',
-  'consents.imageUsage': 'Zgoda na wykorzystanie wizerunku',
-  'consents.regulations': 'Akceptacja regulaminu',
-  'consents.truthDeclaration': 'Oświadczenie o prawdziwości danych',
-
-  'health.q1.question': 'Pytanie',
-  'health.q1.answer': 'Odpowiedź',
-  'health.q1.detail': 'Szczegóły',
-  'health.q2.question': 'Pytanie',
-  'health.q2.answer': 'Odpowiedź',
-  'health.q2.detail': 'Szczegóły',
-  'health.q3.question': 'Pytanie',
-  'health.q3.answer': 'Odpowiedź',
-  'health.q3.detail': 'Szczegóły',
-  'health.additionalInfo': 'Dodatkowe informacje',
-}
-
-const SECTION_LABELS = {
-  person: 'Dane osobowe',
-  address: 'Adres',
-  guardian: 'Dane opiekuna',
-  ice: 'Kontakt awaryjny',
-  role: 'Rola',
-  certificates: 'Uprawnienia',
-  certificateDetails: 'Szczegóły uprawnień',
-  health: 'Kwestionariusz',
-  consents: 'Zgody',
-  turnusCode: 'Turnus',
-}
+const personName = computed(() => {
+  const person = detail.value?.payload?.person
+  return [detail.value?.firstName || person?.firstName, detail.value?.lastName || person?.lastName]
+    .filter(Boolean).join(' ')
+})
 
 onMounted(async () => {
   try {
@@ -95,108 +34,6 @@ onMounted(async () => {
     loading.value = false
   }
 })
-
-function isPlainObject(value) {
-  return value !== null && typeof value === 'object' && !Array.isArray(value)
-}
-
-function toLabel(path, key) {
-  const pathKey = path.join('.')
-  if (FIELD_LABELS[pathKey]) return FIELD_LABELS[pathKey]
-  if (SECTION_LABELS[key]) return SECTION_LABELS[key]
-  return key
-    .replace(/([a-z0-9])([A-Z])/g, '$1 $2')
-    .replace(/_/g, ' ')
-    .replace(/^./, (char) => char.toUpperCase())
-}
-
-function flattenFields(node, path = []) {
-  if (Array.isArray(node)) {
-    return [{
-      path: path.join('.'),
-      label: toLabel(path, path[path.length - 1] || 'value'),
-      value: node.length === 0 ? null : node,
-    }]
-  }
-
-  if (isPlainObject(node)) {
-    const entries = Object.entries(node)
-    if (entries.length === 0) {
-      return [{
-        path: path.join('.'),
-        label: toLabel(path, path[path.length - 1] || 'value'),
-        value: null,
-      }]
-    }
-    return entries.flatMap(([key, value]) => flattenFields(value, [...path, key]))
-  }
-
-  return [{
-    path: path.join('.'),
-    label: toLabel(path, path[path.length - 1] || 'value'),
-    value: node,
-  }]
-}
-
-function payloadSections(payload) {
-  if (!isPlainObject(payload)) {
-    return [{
-      key: 'payload',
-      label: 'Dane zgłoszenia',
-      fields: [{
-        path: 'payload',
-        label: 'Dane',
-        value: payload,
-      }],
-    }]
-  }
-
-  const topLevel = Object.entries(payload)
-  const scalarFields = []
-  const sections = []
-
-  for (const [key, value] of topLevel) {
-    if (isPlainObject(value) || Array.isArray(value)) {
-      sections.push({
-        key,
-        label: SECTION_LABELS[key] || toLabel([key], key),
-        fields: flattenFields(value, [key]),
-      })
-    } else {
-      scalarFields.push({
-        path: key,
-        label: toLabel([key], key),
-        value,
-      })
-    }
-  }
-
-  if (scalarFields.length) {
-    sections.unshift({
-      key: 'basic',
-      label: 'Podstawowe informacje',
-      fields: scalarFields,
-    })
-  }
-
-  return sections
-}
-
-function formatFieldValue(value,path = '') {
-  if (value === null || value === undefined || value === '') return "-----"
-  if (path === 'person.gender') {
-    return value === 'male' ? 'Mężczyzna' : 'Kobieta'
-  }
-  if (typeof value === 'boolean') return value ? 'Tak' : 'Nie'
-  if (Array.isArray(value)) {
-    if (value.every((entry) => ['string', 'number', 'boolean'].includes(typeof entry))) {
-      return value.join(', ')
-    }
-    return JSON.stringify(value)
-  }
-  if (typeof value === 'object') return JSON.stringify(value)
-  return String(value)
-}
 
 function requestStatusAction(action) {
   emit('status-action', detail.value, action)
@@ -218,24 +55,31 @@ function requestStatusAction(action) {
       <template v-else-if="detail">
 
         <!-- Header info -->
-        <section>
-          <h3 class="text-sm font-semibold text-slate-500 uppercase tracking-wide mb-2">Zgłoszenie</h3>
-          <dl class="grid grid-cols-2 gap-x-4 gap-y-1 text-sm">
-            <dt class="text-slate-500">Kod</dt>
-            <dd>{{ detail.registrationCode }}</dd>
-            <dt class="text-slate-500">Typ</dt>
-            <dd>{{ detail.registrationType === 'PARTICIPANT' ? 'Uczestnik' : 'Kadra' }}</dd>
-            <dt class="text-slate-500">Turnus</dt>
-            <dd>{{ detail.turnusCode }}</dd>
-            <dt class="text-slate-500">Status</dt>
-            <dd><StatusBadge :status="detail.status" /></dd>
-            <template v-if="detail.rejectionReason">
-              <dt class="text-slate-500">Powód odrzucenia</dt>
-              <dd>{{ detail.rejectionReason }}</dd>
-            </template>
-            <dt class="text-slate-500">Data zgłoszenia</dt>
-            <dd>{{ formatDateTime(detail.createdAt) }}</dd>
+        <section aria-labelledby="registration-summary-heading" class="space-y-3">
+          <div class="flex flex-wrap items-start gap-x-6 gap-y-3 sm:pr-4">
+          <div class="min-w-0 flex-1 basis-60">
+            <div class="flex min-h-6 flex-wrap items-center gap-2">
+              <h3 id="registration-summary-heading" class="min-w-0 break-words text-base font-semibold text-slate-900">{{ personName || 'Zgłoszenie' }}</h3>
+              <span class="rounded-full border border-slate-300 px-2 py-0.5 text-xs font-medium text-slate-600">{{ detail.registrationType === 'PARTICIPANT' ? 'Uczestnik' : 'Kadra' }}</span>
+              <StatusBadge :status="detail.status" />
+            </div>
+            <p class="mt-1 break-all text-xs leading-4 text-slate-500">{{ detail.registrationCode }}</p>
+          </div>
+          <dl class="flex flex-wrap gap-x-6 gap-y-3 text-sm">
+            <div class="min-w-0">
+              <dt class="flex min-h-6 items-center text-xs text-slate-500">Turnus</dt>
+              <dd class="mt-1 break-words leading-4">{{ detail.turnusCode }}</dd>
+            </div>
+            <div>
+              <dt class="flex min-h-6 items-center text-xs text-slate-500">Data zgłoszenia</dt>
+              <dd class="mt-1 leading-4">{{ formatDateTime(detail.createdAt) }}</dd>
+            </div>
           </dl>
+          </div>
+          <div v-if="detail.rejectionReason" class="border-t border-slate-200 pt-3 text-sm">
+            <p class="font-medium text-slate-700">Powód odrzucenia</p>
+            <p class="mt-1 whitespace-pre-wrap break-words text-slate-600">{{ detail.rejectionReason }}</p>
+          </div>
         </section>
 
         <!-- Payload as dedicated fields -->
@@ -243,17 +87,28 @@ function requestStatusAction(action) {
           <h3 class="text-sm font-semibold text-slate-500 uppercase tracking-wide mb-2">Dane zgłoszenia</h3>
           <div class="space-y-3">
             <div
-              v-for="section in payloadSections(detail.payload)"
+              v-for="section in registrationSections(detail)"
               :key="section.key"
               class="bg-slate-50 border border-slate-200 rounded-lg p-3"
             >
               <h4 class="text-xs font-semibold uppercase tracking-wide text-slate-500 mb-2">
                 {{ section.label }}
               </h4>
-              <dl class="grid grid-cols-2 gap-x-4 gap-y-1 text-sm">
+              <div v-if="section.questions" class="space-y-4">
+                <div v-for="question in section.questions" :key="question.key" class="space-y-2">
+                  <p class="whitespace-pre-wrap break-words text-sm font-medium text-slate-800">{{ question.question }}</p>
+                  <dl class="grid grid-cols-2 gap-x-4 gap-y-1 text-sm">
+                    <template v-for="field in question.fields" :key="field.path">
+                      <dt class="min-w-0 break-words text-slate-500">{{ field.label }}</dt>
+                      <dd class="min-w-0 whitespace-pre-wrap break-words">{{ formatFieldValue(field.value, field.path) }}</dd>
+                    </template>
+                  </dl>
+                </div>
+              </div>
+              <dl v-else class="grid grid-cols-2 gap-x-4 gap-y-1 text-sm">
                 <template v-for="field in section.fields" :key="field.path">
                   <dt class="text-slate-500">{{ field.label }}</dt>
-                  <dd>{{ formatFieldValue(field.value, field.path) }}</dd>
+                  <dd class="min-w-0 whitespace-pre-wrap break-words">{{ formatFieldValue(field.value, field.path) }}</dd>
                 </template>
               </dl>
             </div>

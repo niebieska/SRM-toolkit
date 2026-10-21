@@ -1,0 +1,215 @@
+const FIELD_LABELS = {
+  turnusCode: 'Turnus',
+
+  'person.firstName': 'Imię',
+  'person.lastName': 'Nazwisko',
+  'person.pesel': 'PESEL',
+  'person.gender': 'Płeć',
+  'person.isAdult': 'Osoba pełnoletnia',
+  'person.contact.email': 'E-mail',
+  'person.contact.phone': 'Telefon',
+
+  'address.street': 'Ulica',
+  'address.houseNumber': 'Nr domu',
+  'address.postalCode': 'Kod pocztowy',
+  'address.city': 'Miasto',
+  'address.sameAddress': 'Adres opiekuna taki sam',
+  'address.guardianAddress.street': 'Ulica (opiekun)',
+  'address.guardianAddress.houseNumber': 'Nr domu (opiekun)',
+  'address.guardianAddress.postalCode': 'Kod pocztowy (opiekun)',
+  'address.guardianAddress.city': 'Miasto (opiekun)',
+
+  'guardian.firstName': 'Imię opiekuna',
+  'guardian.lastName': 'Nazwisko opiekuna',
+  'guardian.relation': 'Relacja',
+  'guardian.names': 'Imiona i nazwiska rodziców/opiekunów',
+  'guardian.contact.email': 'E-mail opiekuna',
+  'guardian.contact.phone': 'Telefon opiekuna',
+
+  'ice.firstName': 'Imię osoby kontaktowej',
+  'ice.lastName': 'Nazwisko osoby kontaktowej',
+  'ice.relationOther': 'Relacja (inne)',
+  'ice.relation': 'Relacja (kontakt awaryjny)',
+  'ice.phone': 'Telefon (kontakt awaryjny)',
+
+  role: 'Rola',
+  subrole: 'Funkcja',
+
+  'consents.dataProcessing': 'Zgoda na przetwarzanie danych',
+  'consents.imageUsage': 'Zgoda na wykorzystanie wizerunku',
+  'consents.regulations': 'Akceptacja regulaminu',
+  'consents.truthDeclaration': 'Oświadczenie o prawdziwości danych',
+
+  'health.q1.question': 'Pytanie',
+  'health.q1.answer': 'Odpowiedź',
+  'health.q1.detail': 'Szczegóły',
+  'health.q2.question': 'Pytanie',
+  'health.q2.answer': 'Odpowiedź',
+  'health.q2.detail': 'Szczegóły',
+  'health.q3.question': 'Pytanie',
+  'health.q3.answer': 'Odpowiedź',
+  'health.q3.detail': 'Szczegóły',
+  'health.additionalInfo': 'Dodatkowe informacje',
+  'health.additionalInfo.value': 'Informacje',
+}
+
+const SECTION_LABELS = {
+  person: 'Dane osobowe',
+  address: 'Adres',
+  guardian: 'Dane opiekuna',
+  ice: 'Kontakt awaryjny',
+  role: 'Rola',
+  certificates: 'Uprawnienia',
+  certificateDetails: 'Szczegóły uprawnień',
+  health: 'Kwestionariusz',
+  consents: 'Zgody',
+  turnusCode: 'Turnus',
+}
+
+function isPlainObject(value) {
+  return value !== null && typeof value === 'object' && !Array.isArray(value)
+}
+
+function toLabel(path, key) {
+  const pathKey = path.join('.')
+  if (FIELD_LABELS[pathKey]) return FIELD_LABELS[pathKey]
+  if (SECTION_LABELS[key]) return SECTION_LABELS[key]
+  return key
+    .replace(/([a-z0-9])([A-Z])/g, '$1 $2')
+    .replace(/_/g, ' ')
+    .replace(/^./, (char) => char.toUpperCase())
+}
+
+export function registrationSections(registration) {
+  const payload = registration.payload
+  // The saved classification takes precedence over age today or browser values.
+  const minor = typeof registration.minor === 'boolean' ? registration.minor : null
+  const type = registration.registrationType
+  const sections = rawPayloadSections(payload)
+  const known = new Set(['person', 'address', 'guardian', 'ice', 'role', 'subrole',
+    'certificates', 'certificateDetails', 'health', 'consents', 'turnusCode'])
+  const result = []
+  const other = []
+  for (const section of sections) {
+    if (section.key === 'guardian' && minor === false) continue
+    if (section.key === 'ice' && minor === true) continue
+    if (type === 'PARTICIPANT' && ['certificates', 'certificateDetails'].includes(section.key)) continue
+    if (section.key === 'basic') {
+      section.fields = section.fields.filter(field => {
+        const key = field.path
+        if (key === 'guardian' && minor === false || key === 'ice' && minor === true) return false
+        if (type === 'PARTICIPANT' && ['role', 'subrole'].includes(key)) return false
+        if (!known.has(key)) { other.push(field); return false }
+        return true
+      })
+    } else if (!known.has(section.key) && section.key !== 'payload') {
+      other.push(...section.fields)
+      continue
+    }
+    if (section.key === 'health' && isPlainObject(payload?.health) && Object.keys(payload.health).length) {
+      section.questions = Object.entries(payload.health).map(([key, value]) => {
+        const question = isPlainObject(value) && typeof value.question === 'string' && value.question.trim()
+          ? value.question : /^q\d+$/.test(key) ? `Pytanie ${key.slice(1)}` : toLabel(['health', key], key)
+        const fields = flattenFields(value, ['health', key])
+          .filter(field => field.path !== `health.${key}.question` || typeof field.value !== 'string' || !field.value.trim())
+        if (!fields.length) fields.push({ path: `health.${key}.answer`, label: 'Odpowiedź', value: null })
+        return { key, question, fields }
+      })
+    }
+    if (section.fields.length) result.push(section)
+  }
+  if (other.length) result.push({ key: 'other', label: 'Pozostałe informacje', fields: other })
+  return result
+}
+
+function flattenFields(node, path = []) {
+  if (Array.isArray(node)) {
+    return [{
+      path: path.join('.'),
+      label: toLabel(path, path[path.length - 1] || 'value'),
+      value: node.length === 0 ? null : node,
+    }]
+  }
+
+  if (isPlainObject(node)) {
+    const entries = Object.entries(node)
+    if (entries.length === 0) {
+      return [{
+        path: path.join('.'),
+        label: toLabel(path, path[path.length - 1] || 'value'),
+        value: null,
+      }]
+    }
+    return entries.flatMap(([key, value]) => flattenFields(value, [...path, key]))
+  }
+
+  return [{
+    path: path.join('.'),
+    label: toLabel(path, path[path.length - 1] || 'value'),
+    value: node,
+  }]
+}
+
+function rawPayloadSections(payload) {
+  if (!isPlainObject(payload)) {
+    return [{
+      key: 'payload',
+      label: 'Dane zgłoszenia',
+      fields: [{
+        path: 'payload',
+        label: 'Dane',
+        value: payload,
+      }],
+    }]
+  }
+
+  const topLevel = Object.entries(payload)
+  const scalarFields = []
+  const sections = []
+
+  for (const [key, value] of topLevel) {
+    if (isPlainObject(value) || Array.isArray(value)) {
+      sections.push({
+        key,
+        label: SECTION_LABELS[key] || toLabel([key], key),
+        fields: flattenFields(value, [key]),
+      })
+    } else {
+      scalarFields.push({
+        path: key,
+        label: toLabel([key], key),
+        value,
+      })
+    }
+  }
+
+  if (scalarFields.length) {
+    sections.unshift({
+      key: 'basic',
+      label: 'Podstawowe informacje',
+      fields: scalarFields,
+    })
+  }
+
+  return sections
+}
+
+export function formatFieldValue(value,path = '') {
+  if (value === null || value === undefined || value === '') return 'Brak danych'
+  if (path === 'person.gender') {
+    return ({ male: 'Mężczyzna', female: 'Kobieta' })[value] || String(value)
+  }
+  if (['guardian.relation', 'ice.relation'].includes(path))
+    return ({ matka: 'Matka', ojciec: 'Ojciec', opiekun_prawny: 'Opiekun prawny', inna: 'Inna' })[value] || String(value)
+  if (/^health\.q\d+\.answer$/.test(path)) return ({ tak: 'Tak', nie: 'Nie' })[value] || String(value)
+  if (typeof value === 'boolean') return value ? 'Tak' : 'Nie'
+  if (Array.isArray(value)) {
+    if (value.every((entry) => ['string', 'number', 'boolean'].includes(typeof entry))) {
+      return value.join(', ')
+    }
+    return JSON.stringify(value)
+  }
+  if (typeof value === 'object') return JSON.stringify(value)
+  return String(value)
+}
+
