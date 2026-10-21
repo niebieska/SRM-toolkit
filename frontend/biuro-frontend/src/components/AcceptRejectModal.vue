@@ -22,12 +22,16 @@ const selectedReasons = ref([])
 const loading = ref(false)
 const errorMessage = ref('')
 
-const predefinedRejectionReasons = [
+const otherReason = 'Inny powód'
+const predefinedRejectionReasons = computed(() => [
   'Brak wolnych miejsc',
-  'Nie spełnia kryteriów wieku dla wybranego turnusu',
-  'Niekompletne dane w zgłoszeniu',
-  'Brak wymaganych zgód',
-]
+  'Niezgodność z wymaganiami turnusu',
+  'Rezygnacja zgłaszającego',
+  'Zgłoszenie omyłkowe',
+  ...(props.registration.registrationType === 'STAFF' ? ['Brak zapotrzebowania na wybraną rolę'] : []),
+  otherReason,
+])
+const hasOtherReason = computed(() => selectedReasons.value.includes(otherReason))
 
 const actionConfig = computed(() => {
   if (props.action === 'ACCEPT') {
@@ -52,13 +56,18 @@ const actionConfig = computed(() => {
 })
 
 const combinedRejectionReason = computed(() => {
-  return [...selectedReasons.value, rejectionReason.value.trim()]
+  return [...selectedReasons.value.filter(reason => reason !== otherReason),
+    hasOtherReason.value ? rejectionReason.value.trim() : '']
     .filter(Boolean)
     .join('; ')
 })
 
 async function confirm() {
   errorMessage.value = ''
+  if (props.action === 'REJECT' && hasOtherReason.value && !rejectionReason.value.trim()) {
+    errorMessage.value = 'Opisz inny powód odrzucenia'
+    return
+  }
   if (props.action === 'REJECT' && !combinedRejectionReason.value) {
     errorMessage.value = 'Powód odrzucenia jest wymagany'
     return
@@ -108,13 +117,17 @@ async function confirm() {
             <span>{{ reason }}</span>
           </label>
         </div>
-        <label class="block text-sm">Dodatkowy powód</label>
-        <textarea
-          v-model="rejectionReason"
-          rows="4"
-          class="w-full rounded border border-slate-300 px-3 py-2"
-          placeholder="Opcjonalny komentarz"
-        />
+        <div v-if="hasOtherReason" class="space-y-1">
+          <label for="rejection-other-reason" class="block text-sm">Inny powód *</label>
+          <textarea
+            id="rejection-other-reason"
+            v-model="rejectionReason"
+            rows="2"
+            class="w-full rounded border border-slate-300 px-3 py-2 text-sm"
+            placeholder="Krótko opisz powód"
+            required
+          />
+        </div>
       </div>
 
       <p class="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-700">
