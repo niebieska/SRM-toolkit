@@ -152,12 +152,12 @@ async function save() {
           <li aria-current="page" class="font-medium text-slate-800">{{ isNew ? 'Nowy turnus' : 'Szczegóły turnusu' }}</li>
         </ol>
       </nav>
-      <header class="flex flex-wrap items-start justify-between gap-3">
-        <div>
-          <h2 class="text-2xl font-semibold tracking-tight text-slate-900">{{ isNew ? 'Nowy turnus' : form.turnusName || 'Szczegóły turnusu' }}</h2>
-          <p class="mt-1 text-sm text-slate-600">{{ isNew ? 'Uzupełnij informacje i skonfiguruj nowy turnus.' : `${form.turnusCode || ''} · Edytuj informacje i ustawienia turnusu.` }}</p>
+      <header class="space-y-1">
+        <div class="flex flex-wrap items-center gap-2">
+          <h2 class="min-w-0 break-words text-xl font-semibold tracking-tight text-slate-900">{{ isNew ? 'Nowy turnus' : form.turnusName || 'Szczegóły turnusu' }}</h2>
+          <span v-if="loaded" class="shrink-0 rounded-full border px-2 py-0.5 text-xs font-medium" :class="form.active ? 'border-slate-400 bg-slate-200 text-slate-900' : 'border-slate-200 bg-white text-slate-600'">{{ status }}</span>
         </div>
-        <span v-if="loaded" class="rounded-full border px-3 py-1 text-xs font-medium" :class="form.active ? 'border-slate-400 bg-slate-200 text-slate-900' : 'border-slate-200 bg-white text-slate-600'">{{ status }}</span>
+        <p v-if="isNew" class="text-sm text-slate-600">Uzupełnij informacje i skonfiguruj nowy turnus.</p>
       </header>
       <nav v-if="!isNew && loaded" aria-label="Sekcje turnusu" class="flex gap-1 border-b border-slate-200 text-sm">
         <RouterLink :to="{ name: 'turnus-detail', params: { code: form.turnusCode } }" aria-current="page" class="border-b-2 border-slate-800 px-4 py-2 font-semibold text-slate-900">Szczegóły</RouterLink>
