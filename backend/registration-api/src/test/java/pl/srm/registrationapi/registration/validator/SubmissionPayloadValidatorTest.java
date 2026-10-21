@@ -24,7 +24,7 @@ class SubmissionPayloadValidatorTest {
 
     private ObjectNode payload(boolean isMinor) throws Exception {
         ObjectNode root = (ObjectNode) mapper.readTree("""
-                {"person":{"firstName":"Jan","lastName":"Testowy","gender":"male","isAdult":true,
+                {"person":{"firstName":"Jan","lastName":"Testowy","motherName":"Maria","fatherName":"Adam","birthSurname":"Rodowy","gender":"male","isAdult":true,
                   "contact":{"email":"test@example.org","phone":"+48123456789"}},
                  "guardian":{"firstName":"Anna","lastName":"Testowa","relation":"matka","names":"Anna Testowa",
                   "contact":{"email":"guardian@example.org","phone":"+48987654321"}},
@@ -117,5 +117,23 @@ class SubmissionPayloadValidatorTest {
 
     private void rejects(ObjectNode root, RegistrationContext context, RegistrationType type) {
         assertThrows(RegistrationException.class, () -> validator.validate(root.toString(), context, type, summer));
+    }
+
+    @ParameterizedTest @ValueSource(strings = {"motherName", "fatherName", "birthSurname"})
+    void requiresStaffFamilyFieldsForAdultsAndMinorsOnly(String field) throws Exception {
+        for (boolean isMinor : new boolean[]{false, true}) {
+            var root = payload(isMinor);
+            var person = (ObjectNode) root.path("person");
+            person.remove(field);
+            var context = isMinor ? minor : adult;
+            rejects(root, context, RegistrationType.STAFF);
+            assertDoesNotThrow(() -> validator.validate(root.toString(), context, RegistrationType.PARTICIPANT, summer));
+            person.put(field, "   ");
+            rejects(root, context, RegistrationType.STAFF);
+            person.put(field, 123);
+            rejects(root, context, RegistrationType.STAFF);
+            person.put(field, "a".repeat(field.equals("birthSurname") ? 151 : 101));
+            rejects(root, context, RegistrationType.STAFF);
+        }
     }
 }

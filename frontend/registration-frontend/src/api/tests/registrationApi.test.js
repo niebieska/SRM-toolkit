@@ -4,6 +4,18 @@ import { buildParticipantPayload, buildStaffPayload, submitParticipantRegistrati
 
 const form = () => ({ isAdult: true, iceRelation: 'inna', iceRelationOther: 'Przyjaciel', health: {} })
 
+test('staff family fields are trimmed and a different birth surname is used only when selected', () => {
+  const data = { ...form(), motherName: ' Maria ', fatherName: ' Adam ', lastName: ' Nowak ', birthSurname: ' Kowalska ', birthSurnameDifferent: true }
+  assert.equal(buildStaffPayload(data).person.birthSurname, 'Kowalska')
+  const same = buildStaffPayload({ ...data, birthSurnameDifferent: false }).person
+  assert.equal(same.birthSurname, 'Nowak')
+  assert.equal(same.motherName, 'Maria')
+  assert.equal(same.fatherName, 'Adam')
+  assert.equal(buildStaffPayload({ ...data, isAdult: false }).person.birthSurname, 'Kowalska')
+  assert.equal(buildParticipantPayload(data).person.motherName, undefined)
+  assert.equal(buildParticipantPayload(data).person.birthSurname, undefined)
+})
+
 test('both payloads preserve other ICE relationship and omit guardian for adults', () => {
   for (const build of [buildParticipantPayload, buildStaffPayload]) {
     const payload = build(form())
