@@ -267,8 +267,8 @@ export function formatFieldValue(value,path = '') {
   }
   if (['guardian.relation', 'ice.relation'].includes(path))
     return ({ matka: 'Matka', ojciec: 'Ojciec', opiekun_prawny: 'Opiekun prawny', inna: 'Inna' })[value] || String(value)
-  if (/^health\.q\d+\.answer$/.test(path)) return ({ tak: 'Tak', nie: 'Nie' })[value] || String(value)
   if (typeof value === 'boolean') return value ? 'Tak' : 'Nie'
+  if (/^health\.q\d+\.answer$/.test(path)) return ({ tak: 'Tak', nie: 'Nie' })[value] || String(value)
   if (Array.isArray(value)) {
     if (value.every((entry) => ['string', 'number', 'boolean'].includes(typeof entry))) {
       return value.join(', ')
