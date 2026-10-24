@@ -22,8 +22,9 @@ Current status/update time and notification logs are not persisted status histor
   it through the trusted service connection; never trust a browser-supplied actor.
   Proxy history reads with existing registration-detail permissions. No additional
   VIEWER access is granted by this task.
-- **biuro-frontend:** add the section to existing registration details, with
-  Polish labels and loading, empty and error states.
+- **biuro-frontend:** add a separate **Historia statusów** section at the end of
+  the existing registration details modal, after the registration data sections.
+  Include Polish labels and loading, empty and error states.
 - **Tests:** account attribution, ordering, rejection reasons, atomic rollback
   when history persistence fails, access control and UI states.
 

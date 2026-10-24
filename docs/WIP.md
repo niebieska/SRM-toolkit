@@ -1,5 +1,28 @@
 # Work in progress
 
+## 2026-10-24 — Status history placement
+
+- Agreed to show **Historia statusów** as a separate final section at the end of
+  the registration details modal, after the submitted registration data. This
+  clarifies placement only; the required history fields and MVP status are
+  unchanged. Implementation remains pending.
+
+## 2026-10-21 — Registration details UI branch
+
+- Started `feature/registration-details-ui` from development, separate from the
+  parked staff family-field branch. Layout experiments were withdrawn; the agreed
+  first step retains the original modal shell/header/actions and applies data variants.
+- Guardian for saved minors, ICE for saved adults, role/qualifications for staff.
+  Health questions are grouped with saved answers/explanations; unknown sections
+  retain a Pozostałe informacje fallback. No API/database/permission changes or
+  status-history implementation. Current age does not change saved classification.
+- Presentation regressions and manual acceptance scope are documented in
+  [Registration details UI](Registration-details-ui.md). Broader layout, native
+  dialog and request-lifecycle changes are not included in this first step.
+- Compacted the registration summary: name/type/status, code, Turnus/date alongside
+  with a small right inset and rejection reason below. All 19 Biuro frontend test
+  files and production build passed before committing; whitespace checks passed.
+
 ## 2026-10-21 — Full-hour catalogue refresh deferred
 
 - Added full-hour Turnus cache refresh to the later-work backlog. Intended schedule

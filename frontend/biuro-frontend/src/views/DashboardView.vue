@@ -20,6 +20,7 @@ const filters = reactive({
 })
 
 const turnusOptions = ref([])
+const activeTurnusOptions = computed(() => turnusOptions.value.filter(turnus => turnus.active === true))
 const catalogueError = ref('')
 const statsError = ref('')
 const statsLoading = ref(false)
@@ -93,7 +94,7 @@ watch(
         <select aria-label="Turnus" v-model="filters.turnusCode" class="min-w-0 rounded border border-slate-300 px-3 py-2">
           <option value="">Wszystkie turnusy</option>
           <option
-              v-for="turnus in turnusOptions"
+              v-for="turnus in activeTurnusOptions"
               :key="turnus.turnusCode"
               :value="turnus.turnusCode"
           >

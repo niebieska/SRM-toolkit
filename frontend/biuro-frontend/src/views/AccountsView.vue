@@ -146,11 +146,11 @@ onBeforeUnmount(() => { historySequence++; decide(false); window.removeEventList
             <label v-if="!isNew" class="flex items-center gap-2 text-sm"><input v-model="form.active" type="checkbox" />Konto aktywne</label>
             <fieldset class="space-y-2 rounded border p-3"><legend class="px-1 text-sm font-semibold">Role</legend>
               <label v-for="(label, role) in roleLabels" :key="role" class="flex items-center gap-2 text-sm"><input v-model="form.roles" :value="role" type="checkbox" />{{ label }}</label>
-              <p class="text-xs text-slate-600">Administrator zarządza kontami. Operator ma pełny dostęp do obsługi turnusów i zgłoszeń. Operator-Podgląd list obejmuje przypisane turnusy.</p>
+              <p class="text-xs text-slate-600">Administrator zarządza kontami. Operator ma pełny dostęp do obsługi turnusów i zgłoszeń. Obserwator ma dostęp do przypisanych turnusów i list.</p>
             </fieldset>
             <fieldset class="space-y-2 rounded border p-3"><legend class="px-1 text-sm font-semibold">Przypisane turnusy</legend>
               <p v-if="form.roles.includes('OPERATOR')" class="text-xs text-slate-600">Operator widzi wszystkie turnusy niezależnie od przypisań.</p>
-              <p v-else-if="!form.roles.includes('VIEWER')" class="text-xs text-slate-600">Przypisania dają dostęp wyłącznie z rolą Operator-Podgląd list.</p>
+              <p v-else-if="!form.roles.includes('VIEWER')" class="text-xs text-slate-600">Przypisania dają dostęp wyłącznie z rolą Obserwator – Podgląd list.</p>
               <div class="max-h-48 space-y-2 overflow-auto"><label v-for="turnus in turnuses" :key="turnus.turnusCode" class="flex items-start gap-2 text-sm"><input v-model="form.turnusCodes" :value="turnus.turnusCode" type="checkbox" class="mt-1" /><span>{{ turnus.turnusName }} <span class="text-xs text-slate-500">({{ turnus.turnusCode }})</span></span></label></div>
               <p v-if="!turnuses.length" class="text-sm text-slate-600">Brak zdefiniowanych turnusów.</p>
             </fieldset>

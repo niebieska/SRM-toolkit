@@ -23,6 +23,12 @@ test('minor payload uses guardian and omits ICE', () => {
   }
 })
 
+test('staff payload omits details for qualifications that were not selected', () => {
+  const payload = buildStaffPayload({ ...form(), certificates: { inne: true, kpp: false },
+    certificateDetails: { inne: 'Pomocnik instruktora', kpp: 'Stara informacja', removed: 'Nie wybrano' } })
+  assert.deepEqual(payload.certificateDetails, { inne: 'Pomocnik instruktora' })
+})
+
 test('both submission paths retain backend code, message and status', async (t) => {
   const original = globalThis.fetch
   t.after(() => { globalThis.fetch = original })

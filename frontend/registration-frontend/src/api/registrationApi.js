@@ -97,6 +97,14 @@ function buildConsentsBlock(f) {
     }
 }
 
+function buildSelectedCertificateDetails(f) {
+    const selected = new Set(Object.entries(f.certificates || {})
+        .filter(([, isSelected]) => isSelected === true)
+        .map(([id]) => id))
+    return Object.fromEntries(Object.entries(f.certificateDetails || {})
+        .filter(([id]) => selected.has(id)))
+}
+
 export function buildParticipantPayload(f) {
     return {
         turnusCode: f.turnusCode,
@@ -136,7 +144,7 @@ export function buildStaffPayload(f) {
         role: f.role,
         subrole: f.subrole,
         certificates: f.certificates,
-        certificateDetails: f.certificateDetails,
+        certificateDetails: buildSelectedCertificateDetails(f),
         health: buildStaffHealthBlock(f),
         consents: buildConsentsBlock(f),
     }
