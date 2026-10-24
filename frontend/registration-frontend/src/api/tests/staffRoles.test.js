@@ -40,8 +40,27 @@ test('Winter instructor requires one discipline and priest permits at most one f
 test('changing season invalidates unavailable roles/functions and certificates follow the new catalogue', () => {
   assert.ok(selectionError(winter, 'sternik', '', true))
   assert.ok(selectionError(winter, 'animator', 'animator_wychowawca', true))
-  assert.deepEqual(certificatesFor(winter, 'instruktor', 'narty').map(c => c.id), ['inne'])
+  assert.deepEqual(certificatesFor(winter, 'instruktor', 'narty').map(c => c.id), [
+    'wychowawca_wypoczynku', 'kpp', 'prawo_jazdy_b', 'instruktor_narciarstwa', 'inne',
+  ])
   const changed = structuredClone(winter)
-  changed.certificatesByRole.instruktor.push({id:'narty_test',label:'Added in configuration',hasDetails:false})
-  assert.equal(certificatesFor(changed, 'instruktor', 'narty').length, 2)
+  changed.certificatesByRole.instruktor_narty.push({id:'narty_test',label:'Added in configuration',hasDetails:false})
+  assert.equal(certificatesFor(changed, 'instruktor', 'narty').length, 6)
+})
+
+test('Winter offers role-appropriate Summer certificates and one discipline certificate', () => {
+  const ids = (role, subrole = '') => certificatesFor(winter, role, subrole).map(certificate => certificate.id)
+
+  assert.deepEqual(ids('kucharka'), ['ksiazeczka_sanepid', 'inne'])
+  assert.deepEqual(ids('kierowca'), ['prawo_jazdy_b', 'inne'])
+  assert.deepEqual(ids('animator'), ['wychowawca_wypoczynku', 'kpp', 'prawo_jazdy_b', 'inne'])
+  assert.deepEqual(ids('animator', 'kandydat_na_animatora'), ['kurs_wychowawcy_w_trakcie', 'inne'])
+  assert.deepEqual(ids('ksiadz', 'prowadzacy'), ['kierownik_wypoczynku', 'inne'])
+
+  assert.ok(ids('instruktor', 'narty').includes('instruktor_narciarstwa'))
+  assert.ok(!ids('instruktor', 'narty').includes('instruktor_snowboardu'))
+  assert.ok(ids('instruktor', 'snowboard').includes('instruktor_snowboardu'))
+  assert.ok(!ids('instruktor', 'snowboard').includes('instruktor_narciarstwa'))
+  assert.ok(ids('ksiadz', 'instruktor_narty').includes('instruktor_narciarstwa'))
+  assert.ok(ids('ksiadz', 'instruktor_snowboard').includes('instruktor_snowboardu'))
 })

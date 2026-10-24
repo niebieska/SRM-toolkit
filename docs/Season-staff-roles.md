@@ -18,9 +18,12 @@ Winter:
 | Instruktor | Narty or Snowboard; exactly one required | Adult |
 
 Certificates are optional declarations. Selecting an option with `hasDetails=true`
-requires a description. Winter initially offers only `inne` / Inne uprawnienia;
-precise instructor and other certificate options can be added to the file later.
-Missing qualifications do not automatically block submission or acceptance.
+requires a description. Winter reuses the relevant Summer options for Animator,
+candidate Animator, Ksiądz/Prowadzący, Kucharka and Kierowca. Ski and snowboard
+instructor functions have separate optional declarations: `instruktor_narciarstwa`
+and `instruktor_snowboardu`; a priest selecting either instructor function sees
+the matching discipline option too. These are declarations only: missing
+qualifications do not block submission or acceptance.
 
 For later staffing statistics: Ksiądz + Prowadzący counts separately as Ksiądz
 prowadzący. All other priest functions count as Ksiądz, including instructor

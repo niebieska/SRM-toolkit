@@ -1,5 +1,13 @@
 # Work in progress
 
+## 2026-10-25 — Winter certificate options
+
+- Expanded the file-based Winter certificate catalogue with the relevant Summer
+  options for Animator/candidate, Ksiądz/Prowadzący, Kucharka and Kierowca.
+  Added separate optional ski and snowboard instructor declarations for both
+  instructor roles and Ksiądz instructor functions. Missing certificates remain
+  non-blocking; selecting Inne still requires a description.
+
 ## 2026-10-24 — Status history placement
 
 - Agreed to show **Historia statusów** as a separate final section at the end of

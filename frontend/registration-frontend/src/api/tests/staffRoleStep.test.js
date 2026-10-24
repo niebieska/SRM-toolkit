@@ -64,7 +64,7 @@ test('Back and remount preserve selected Summer certificates and descriptions', 
 
 test('Turnus change preserves personal data and removes unavailable certificate selections', async t => {
   const { vm, events, update } = await mount(t, { turnusCode: 'SUMMER', firstName: 'Anna',
-    role: 'ksiadz', subrole: 'pomoc', certificates: { kpp: true }, certificateDetails: {} })
+    role: 'animator', subrole: 'animator', certificates: { patent_zeglarski: true }, certificateDetails: {} })
   await update({ formData: { turnusCode: 'WINTER' } })
   vm.goNext()
   const saved = events.find(event => event[0] === 'data')[1]
