@@ -1,5 +1,12 @@
 # Work in progress
 
+## 2026-10-24 — Status history placement
+
+- Agreed to show **Historia statusów** as a separate final section at the end of
+  the registration details modal, after the submitted registration data. This
+  clarifies placement only; the required history fields and MVP status are
+  unchanged. Implementation remains pending.
+
 ## 2026-10-21 — Registration details UI branch
 
 - Started `feature/registration-details-ui` from development, separate from the
