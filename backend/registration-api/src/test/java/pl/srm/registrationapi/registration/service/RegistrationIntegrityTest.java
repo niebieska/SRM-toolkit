@@ -7,6 +7,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
+import org.springframework.test.context.bean.override.mockito.MockitoSpyBean;
 import pl.srm.registrationapi.registration.dto.request.StatusUpdateRequest;
 import pl.srm.registrationapi.registration.exception.RegistrationException;
 import pl.srm.registrationapi.registration.parser.RegistrationContext;
@@ -25,6 +26,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
@@ -46,6 +48,7 @@ class RegistrationIntegrityTest {
     @Autowired JdbcTemplate jdbc;
     @Autowired RegistrationManagementService managementService;
     @MockitoBean StatusNotificationService notificationService;
+    @MockitoSpyBean pl.srm.registrationapi.registration.repository.RegistrationStatusHistoryRepository historyRepository;
 
     @BeforeEach
     void clearFixtures() {
@@ -213,6 +216,39 @@ class RegistrationIntegrityTest {
         assertEquals(jdbc.queryForObject(
                 "SELECT status FROM registration WHERE id = ?", String.class, registrationId),
                 history.get(1).get("new_status"));
+    }
+
+    @Test
+    void registrationDetailsReadCurrentStatusAndHistoryFromOneSnapshot() throws Exception {
+        String code = service.saveParticipant(context("DETAIL-SNAPSHOT", "person"), "{}");
+        var historyQueryStarted = new CountDownLatch(1);
+        var allowHistoryQuery = new CountDownLatch(1);
+        AtomicBoolean timedOut = new AtomicBoolean(false);
+        doAnswer(invocation -> {
+            historyQueryStarted.countDown();
+            if (!allowHistoryQuery.await(10, TimeUnit.SECONDS)) timedOut.set(true);
+            return invocation.callRealMethod();
+        }).when(historyRepository).findByRegistrationIdOrderByChangedAtDescIdDesc(any());
+
+        try (var executor = Executors.newSingleThreadExecutor()) {
+            Future<pl.srm.registrationapi.registration.dto.response.RegistrationDetailResponse> detailFuture =
+                    executor.submit(() -> managementService.getDetailByCode(code));
+            assertTrue(historyQueryStarted.await(10, TimeUnit.SECONDS));
+            managementService.updateStatus(code,
+                    new StatusUpdateRequest("ACCEPTED", null, "account-id", "operator"));
+            allowHistoryQuery.countDown();
+
+            var detail = detailFuture.get(10, TimeUnit.SECONDS);
+            assertFalse(timedOut.get());
+            assertEquals("NEW", detail.status());
+            assertTrue(detail.statusHistory().isEmpty());
+        } finally {
+            allowHistoryQuery.countDown();
+        }
+
+        var latestDetail = managementService.getDetailByCode(code);
+        assertEquals("ACCEPTED", latestDetail.status());
+        assertEquals(1, latestDetail.statusHistory().size());
     }
 
     @Test

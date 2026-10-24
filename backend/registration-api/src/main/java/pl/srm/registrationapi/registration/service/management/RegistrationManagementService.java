@@ -3,6 +3,8 @@ package pl.srm.registrationapi.registration.service.management;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Isolation;
+import org.springframework.transaction.annotation.Transactional;
 import pl.srm.registrationapi.registration.dto.response.RegistrationDetailResponse;
 import pl.srm.registrationapi.registration.dto.response.RegistrationStatusHistoryEntryResponse;
 import pl.srm.registrationapi.registration.dto.response.RegistrationSummaryResponse;
@@ -49,6 +51,7 @@ public class RegistrationManagementService {
         return toSummary(findByCode(code));
     }
 
+    @Transactional(readOnly = true, isolation = Isolation.REPEATABLE_READ)
     public RegistrationDetailResponse getDetailByCode(String code) {
         Registration registration = findByCode(code);
         RegistrationSummaryResponse summary = toSummary(registration);
