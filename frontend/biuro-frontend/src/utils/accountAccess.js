@@ -1,4 +1,4 @@
-export const roleLabels = { SYS_ADMIN: 'Administrator systemu', OPERATOR: 'Operator', VIEWER: 'Operator-Podgląd list' }
+export const roleLabels = { SYS_ADMIN: 'Administrator systemu', OPERATOR: 'Operator', VIEWER: 'Obserwator – Podgląd list' }
 export function hasRole(user, role) { return !user?.passwordChangeRequired && user?.roles?.includes(role) === true }
 export function homeFor(user) {
   if (user?.passwordChangeRequired) return '/haslo'
