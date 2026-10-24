@@ -2,6 +2,7 @@ package pl.srm.registrationapi.common.exception;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import pl.srm.registrationapi.common.dto.ApiError;
@@ -28,6 +29,11 @@ public class GlobalExceptionHandler {
             org.springframework.web.bind.MissingServletRequestParameterException.class})
     public ResponseEntity<ApiError> handleInvalidParameter(Exception ex) {
         return ResponseEntity.badRequest().body(new ApiError("INVALID_REQUEST", "Nieprawidłowy parametr żądania."));
+    }
+
+    @ExceptionHandler(MethodArgumentNotValidException.class)
+    public ResponseEntity<ApiError> handleValidation(MethodArgumentNotValidException ex) {
+        return ResponseEntity.badRequest().body(new ApiError("INVALID_REQUEST", "Nieprawidłowe dane żądania."));
     }
 
     @ExceptionHandler(Exception.class)

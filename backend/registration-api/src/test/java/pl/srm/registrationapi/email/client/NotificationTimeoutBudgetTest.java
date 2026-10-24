@@ -63,7 +63,7 @@ class NotificationTimeoutBudgetTest {
         var repository = mock(RegistrationRepository.class);
         var saved = new Registration("REG-P-T1-1", "PARTICIPANT", "T1", "hash", false, "NEW", null,
                 "{\"person\":{\"contact\":{\"email\":\"recipient@example.test\"}}}", LocalDateTime.now(), null);
-        when(repository.findByRegistrationCode(saved.getRegistrationCode())).thenReturn(Optional.of(saved));
+        when(repository.findByRegistrationCodeForUpdate(saved.getRegistrationCode())).thenReturn(Optional.of(saved));
         when(repository.save(saved)).thenReturn(saved);
         email.createContext("/api/email/send", exchange -> {
             try { release.await(10, TimeUnit.SECONDS); }

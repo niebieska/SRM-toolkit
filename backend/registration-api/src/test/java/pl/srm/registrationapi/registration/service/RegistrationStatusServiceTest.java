@@ -32,7 +32,7 @@ class RegistrationStatusServiceTest {
     @Test
     void acceptsWaitlistStatusAndClearsRejectionReason() {
         Registration registration = registration("REJECTED", "Brak miejsc");
-        when(repository.findByRegistrationCode("REG-P-ZAGLE26T1-1")).thenReturn(Optional.of(registration));
+        when(repository.findByRegistrationCodeForUpdate("REG-P-ZAGLE26T1-1")).thenReturn(Optional.of(registration));
         when(repository.save(registration)).thenReturn(registration);
 
         Registration saved = service.updateStatus(
@@ -55,7 +55,7 @@ class RegistrationStatusServiceTest {
     @Test
     void keepsTrimmedRejectionReasonForRejectedStatus() {
         Registration registration = registration("NEW", null);
-        when(repository.findByRegistrationCode("REG-P-ZAGLE26T1-1")).thenReturn(Optional.of(registration));
+        when(repository.findByRegistrationCodeForUpdate("REG-P-ZAGLE26T1-1")).thenReturn(Optional.of(registration));
         when(repository.save(registration)).thenReturn(registration);
 
         Registration saved = service.updateStatus(
@@ -74,7 +74,7 @@ class RegistrationStatusServiceTest {
     @Test
     void doesNotAddHistoryWhenTheStatusIsUnchanged() {
         Registration registration = registration("ACCEPTED", null);
-        when(repository.findByRegistrationCode("REG-P-ZAGLE26T1-1")).thenReturn(Optional.of(registration));
+        when(repository.findByRegistrationCodeForUpdate("REG-P-ZAGLE26T1-1")).thenReturn(Optional.of(registration));
         when(repository.save(registration)).thenReturn(registration);
 
         service.updateStatus("REG-P-ZAGLE26T1-1", request("ACCEPTED", null));
@@ -85,7 +85,7 @@ class RegistrationStatusServiceTest {
     @Test
     void rejectsUnsupportedStatusWithoutSavingOrNotifying() {
         Registration registration = registration("NEW", null);
-        when(repository.findByRegistrationCode("REG-P-ZAGLE26T1-1")).thenReturn(Optional.of(registration));
+        when(repository.findByRegistrationCodeForUpdate("REG-P-ZAGLE26T1-1")).thenReturn(Optional.of(registration));
 
         RegistrationException exception = assertThrows(
                 RegistrationException.class,
@@ -93,7 +93,7 @@ class RegistrationStatusServiceTest {
         );
 
         assertEquals("INVALID_STATUS", exception.getCode());
-        verify(repository).findByRegistrationCode("REG-P-ZAGLE26T1-1");
+        verify(repository).findByRegistrationCodeForUpdate("REG-P-ZAGLE26T1-1");
         verify(repository, never()).save(any());
         verifyNoInteractions(historyRepository);
     }

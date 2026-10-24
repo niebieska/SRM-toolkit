@@ -35,7 +35,7 @@ public class RegistrationStatusService {
 
     @Transactional
     public Registration updateStatus(String code, StatusUpdateRequest request) {
-        Registration registration = repository.findByRegistrationCode(code)
+        Registration registration = repository.findByRegistrationCodeForUpdate(code)
                 .orElseThrow(() -> new RegistrationException(
                         "REGISTRATION_NOT_FOUND",
                         "Nie znaleziono zgłoszenia o podanym kodzie."

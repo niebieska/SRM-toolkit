@@ -161,6 +161,24 @@ class ManagementSecurityConfigTest {
         mvc.perform(get("/api/registrations")).andExpect(status().isUnauthorized());
     }
 
+    @ParameterizedTest
+    @MethodSource("invalidStatusUpdateRequests")
+    void returnsBadRequestForInvalidStatusUpdateActor(String body) throws Exception {
+        mvc.perform(patch("/api/registrations/ABC/status").header(HttpHeaders.AUTHORIZATION, credentials)
+                        .contentType(MediaType.APPLICATION_JSON).content(body))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("INVALID_REQUEST"));
+        verifyNoInteractions(management);
+    }
+
+    static Stream<String> invalidStatusUpdateRequests() {
+        return Stream.of(
+                "{\"status\":\"ACCEPTED\",\"actorAccountId\":\"\",\"actorUsername\":\"operator\"}",
+                "{\"status\":\"ACCEPTED\",\"actorAccountId\":\"account-id\",\"actorUsername\":\" \"}",
+                "{\"status\":\"ACCEPTED\",\"actorAccountId\":\"account-id\",\"actorUsername\":\"" + "x".repeat(65) + "\"}"
+        );
+    }
+
     @Test
     void keepsSubmissionsAndBothTurnusAliasesPublic() throws Exception {
         for (String type : List.of("participant", "staff")) {

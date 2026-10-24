@@ -137,7 +137,7 @@ class EmailServiceClientTest {
         RegistrationRepository repository = mock(RegistrationRepository.class);
         Registration registration = new Registration("REG-P-T1-1", "PARTICIPANT", "T1", "hash", false, "NEW", null,
                 "{\"person\":{\"firstName\":\"Synthetic\",\"contact\":{\"email\":\"recipient@example.test\"}}}", LocalDateTime.now(), null);
-        when(repository.findByRegistrationCode("REG-P-T1-1")).thenReturn(Optional.of(registration));
+        when(repository.findByRegistrationCodeForUpdate("REG-P-T1-1")).thenReturn(Optional.of(registration));
         when(repository.save(registration)).thenReturn(registration);
         var notifications = new StatusNotificationService(client(Duration.ofSeconds(1)), new ObjectMapper());
         var historyRepository = mock(RegistrationStatusHistoryRepository.class);
