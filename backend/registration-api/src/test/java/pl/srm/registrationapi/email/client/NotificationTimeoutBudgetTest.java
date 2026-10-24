@@ -14,6 +14,7 @@ import pl.srm.registrationapi.common.config.RestClientConfig;
 import pl.srm.registrationapi.registration.dto.request.StatusUpdateRequest;
 import pl.srm.registrationapi.registration.model.Registration;
 import pl.srm.registrationapi.registration.repository.RegistrationRepository;
+import pl.srm.registrationapi.registration.repository.RegistrationStatusHistoryRepository;
 import pl.srm.registrationapi.registration.service.management.RegistrationStatusService;
 import pl.srm.registrationapi.registration.service.management.StatusNotificationService;
 import java.io.IOException;
@@ -77,11 +78,11 @@ class NotificationTimeoutBudgetTest {
                 var read = Duration.parse(context.getEnvironment().getProperty("email.service.read-timeout")).dividedBy(10);
                 var inner = new EmailServiceClient(RestClient.builder(), "http://127.0.0.1:" + email.getAddress().getPort(), connect, read);
                 var notifications = new StatusNotificationService(inner, new ObjectMapper());
-                var service = new RegistrationStatusService(repository, notifications);
+                var service = new RegistrationStatusService(repository, mock(RegistrationStatusHistoryRepository.class), notifications);
                 registration.createContext("/status", exchange -> {
                     try {
                         exchange.getRequestBody().readAllBytes();
-                        service.updateStatus(saved.getRegistrationCode(), new StatusUpdateRequest("ACCEPTED", null));
+                        service.updateStatus(saved.getRegistrationCode(), new StatusUpdateRequest("ACCEPTED", null, "actor-id", "operator"));
                         byte[] body = "{\"status\":\"ACCEPTED\"}".getBytes(StandardCharsets.UTF_8);
                         exchange.getResponseHeaders().add("Content-Type", "application/json");
                         exchange.sendResponseHeaders(200, body.length);

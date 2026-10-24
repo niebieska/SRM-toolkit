@@ -149,7 +149,8 @@ class ManagementSecurityConfigTest {
                     .andExpect(status().isOk()).andExpect(cookie().doesNotExist("JSESSIONID"));
         }
         mvc.perform(patch("/api/registrations/ABC/status").header(HttpHeaders.AUTHORIZATION, credentials)
-                .contentType(MediaType.APPLICATION_JSON).content("{\"status\":\"WAITLIST\"}"))
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("{\"status\":\"WAITLIST\",\"actorAccountId\":\"actor-id\",\"actorUsername\":\"operator\"}"))
                 .andExpect(status().isOk());
         verify(management).getAll();
         verify(management).getDetailByCode("ABC");

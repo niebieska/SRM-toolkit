@@ -27,6 +27,7 @@ import org.springframework.web.client.RestClient;
 import pl.srm.registrationapi.registration.dto.request.StatusUpdateRequest;
 import pl.srm.registrationapi.registration.model.Registration;
 import pl.srm.registrationapi.registration.repository.RegistrationRepository;
+import pl.srm.registrationapi.registration.repository.RegistrationStatusHistoryRepository;
 import pl.srm.registrationapi.registration.service.management.RegistrationStatusService;
 import pl.srm.registrationapi.registration.service.management.StatusNotificationService;
 import java.net.InetSocketAddress;
@@ -137,8 +138,8 @@ class EmailServiceClientTest {
         when(repository.findByRegistrationCode("REG-P-T1-1")).thenReturn(Optional.of(registration));
         when(repository.save(registration)).thenReturn(registration);
         var notifications = new StatusNotificationService(client(Duration.ofSeconds(1)), new ObjectMapper());
-        var service = new RegistrationStatusService(repository, notifications);
-        assertEquals("ACCEPTED", service.updateStatus("REG-P-T1-1", new StatusUpdateRequest("ACCEPTED", null)).getStatus());
+        var service = new RegistrationStatusService(repository, mock(RegistrationStatusHistoryRepository.class), notifications);
+        assertEquals("ACCEPTED", service.updateStatus("REG-P-T1-1", new StatusUpdateRequest("ACCEPTED", null, "actor-id", "operator")).getStatus());
         verify(repository).save(registration); assertEquals(1, calls.get());
         assertTrue(messages().contains("UNCONFIRMED"));
     }

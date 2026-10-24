@@ -4,12 +4,14 @@ import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.stereotype.Service;
 import pl.srm.registrationapi.registration.dto.response.RegistrationDetailResponse;
+import pl.srm.registrationapi.registration.dto.response.RegistrationStatusHistoryEntryResponse;
 import pl.srm.registrationapi.registration.dto.response.RegistrationSummaryResponse;
 import pl.srm.registrationapi.registration.dto.request.StatusUpdateRequest;
 import pl.srm.registrationapi.registration.model.Registration;
 import pl.srm.registrationapi.registration.exception.RegistrationException;
 import pl.srm.registrationapi.registration.model.RegistrationType;
 import pl.srm.registrationapi.registration.repository.RegistrationRepository;
+import pl.srm.registrationapi.registration.repository.RegistrationStatusHistoryRepository;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -24,14 +26,17 @@ public class RegistrationManagementService {
     private static final Set<String> ALLOWED_STATUSES = Set.of("ACCEPTED", "REJECTED");
 
     private final RegistrationRepository repository;
+    private final RegistrationStatusHistoryRepository historyRepository;
     private final ObjectMapper objectMapper;
     private final PeselHelper peselHelper;
     private final RegistrationStatusService  statusService;
 
     public RegistrationManagementService(RegistrationRepository repository,
+                                         RegistrationStatusHistoryRepository historyRepository,
                                          ObjectMapper objectMapper,
                                          PeselHelper peselHelper, RegistrationStatusService statusService) {
         this.repository = repository;
+        this.historyRepository = historyRepository;
         this.objectMapper = objectMapper;
         this.peselHelper = peselHelper;
         this.statusService = statusService;
@@ -55,7 +60,13 @@ public class RegistrationManagementService {
                 summary.firstName(),
                 summary.lastName(),
                 summary.age(),
-                registration.getPayload()
+                registration.getPayload(),
+                historyRepository.findByRegistrationIdOrderByChangedAtDescIdDesc(registration.getId()).stream()
+                        .map(entry -> new RegistrationStatusHistoryEntryResponse(
+                                entry.getId(), entry.getPreviousStatus(), entry.getNewStatus(),
+                                entry.getChangedAt(), entry.getActorUsername(), entry.getRejectionReason()
+                        ))
+                        .toList()
         );
     }
 

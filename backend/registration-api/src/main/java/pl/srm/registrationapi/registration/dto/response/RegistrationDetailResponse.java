@@ -3,6 +3,7 @@ package pl.srm.registrationapi.registration.dto.response;
 import com.fasterxml.jackson.annotation.JsonRawValue;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 public record RegistrationDetailResponse(
         String registrationCode,
@@ -15,6 +16,7 @@ public record RegistrationDetailResponse(
         String firstName,
         String lastName,
         Integer age,
-        @JsonRawValue String payload
+        @JsonRawValue String payload,
+        List<RegistrationStatusHistoryEntryResponse> statusHistory
 ) {
 }
