@@ -42,6 +42,18 @@ test('health questions stay with answers, details and unknown saved fields', () 
   assert.equal(questions[1].fields[0].value, 'Późny przyjazd')
 })
 
+test('parent and guardian names are shown last in guardian details', () => {
+  const data = registration('PARTICIPANT', true)
+  data.payload.guardian = {
+    names: 'Maria i Jan Kowalscy',
+    contact: { phone: '123456789', email: 'rodzic@example.test' },
+    firstName: 'Maria',
+    lastName: 'Kowalska',
+  }
+  const guardian = registrationSections(data).find(section => section.key === 'guardian')
+  assert.equal(guardian.fields.at(-1).path, 'guardian.names')
+})
+
 test('older missing fields and unfamiliar sections remain readable without fabricating values', () => {
   const data = { payload: { person: { firstName: 'Anna' }, guardian: null, ice: null,
     extra: 'saved', customSection: { nested: { value: 0 }, entries: [{ flag: false }] } } }

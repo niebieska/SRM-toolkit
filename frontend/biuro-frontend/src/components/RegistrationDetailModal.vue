@@ -47,17 +47,37 @@ function addressValue(fields, paths) {
   return parts.join(' ') || 'Brak danych'
 }
 
-function hasAddressValue(fields, prefix) {
-  return fields.some(field => field.path.startsWith(prefix)
-    && field.value !== null && field.value !== undefined && String(field.value).trim() !== '')
-}
-
 function addressFieldsToKeep(fields) {
   const addressPaths = new Set([
     'address.street', 'address.houseNumber', 'address.postalCode', 'address.city',
     'address.sameAddress', 'address.guardianAddress',
     'address.guardianAddress.street', 'address.guardianAddress.houseNumber',
     'address.guardianAddress.postalCode', 'address.guardianAddress.city',
+  ])
+  return fields.filter(field => !addressPaths.has(field.path)
+    && !field.path.startsWith('address.guardianAddress.'))
+}
+
+function guardianAddressFields(fields) {
+  const labels = {
+    'guardianAddress.street': 'Ulica',
+    'guardianAddress.houseNumber': 'Nr domu',
+    'guardianAddress.postalCode': 'Kod pocztowy',
+    'guardianAddress.city': 'Miasto',
+  }
+  return fields
+    .filter(field => field.path === 'address.guardianAddress' || field.path.startsWith('address.guardianAddress.'))
+    .filter(field => field.value !== null && field.value !== undefined && String(field.value).trim() !== '')
+    .map(field => {
+      const path = field.path.replace('address.', '')
+      return { ...field, path, label: labels[path] || field.label }
+    })
+}
+
+function guardianAddressOtherFields(fields) {
+  const addressPaths = new Set([
+    'guardianAddress.street', 'guardianAddress.houseNumber',
+    'guardianAddress.postalCode', 'guardianAddress.city',
   ])
   return fields.filter(field => !addressPaths.has(field.path))
 }
@@ -80,6 +100,22 @@ function iceFields(fields) {
 function visibleRegistrationSections(registration) {
   const sections = registrationSections(registration)
     .filter(section => registration.registrationType !== 'STAFF' || section.key !== 'role')
+  const addressSection = sections.find(section => section.key === 'address')
+  if (addressSection) {
+    const sameAddress = addressSection.fields.find(field => field.path === 'address.sameAddress')?.value === true
+    const guardianFields = guardianAddressFields(addressSection.fields)
+    addressSection.fields = addressSection.fields.filter(field => field.path !== 'address.guardianAddress'
+      && !field.path.startsWith('address.guardianAddress.'))
+    if (!sameAddress && guardianFields.length) {
+      const guardianSection = sections.find(section => section.key === 'guardian')
+      const insertAfter = guardianSection || addressSection
+      sections.splice(sections.indexOf(insertAfter) + 1, 0, {
+        key: 'guardianAddress',
+        label: 'Adres opiekuna',
+        fields: guardianFields,
+      })
+    }
+  }
   const certificateSection = sections.find(section => section.key === 'certificates')
   const certificateDetails = sections.find(section => section.key === 'certificateDetails')
 
@@ -156,17 +192,21 @@ function visibleRegistrationSections(registration) {
             <div
               v-for="section in visibleRegistrationSections(detail)"
               :key="section.key"
-              class="min-w-0 rounded-md border border-slate-200 bg-white p-3"
+              class="min-w-0"
               :class="detail.registrationType === 'PARTICIPANT'
-                ? 'mb-4 break-inside-avoid'
+                ? 'break-inside-avoid pb-4'
                 : section.questions || section.key === 'consents' ? 'sm:col-span-2' : ''"
               :style="detail.registrationType === 'PARTICIPANT' && (section.questions || section.key === 'consents')
                 ? { columnSpan: 'all' }
                 : undefined"
             >
-              <h4 class="mb-2 border-b border-slate-200 pb-2 text-xs font-semibold uppercase tracking-wide text-slate-500">
-                {{ section.label }}
-              </h4>
+              <div
+                class="min-w-0 rounded-md border border-slate-200 bg-white p-3"
+                :class="detail.registrationType === 'STAFF' ? 'h-full' : ''"
+              >
+                <h4 class="mb-2 border-b border-slate-200 pb-2 text-xs font-semibold uppercase tracking-wide text-slate-500">
+                  {{ section.label }}
+                </h4>
               <div v-if="section.questions" class="space-y-3">
                 <article v-for="question in section.questions" :key="question.key" class="border-b border-slate-100 pb-3 last:border-0 last:pb-0">
                   <p class="whitespace-pre-wrap break-words text-sm font-medium leading-5 text-slate-800">{{ question.question }}</p>
@@ -216,18 +256,20 @@ function visibleRegistrationSections(registration) {
                   <p>{{ addressValue(section.fields, ['address.street', 'address.houseNumber']) }}</p>
                   <p>{{ addressValue(section.fields, ['address.postalCode', 'address.city']) }}</p>
                 </address>
-                <p v-if="section.fields.find(field => field.path === 'address.sameAddress')?.value === true" class="text-slate-600">
-                  Adres opiekuna: taki sam jak powyżej
-                </p>
-                <div v-else-if="section.fields.find(field => field.path === 'address.sameAddress')?.value === false || hasAddressValue(section.fields, 'address.guardianAddress.')" class="border-t border-slate-200 pt-2">
-                  <h5 class="mb-1 text-xs font-medium text-slate-500">Adres opiekuna</h5>
-                  <address class="space-y-1 not-italic text-slate-700">
-                    <p>{{ addressValue(section.fields, ['address.guardianAddress.street', 'address.guardianAddress.houseNumber']) }}</p>
-                    <p>{{ addressValue(section.fields, ['address.guardianAddress.postalCode', 'address.guardianAddress.city']) }}</p>
-                  </address>
-                </div>
                 <dl v-if="addressFieldsToKeep(section.fields).length" class="grid grid-cols-[minmax(0,0.4fr)_minmax(0,0.6fr)] gap-x-3 gap-y-1">
                   <template v-for="field in addressFieldsToKeep(section.fields)" :key="field.path">
+                    <dt class="min-w-0 break-words text-slate-500">{{ field.label }}</dt>
+                    <dd class="min-w-0 whitespace-pre-wrap break-words">{{ formatFieldValue(field.value, field.path) }}</dd>
+                  </template>
+                </dl>
+              </div>
+              <div v-else-if="section.key === 'guardianAddress'" class="space-y-3 text-sm">
+                <address class="space-y-1 not-italic text-slate-700">
+                  <p>{{ addressValue(section.fields, ['guardianAddress.street', 'guardianAddress.houseNumber']) }}</p>
+                  <p>{{ addressValue(section.fields, ['guardianAddress.postalCode', 'guardianAddress.city']) }}</p>
+                </address>
+                <dl v-if="guardianAddressOtherFields(section.fields).length" class="grid grid-cols-[minmax(0,0.4fr)_minmax(0,0.6fr)] gap-x-3 gap-y-1">
+                  <template v-for="field in guardianAddressOtherFields(section.fields)" :key="field.path">
                     <dt class="min-w-0 break-words text-slate-500">{{ field.label }}</dt>
                     <dd class="min-w-0 whitespace-pre-wrap break-words">{{ formatFieldValue(field.value, field.path) }}</dd>
                   </template>
@@ -245,6 +287,7 @@ function visibleRegistrationSections(registration) {
                   <dd class="min-w-0 whitespace-pre-wrap break-words">{{ formatFieldValue(field.value, field.path) }}</dd>
                 </template>
               </dl>
+              </div>
             </div>
           </div>
         </section>

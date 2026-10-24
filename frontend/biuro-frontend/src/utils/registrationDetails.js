@@ -19,12 +19,12 @@ const FIELD_LABELS = {
   'address.guardianAddress.postalCode': 'Kod pocztowy (opiekun)',
   'address.guardianAddress.city': 'Miasto (opiekun)',
 
-  'guardian.firstName': 'Imię opiekuna',
-  'guardian.lastName': 'Nazwisko opiekuna',
+  'guardian.firstName': 'Imię',
+  'guardian.lastName': 'Nazwisko',
   'guardian.relation': 'Relacja',
   'guardian.names': 'Imiona i nazwiska rodziców/opiekunów',
-  'guardian.contact.email': 'E-mail opiekuna',
-  'guardian.contact.phone': 'Telefon opiekuna',
+  'guardian.contact.email': 'E-mail',
+  'guardian.contact.phone': 'Telefon',
 
   'ice.firstName': 'Imię',
   'ice.lastName': 'Nazwisko',
@@ -131,6 +131,10 @@ export function registrationSections(registration) {
     if (section.fields.length) result.push(section)
   }
   if (other.length) result.push({ key: 'other', label: 'Pozostałe informacje', fields: other })
+  const guardian = result.find(section => section.key === 'guardian')
+  if (guardian) {
+    guardian.fields.sort((a, b) => Number(a.path === 'guardian.names') - Number(b.path === 'guardian.names'))
+  }
   const order = ['person', 'address', 'guardian', 'ice', 'role', 'certificates', 'certificateDetails', 'health', 'consents', 'payload', 'other']
   return result.sort((a, b) => order.indexOf(a.key) - order.indexOf(b.key))
 }
