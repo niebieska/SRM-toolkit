@@ -3,8 +3,11 @@ import { computed, onMounted, ref } from 'vue'
 import { useAuthStore } from '../stores/auth'
 import { fetchRegistrationDetail } from '../api/registrationApi'
 import StatusBadge from './StatusBadge.vue'
+import RegistrationEditForm from './RegistrationEditForm.vue'
+import DiscardChangesDialog from './DiscardChangesDialog.vue'
 import { formatDateTime } from '../utils/dateUtils'
 import { registrationSections, combineQualificationSections, formatFieldValue } from '../utils/registrationDetails'
+import { createDiscardConfirmation } from '../utils/discardConfirmation.js'
 
 const props = defineProps({
   code: {
@@ -19,6 +22,11 @@ const authStore = useAuthStore()
 const detail = ref(null)
 const loading = ref(true)
 const errorMessage = ref('')
+const editing = ref(false)
+const editDirty = ref(false)
+const editSuccess = ref('')
+const editReloadError = ref('')
+const { prompt, confirm, decide } = createDiscardConfirmation()
 const personName = computed(() => {
   const person = detail.value?.payload?.person
   return [detail.value?.firstName || person?.firstName, detail.value?.lastName || person?.lastName]
@@ -59,6 +67,60 @@ onMounted(async () => {
 
 function requestStatusAction(action) {
   emit('status-action', detail.value, action)
+}
+
+async function requestCancelEdit() {
+  if (editDirty.value && !(await confirm('leave'))) return
+  editing.value = false
+  editDirty.value = false
+}
+
+async function requestClose() {
+  if (editing.value && editDirty.value && !(await confirm('leave'))) return
+  emit('close')
+}
+
+async function requestReload() {
+  editReloadError.value = ''
+  let latest
+  try {
+    latest = await fetchRegistrationDetail(authStore.token, props.code)
+  } catch (error) {
+    editReloadError.value = error.message || 'Nie udało się wczytać aktualnych danych.'
+    return
+  }
+  if (editDirty.value && !(await confirm('reload'))) return
+  detail.value = latest
+  editing.value = false
+  editDirty.value = false
+  editSuccess.value = ''
+}
+
+function handleEditSaved(updated) {
+  detail.value = updated
+  editing.value = false
+  editDirty.value = false
+  editSuccess.value = 'Zmiany zostały zapisane.'
+}
+
+function editFieldLabel(path) {
+  return ({
+    'person.firstName': 'Imię', 'person.lastName': 'Nazwisko',
+    'person.contact.email': 'E-mail', 'person.contact.phone': 'Telefon',
+    'person.motherName': 'Imię matki', 'person.fatherName': 'Imię ojca', 'person.birthSurname': 'Nazwisko rodowe',
+    'address.street': 'Ulica', 'address.houseNumber': 'Nr domu', 'address.postalCode': 'Kod pocztowy', 'address.city': 'Miasto',
+    'guardian.firstName': 'Imię opiekuna', 'guardian.lastName': 'Nazwisko opiekuna', 'guardian.names': 'Imiona i nazwiska rodziców/opiekunów',
+    'guardian.relation': 'Relacja opiekuna', 'guardian.contact.email': 'E-mail opiekuna', 'guardian.contact.phone': 'Telefon opiekuna',
+    'address.sameAddress': 'Adres opiekuna taki sam', 'address.guardianAddress.street': 'Ulica opiekuna',
+    'address.guardianAddress.houseNumber': 'Nr domu opiekuna', 'address.guardianAddress.postalCode': 'Kod pocztowy opiekuna',
+    'address.guardianAddress.city': 'Miasto opiekuna',
+    'ice.firstName': 'Imię kontaktu awaryjnego', 'ice.lastName': 'Nazwisko kontaktu awaryjnego',
+    'ice.relation': 'Relacja kontaktu awaryjnego', 'ice.relationOther': 'Doprecyzowanie relacji', 'ice.phone': 'Telefon kontaktu awaryjnego',
+    'health.q1.answer': 'Choroby przewlekłe — odpowiedź', 'health.q1.detail': 'Choroby przewlekłe — szczegóły',
+    'health.q2.answer': 'Alergie — odpowiedź', 'health.q2.detail': 'Alergie — szczegóły',
+    'health.q3.answer': 'Dodatkowe potrzeby — odpowiedź', 'health.q3.detail': 'Dodatkowe potrzeby — szczegóły',
+    'health.additionalInfo.value': 'Dodatkowe informacje', 'health.additionalInfo': 'Dodatkowe informacje',
+  })[path] || path
 }
 
 function addressValue(fields, paths) {
@@ -144,17 +206,31 @@ function visibleRegistrationSections(registration) {
 
 <template>
   <div class="fixed inset-0 bg-black/40 flex items-start justify-center p-4 overflow-y-auto z-50">
-    <div class="w-full max-w-2xl bg-white rounded-xl px-6 pt-5 pb-6 space-y-5 my-8">
+    <div :class="['w-full rounded-xl bg-white px-6 pb-6 pt-5 my-8 space-y-5', editing ? 'max-w-3xl' : 'max-w-2xl']">
 
       <div class="flex items-center justify-between">
-        <h2 class="text-lg font-semibold">Szczegóły zgłoszenia</h2>
-        <button class="text-slate-500 hover:text-slate-800 text-xl leading-none" @click="emit('close')">✕</button>
+        <h2 class="text-lg font-semibold">{{ editing ? 'Edytuj dane zgłoszenia' : 'Szczegóły zgłoszenia' }}</h2>
+        <button class="text-slate-500 hover:text-slate-800 text-xl leading-none" aria-label="Zamknij szczegóły zgłoszenia" @click="requestClose">✕</button>
       </div>
 
       <p v-if="loading" class="text-slate-600">Ładowanie...</p>
       <p v-else-if="errorMessage" class="text-red-600">{{ errorMessage }}</p>
 
       <template v-else-if="detail">
+
+        <RegistrationEditForm
+          v-if="editing"
+          :detail="detail"
+          :reload-error="editReloadError"
+          @saved="handleEditSaved"
+          @reload="requestReload"
+          @cancel="requestCancelEdit"
+          @dirty-change="editDirty = $event"
+        />
+
+        <template v-else>
+
+        <p v-if="editSuccess" role="status" class="rounded-lg border border-green-200 bg-green-50 px-3 py-2 text-sm text-green-800">{{ editSuccess }}</p>
 
         <!-- Header info -->
         <section aria-labelledby="registration-summary-heading" class="space-y-3">
@@ -323,9 +399,28 @@ function visibleRegistrationSections(registration) {
           </ol>
         </section>
 
+        <section v-if="detail.editHistory?.length" aria-labelledby="data-history-heading" class="rounded-lg border border-slate-200 p-4">
+          <h3 id="data-history-heading" class="text-sm font-semibold text-slate-700">Historia zmian danych</h3>
+          <ol class="relative mt-3 border-l border-slate-200">
+            <li v-for="entry in detail.editHistory" :key="entry.id" class="relative ml-4 pb-4 last:pb-0">
+              <span class="absolute -left-[21px] top-1 h-2.5 w-2.5 rounded-full border-2 border-white bg-blue-700" aria-hidden="true"></span>
+              <div class="flex flex-wrap items-center gap-x-2 gap-y-1 text-xs text-slate-600">
+                <span>{{ formatDateTime(entry.changedAt) }}</span><span>· {{ entry.actorUsername }}</span>
+              </div>
+              <p class="mt-1 text-sm text-slate-700">Zmieniono: {{ entry.changedFields.map(editFieldLabel).join(', ') }}</p>
+            </li>
+          </ol>
+        </section>
+
+        </template>
+
       </template>
 
-      <div class="flex flex-wrap justify-end gap-2 pt-2">
+      <div v-if="detail && !loading && !errorMessage && !editing" class="flex flex-wrap items-center justify-between gap-2 border-t border-slate-200 pt-4">
+        <button class="rounded border border-slate-300 px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50" @click="editing = true; editSuccess = ''; editReloadError = ''">
+          Edytuj
+        </button>
+        <div class="flex flex-wrap justify-end gap-2">
         <button
           v-if="detail && detail.status !== 'ACCEPTED'"
           class="rounded bg-green-600 text-white px-4 py-2 hover:bg-green-700"
@@ -347,10 +442,17 @@ function visibleRegistrationSections(registration) {
         >
           Odrzuć
         </button>
-        <button class="rounded border border-slate-300 px-4 py-2 hover:bg-slate-50" @click="emit('close')">
+        <button class="rounded border border-slate-300 px-4 py-2 hover:bg-slate-50" @click="requestClose">
           Zamknij
         </button>
+        </div>
       </div>
     </div>
+    <DiscardChangesDialog
+      v-if="prompt"
+      :kind="prompt.kind"
+      @stay="decide(false)"
+      @discard="decide(true)"
+    />
   </div>
 </template>
