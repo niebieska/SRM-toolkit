@@ -227,7 +227,8 @@ class RegistrationIntegrityTest {
         doAnswer(invocation -> {
             historyQueryStarted.countDown();
             if (!allowHistoryQuery.await(10, TimeUnit.SECONDS)) timedOut.set(true);
-            return invocation.callRealMethod();
+            return org.mockito.Mockito.mockingDetails(historyRepository)
+                    .getMockCreationSettings().getDefaultAnswer().answer(invocation);
         }).when(historyRepository).findByRegistrationIdOrderByChangedAtDescIdDesc(any());
 
         try (var executor = Executors.newSingleThreadExecutor()) {
