@@ -14,17 +14,18 @@ Current status/update time and notification logs are not persisted status histor
 
 ## Implementation scope
 
-- **registration-api:** Flyway migration and history storage; save the status
-  change and history entry in the same database transaction. Expose a protected
-  service-authenticated history endpoint. Notification failure must not undo a
-  committed decision.
+- **registration-api:** Flyway migration and history storage in the same database
+  as registrations; save the status change and history entry in the same database
+  transaction. Include ordered history in the existing registration-detail
+  response; do not add a separate history endpoint for this scope. Notification
+  failure must not undo a committed decision.
 - **biuro-api:** derive operator identity from the authenticated account and pass
   it through the trusted service connection; never trust a browser-supplied actor.
-  Proxy history reads with existing registration-detail permissions. No additional
-  VIEWER access is granted by this task.
-- **biuro-frontend:** add a separate **Historia statusów** section at the end of
-  the existing registration details modal, after the registration data sections.
-  Include Polish labels and loading, empty and error states.
+  Return the detail and history through the existing detail route and permissions.
+  No additional VIEWER access is granted by this task.
+- **biuro-frontend:** render the history already included with registration
+  details in a separate **Historia statusów** section at the end of the modal,
+  after the registration data sections. Keep Polish labels and handle empty history.
 - **Tests:** account attribution, ordering, rejection reasons, atomic rollback
   when history persistence fails, access control and UI states.
 
@@ -38,9 +39,12 @@ disabled.
   may precede it. Implementation and deployed acceptance remain open.
 - No public form changes, registration editing, Person history, notification
   history or resend controls in this task.
-- Settle unchanged-status requests before coding: they must not invent a status
-  transition. Notification resend behavior is a separate explicit decision; no
-  silent transition restrictions are introduced.
+- History is audit-only: it records actual changes and does not restrict which
+  status transitions operators can make. Preserve the existing status actions
+  and permissions. A change back to a previously used status (for example,
+  re-accepting a registration) is a real transition and follows the existing
+  status-update and notification workflow. A request that leaves the status
+  unchanged creates no history entry.
 - Future notification attempts/outcomes may link to a history entry. SMTP
   acceptance does not prove inbox delivery.
 

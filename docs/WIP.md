@@ -6,6 +6,13 @@
   the registration details modal, after the submitted registration data. This
   clarifies placement only; the required history fields and MVP status are
   unchanged. Implementation remains pending.
+- Confirmed that the UI offers no action for the registration's current status.
+  A real transition back to a previously used status, such as re-accepting after
+  another status, uses the existing update and notification workflow. Status
+  history is audit-only and must not restrict transitions or change permissions.
+- Agreed to load status history together with registration details in the existing
+  detail response, rather than adding a separate history request/endpoint. History
+  remains in its own table in the Registration database for atomic status auditing.
 
 ## 2026-10-21 — Registration details UI branch
 

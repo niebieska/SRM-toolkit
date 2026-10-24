@@ -284,6 +284,26 @@ function visibleRegistrationSections(registration) {
         </section>
         <p v-else class="text-sm text-slate-500">Brak danych zgłoszenia</p>
 
+        <section aria-labelledby="status-history-heading" class="rounded-lg border border-slate-200 p-4">
+          <h3 id="status-history-heading" class="text-sm font-semibold text-slate-700">Historia statusów</h3>
+          <ol v-if="detail.statusHistory?.length" class="mt-3 space-y-3">
+            <li v-for="entry in detail.statusHistory" :key="entry.id" class="border-t border-slate-100 pt-3 first:border-0 first:pt-0">
+              <div class="flex flex-wrap items-center gap-2 text-sm">
+                <StatusBadge :status="entry.previousStatus" />
+                <span aria-hidden="true" class="text-slate-400">→</span>
+                <StatusBadge :status="entry.newStatus" />
+              </div>
+              <p class="mt-1 text-xs text-slate-600">
+                {{ formatDateTime(entry.changedAt) }} · Login: {{ entry.actorUsername }}
+              </p>
+              <p v-if="entry.rejectionReason" class="mt-1 whitespace-pre-wrap break-words text-sm text-slate-700">
+                Powód odrzucenia: {{ entry.rejectionReason }}
+              </p>
+            </li>
+          </ol>
+          <p v-else class="mt-2 text-sm text-slate-500">Brak zapisanych zmian statusu.</p>
+        </section>
+
       </template>
 
       <div class="flex flex-wrap justify-end gap-2 pt-2">
