@@ -2,8 +2,10 @@ package pl.srm.biuroapi.registration.api;
 
 import jakarta.validation.Valid;
 import org.springframework.http.HttpStatus;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
+import pl.srm.biuroapi.auth.account.AccountPrincipal;
 import pl.srm.biuroapi.registration.client.RegistrationApiClient;
 import pl.srm.biuroapi.registration.model.RegistrationDetail;
 import pl.srm.biuroapi.registration.model.RegistrationSummary;
@@ -51,9 +53,10 @@ public class BiuroRegistrationController {
 
     @PatchMapping("/{code}/status")
     public RegistrationSummary updateStatus(@PathVariable String code,
-                                            @Valid @RequestBody StatusUpdateRequest request) {
+                                            @Valid @RequestBody StatusUpdateRequest request,
+                                            @AuthenticationPrincipal AccountPrincipal actor) {
         validateRequest(request);
-        return registrationApiClient.updateStatus(code, request);
+        return registrationApiClient.updateStatus(code, request, actor.id(), actor.username());
     }
 
 

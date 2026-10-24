@@ -7,9 +7,12 @@ import pl.srm.registrationapi.registration.dto.request.StatusUpdateRequest;
 import pl.srm.registrationapi.registration.model.Registration;
 import pl.srm.registrationapi.registration.exception.RegistrationException;
 import pl.srm.registrationapi.registration.repository.RegistrationRepository;
+import pl.srm.registrationapi.registration.model.RegistrationStatusHistory;
+import pl.srm.registrationapi.registration.repository.RegistrationStatusHistoryRepository;
 import org.springframework.data.domain.Sort;
 import pl.srm.registrationapi.registration.service.management.RegistrationManagementService;
 import pl.srm.registrationapi.registration.service.management.RegistrationStatusService;
+import pl.srm.registrationapi.registration.service.management.StatusNotificationService;
 import pl.srm.registrationapi.registration.util.PeselHelper;
 
 import java.time.LocalDateTime;
@@ -22,13 +25,17 @@ import static org.mockito.Mockito.*;
 class RegistrationManagementServiceTest {
 
     private final RegistrationRepository repository = mock(RegistrationRepository.class);
+    private final RegistrationStatusHistoryRepository historyRepository = mock(RegistrationStatusHistoryRepository.class);
     private final RegistrationStatusService statusService = mock(RegistrationStatusService.class);
+    private final StatusNotificationService notificationService = mock(StatusNotificationService.class);
 
     private final RegistrationManagementService service = new RegistrationManagementService(
             repository,
+            historyRepository,
             new ObjectMapper(),
             new PeselHelper(),
-            statusService
+            statusService,
+            notificationService
     );
     @Test
     void returnsAllRegistrationsOrderedByCreatedAtDesc() {
@@ -80,7 +87,7 @@ class RegistrationManagementServiceTest {
                 LocalDateTime.now()
         );
 
-        StatusUpdateRequest request = new StatusUpdateRequest("REJECTED", "Brak miejsc");
+        StatusUpdateRequest request = new StatusUpdateRequest("REJECTED", "Brak miejsc", "actor-id", "operator");
 
         when(statusService.updateStatus("REG-P-ZAGLE26T1-1", request))
                 .thenReturn(registration);
@@ -93,12 +100,14 @@ class RegistrationManagementServiceTest {
         assertEquals("REJECTED", response.status());
         assertEquals("Brak miejsc", response.rejectionReason());
 
-        verify(statusService).updateStatus("REG-P-ZAGLE26T1-1", request);
+        var order = inOrder(statusService, notificationService);
+        order.verify(statusService).updateStatus("REG-P-ZAGLE26T1-1", request);
+        order.verify(notificationService).sendStatusUpdate(registration);
         verify(repository, never()).save(any());
     }
     @Test
     void rejectsUnknownStatus() {
-        StatusUpdateRequest request = new StatusUpdateRequest("PENDING", null);
+        StatusUpdateRequest request = new StatusUpdateRequest("PENDING", null, "actor-id", "operator");
 
         when(statusService.updateStatus("REG-P-ZAGLE26T1-1", request))
                 .thenThrow(new RegistrationException(
@@ -113,6 +122,25 @@ class RegistrationManagementServiceTest {
 
         assertEquals("INVALID_STATUS", exception.getCode());
         verify(statusService).updateStatus("REG-P-ZAGLE26T1-1", request);
+    }
+
+    @Test
+    void includesStatusHistoryInRegistrationDetailResponse() {
+        Registration registration = new Registration("REG-P-T1-1", "PARTICIPANT", "T1", "hash", false,
+                "ACCEPTED", null, "{}", LocalDateTime.of(2027, 1, 1, 10, 0), null);
+        registration.setId(42L);
+        var entry = new RegistrationStatusHistory(42L, "NEW", "ACCEPTED",
+                LocalDateTime.of(2027, 1, 2, 10, 0), "actor-id", "operator", null);
+        when(repository.findByRegistrationCode("REG-P-T1-1")).thenReturn(Optional.of(registration));
+        when(historyRepository.findByRegistrationIdOrderByChangedAtDescIdDesc(42L)).thenReturn(List.of(entry));
+
+        var detail = service.getDetailByCode("REG-P-T1-1");
+
+        assertEquals(1, detail.statusHistory().size());
+        assertEquals("NEW", detail.statusHistory().getFirst().previousStatus());
+        assertEquals("ACCEPTED", detail.statusHistory().getFirst().newStatus());
+        assertEquals("operator", detail.statusHistory().getFirst().actorUsername());
+        verify(historyRepository).findByRegistrationIdOrderByChangedAtDescIdDesc(42L);
     }
     @Test
     void staffSummariesExposeNormalizedRoleAndFunctionWithoutChangingParticipantSummaries() {

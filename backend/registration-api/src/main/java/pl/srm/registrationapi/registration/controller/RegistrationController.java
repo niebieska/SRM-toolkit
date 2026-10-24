@@ -1,5 +1,6 @@
 package pl.srm.registrationapi.registration.controller;
 
+import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
@@ -59,7 +60,7 @@ public class RegistrationController {
 
     @PatchMapping("/{code}/status")
     public RegistrationSummaryResponse updateStatus(@PathVariable String code,
-                                                    @RequestBody StatusUpdateRequest request) {
+                                                    @Valid @RequestBody StatusUpdateRequest request) {
         return managementService.updateStatus(code, request);
     }
 

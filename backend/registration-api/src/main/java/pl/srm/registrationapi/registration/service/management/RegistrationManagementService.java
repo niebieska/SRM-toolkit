@@ -3,13 +3,17 @@ package pl.srm.registrationapi.registration.service.management;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Isolation;
+import org.springframework.transaction.annotation.Transactional;
 import pl.srm.registrationapi.registration.dto.response.RegistrationDetailResponse;
+import pl.srm.registrationapi.registration.dto.response.RegistrationStatusHistoryEntryResponse;
 import pl.srm.registrationapi.registration.dto.response.RegistrationSummaryResponse;
 import pl.srm.registrationapi.registration.dto.request.StatusUpdateRequest;
 import pl.srm.registrationapi.registration.model.Registration;
 import pl.srm.registrationapi.registration.exception.RegistrationException;
 import pl.srm.registrationapi.registration.model.RegistrationType;
 import pl.srm.registrationapi.registration.repository.RegistrationRepository;
+import pl.srm.registrationapi.registration.repository.RegistrationStatusHistoryRepository;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -24,23 +28,30 @@ public class RegistrationManagementService {
     private static final Set<String> ALLOWED_STATUSES = Set.of("ACCEPTED", "REJECTED");
 
     private final RegistrationRepository repository;
+    private final RegistrationStatusHistoryRepository historyRepository;
     private final ObjectMapper objectMapper;
     private final PeselHelper peselHelper;
     private final RegistrationStatusService  statusService;
+    private final StatusNotificationService notificationService;
 
     public RegistrationManagementService(RegistrationRepository repository,
+                                         RegistrationStatusHistoryRepository historyRepository,
                                          ObjectMapper objectMapper,
-                                         PeselHelper peselHelper, RegistrationStatusService statusService) {
+                                         PeselHelper peselHelper, RegistrationStatusService statusService,
+                                         StatusNotificationService notificationService) {
         this.repository = repository;
+        this.historyRepository = historyRepository;
         this.objectMapper = objectMapper;
         this.peselHelper = peselHelper;
         this.statusService = statusService;
+        this.notificationService = notificationService;
     }
 
     public RegistrationSummaryResponse getByCode(String code) {
         return toSummary(findByCode(code));
     }
 
+    @Transactional(readOnly = true, isolation = Isolation.REPEATABLE_READ)
     public RegistrationDetailResponse getDetailByCode(String code) {
         Registration registration = findByCode(code);
         RegistrationSummaryResponse summary = toSummary(registration);
@@ -55,7 +66,13 @@ public class RegistrationManagementService {
                 summary.firstName(),
                 summary.lastName(),
                 summary.age(),
-                registration.getPayload()
+                registration.getPayload(),
+                historyRepository.findByRegistrationIdOrderByChangedAtDescIdDesc(registration.getId()).stream()
+                        .map(entry -> new RegistrationStatusHistoryEntryResponse(
+                                entry.getId(), entry.getPreviousStatus(), entry.getNewStatus(),
+                                entry.getChangedAt(), entry.getActorUsername(), entry.getRejectionReason()
+                        ))
+                        .toList()
         );
     }
 
@@ -68,6 +85,7 @@ public class RegistrationManagementService {
 
     public RegistrationSummaryResponse updateStatus(String code, StatusUpdateRequest request) {
         Registration updated = statusService.updateStatus(code, request);
+        notificationService.sendStatusUpdate(updated);
         return toSummary(updated);
     }
 

@@ -25,6 +25,9 @@ public class RegistrationApiClient {
     private final RestClient restClient;
     private final String registrationApiUrl;
 
+    private record StatusChangePayload(String status, String rejectionReason,
+                                       String actorAccountId, String actorUsername) {}
+
     public RegistrationApiClient(RestClient.Builder restClientBuilder,
                                  @Value("${registration.api.url:http://localhost:8080}") String registrationApiUrl,
                                  @Value("${registration.api.username}") String serviceUsername,
@@ -102,11 +105,13 @@ public class RegistrationApiClient {
         }
     }
 
-    public RegistrationSummary updateStatus(String code, StatusUpdateRequest request) {
+    public RegistrationSummary updateStatus(String code, StatusUpdateRequest request,
+                                            String actorAccountId, String actorUsername) {
         try {
             RegistrationSummary body = restClient.patch()
                     .uri(registrationApiUrl + "/api/registrations/{code}/status", code)
-                    .body(request)
+                    .body(new StatusChangePayload(request.status(), request.rejectionReason(),
+                            actorAccountId, actorUsername))
                     .retrieve()
                     .body(RegistrationSummary.class);
             if (body == null) {

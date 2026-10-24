@@ -149,7 +149,8 @@ class ManagementSecurityConfigTest {
                     .andExpect(status().isOk()).andExpect(cookie().doesNotExist("JSESSIONID"));
         }
         mvc.perform(patch("/api/registrations/ABC/status").header(HttpHeaders.AUTHORIZATION, credentials)
-                .contentType(MediaType.APPLICATION_JSON).content("{\"status\":\"WAITLIST\"}"))
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("{\"status\":\"WAITLIST\",\"actorAccountId\":\"actor-id\",\"actorUsername\":\"operator\"}"))
                 .andExpect(status().isOk());
         verify(management).getAll();
         verify(management).getDetailByCode("ABC");
@@ -158,6 +159,24 @@ class ManagementSecurityConfigTest {
         verify(management).updateStatus(eq("ABC"), any());
         // An authenticated request must not authenticate a later anonymous request.
         mvc.perform(get("/api/registrations")).andExpect(status().isUnauthorized());
+    }
+
+    @ParameterizedTest
+    @MethodSource("invalidStatusUpdateRequests")
+    void returnsBadRequestForInvalidStatusUpdateActor(String body) throws Exception {
+        mvc.perform(patch("/api/registrations/ABC/status").header(HttpHeaders.AUTHORIZATION, credentials)
+                        .contentType(MediaType.APPLICATION_JSON).content(body))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("INVALID_REQUEST"));
+        verifyNoInteractions(management);
+    }
+
+    static Stream<String> invalidStatusUpdateRequests() {
+        return Stream.of(
+                "{\"status\":\"ACCEPTED\",\"actorAccountId\":\"\",\"actorUsername\":\"operator\"}",
+                "{\"status\":\"ACCEPTED\",\"actorAccountId\":\"account-id\",\"actorUsername\":\" \"}",
+                "{\"status\":\"ACCEPTED\",\"actorAccountId\":\"account-id\",\"actorUsername\":\"" + "x".repeat(65) + "\"}"
+        );
     }
 
     @Test

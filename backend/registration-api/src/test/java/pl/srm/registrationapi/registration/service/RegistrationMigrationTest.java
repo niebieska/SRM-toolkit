@@ -48,7 +48,7 @@ class RegistrationMigrationTest {
     }
 
     @Test
-    void baselineAdoptsLegacySchemaWithoutHistoryAndAppliesV2() throws Exception {
+    void baselineAdoptsLegacySchemaWithoutHistoryAndAppliesCurrentMigrations() throws Exception {
         withDatabase(url -> {
             try (var connection = connect(url); var sql = connection.createStatement()) {
                 try (var stream = getClass().getResourceAsStream("/db/migration/V1__init.sql")) {
@@ -61,13 +61,16 @@ class RegistrationMigrationTest {
             assertThrows(org.flywaydb.core.api.FlywayException.class, () -> flyway(url, null).migrate());
             var adopted = Flyway.configure().dataSource(url, System.getenv("TEST_DB_USER"),
                     System.getenv("TEST_DB_PASSWORD")).baselineOnMigrate(true).baselineVersion("1").load();
-            assertEquals(1, adopted.migrate().migrationsExecuted);
+            assertEquals(2, adopted.migrate().migrationsExecuted);
             try (var connection = connect(url); var sql = connection.createStatement()) {
                 var result = sql.executeQuery("SELECT last_number FROM registration_counter");
                 assertTrue(result.next()); assertEquals(8, result.getLong(1));
                 result = sql.executeQuery("SELECT registration_code FROM registration");
                 assertTrue(result.next()); assertEquals("REG-P-A-8", result.getString(1));
                 assertFalse(result.next());
+                result = sql.executeQuery("SELECT COUNT(*) FROM information_schema.tables "
+                        + "WHERE table_schema = DATABASE() AND table_name = 'registration_status_history'");
+                assertTrue(result.next()); assertEquals(1, result.getInt(1));
             }
             assertEquals(0, flyway(url, null).migrate().migrationsExecuted);
         });

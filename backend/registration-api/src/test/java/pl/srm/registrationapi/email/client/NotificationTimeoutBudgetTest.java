@@ -14,7 +14,10 @@ import pl.srm.registrationapi.common.config.RestClientConfig;
 import pl.srm.registrationapi.registration.dto.request.StatusUpdateRequest;
 import pl.srm.registrationapi.registration.model.Registration;
 import pl.srm.registrationapi.registration.repository.RegistrationRepository;
+import pl.srm.registrationapi.registration.repository.RegistrationStatusHistoryRepository;
 import pl.srm.registrationapi.registration.service.management.RegistrationStatusService;
+import pl.srm.registrationapi.registration.service.management.RegistrationManagementService;
+import pl.srm.registrationapi.registration.util.PeselHelper;
 import pl.srm.registrationapi.registration.service.management.StatusNotificationService;
 import java.io.IOException;
 import java.net.InetSocketAddress;
@@ -60,7 +63,7 @@ class NotificationTimeoutBudgetTest {
         var repository = mock(RegistrationRepository.class);
         var saved = new Registration("REG-P-T1-1", "PARTICIPANT", "T1", "hash", false, "NEW", null,
                 "{\"person\":{\"contact\":{\"email\":\"recipient@example.test\"}}}", LocalDateTime.now(), null);
-        when(repository.findByRegistrationCode(saved.getRegistrationCode())).thenReturn(Optional.of(saved));
+        when(repository.findByRegistrationCodeForUpdate(saved.getRegistrationCode())).thenReturn(Optional.of(saved));
         when(repository.save(saved)).thenReturn(saved);
         email.createContext("/api/email/send", exchange -> {
             try { release.await(10, TimeUnit.SECONDS); }
@@ -77,11 +80,14 @@ class NotificationTimeoutBudgetTest {
                 var read = Duration.parse(context.getEnvironment().getProperty("email.service.read-timeout")).dividedBy(10);
                 var inner = new EmailServiceClient(RestClient.builder(), "http://127.0.0.1:" + email.getAddress().getPort(), connect, read);
                 var notifications = new StatusNotificationService(inner, new ObjectMapper());
-                var service = new RegistrationStatusService(repository, notifications);
+                var historyRepository = mock(RegistrationStatusHistoryRepository.class);
+                var statusService = new RegistrationStatusService(repository, historyRepository);
+                var service = new RegistrationManagementService(repository, historyRepository,
+                        new ObjectMapper(), new PeselHelper(), statusService, notifications);
                 registration.createContext("/status", exchange -> {
                     try {
                         exchange.getRequestBody().readAllBytes();
-                        service.updateStatus(saved.getRegistrationCode(), new StatusUpdateRequest("ACCEPTED", null));
+                        service.updateStatus(saved.getRegistrationCode(), new StatusUpdateRequest("ACCEPTED", null, "actor-id", "operator"));
                         byte[] body = "{\"status\":\"ACCEPTED\"}".getBytes(StandardCharsets.UTF_8);
                         exchange.getResponseHeaders().add("Content-Type", "application/json");
                         exchange.sendResponseHeaders(200, body.length);
