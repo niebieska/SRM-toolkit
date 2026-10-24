@@ -26,6 +26,7 @@ import org.slf4j.LoggerFactory;
 import org.springframework.web.client.RestClient;
 import pl.srm.registrationapi.registration.dto.request.StatusUpdateRequest;
 import pl.srm.registrationapi.registration.model.Registration;
+import pl.srm.registrationapi.registration.repository.RegistrationEditHistoryRepository;
 import pl.srm.registrationapi.registration.repository.RegistrationRepository;
 import pl.srm.registrationapi.registration.repository.RegistrationStatusHistoryRepository;
 import pl.srm.registrationapi.registration.service.management.RegistrationStatusService;
@@ -141,9 +142,10 @@ class EmailServiceClientTest {
         when(repository.save(registration)).thenReturn(registration);
         var notifications = new StatusNotificationService(client(Duration.ofSeconds(1)), new ObjectMapper());
         var historyRepository = mock(RegistrationStatusHistoryRepository.class);
+        var editHistoryRepository = mock(RegistrationEditHistoryRepository.class);
         var statusService = new RegistrationStatusService(repository, historyRepository);
         var service = new RegistrationManagementService(repository, historyRepository,
-                new ObjectMapper(), new PeselHelper(), statusService, notifications);
+                editHistoryRepository, new ObjectMapper(), new PeselHelper(), statusService, notifications);
         assertEquals("ACCEPTED", service.updateStatus("REG-P-T1-1",
                 new StatusUpdateRequest("ACCEPTED", null, "actor-id", "operator")).status());
         verify(repository).save(registration); assertEquals(1, calls.get());

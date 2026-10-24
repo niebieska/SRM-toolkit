@@ -54,6 +54,7 @@ class RegistrationIntegrityTest {
     void clearFixtures() {
         assertEquals("integrity_test", jdbc.queryForObject("SELECT DATABASE()", String.class),
                 "Use only the disposable integrity_test database");
+        jdbc.update("DELETE FROM registration_edit_history");
         jdbc.update("DELETE FROM registration_status_history");
         jdbc.update("DELETE FROM registration");
         jdbc.update("DELETE FROM registration_counter");

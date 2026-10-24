@@ -9,6 +9,7 @@ import pl.srm.registrationapi.registration.exception.RegistrationException;
 import pl.srm.registrationapi.registration.repository.RegistrationRepository;
 import pl.srm.registrationapi.registration.model.RegistrationStatusHistory;
 import pl.srm.registrationapi.registration.repository.RegistrationStatusHistoryRepository;
+import pl.srm.registrationapi.registration.repository.RegistrationEditHistoryRepository;
 import org.springframework.data.domain.Sort;
 import pl.srm.registrationapi.registration.service.management.RegistrationManagementService;
 import pl.srm.registrationapi.registration.service.management.RegistrationStatusService;
@@ -26,12 +27,14 @@ class RegistrationManagementServiceTest {
 
     private final RegistrationRepository repository = mock(RegistrationRepository.class);
     private final RegistrationStatusHistoryRepository historyRepository = mock(RegistrationStatusHistoryRepository.class);
+    private final RegistrationEditHistoryRepository editHistoryRepository = mock(RegistrationEditHistoryRepository.class);
     private final RegistrationStatusService statusService = mock(RegistrationStatusService.class);
     private final StatusNotificationService notificationService = mock(StatusNotificationService.class);
 
     private final RegistrationManagementService service = new RegistrationManagementService(
             repository,
             historyRepository,
+            editHistoryRepository,
             new ObjectMapper(),
             new PeselHelper(),
             statusService,

@@ -61,7 +61,7 @@ class RegistrationMigrationTest {
             assertThrows(org.flywaydb.core.api.FlywayException.class, () -> flyway(url, null).migrate());
             var adopted = Flyway.configure().dataSource(url, System.getenv("TEST_DB_USER"),
                     System.getenv("TEST_DB_PASSWORD")).baselineOnMigrate(true).baselineVersion("1").load();
-            assertEquals(2, adopted.migrate().migrationsExecuted);
+            assertEquals(3, adopted.migrate().migrationsExecuted);
             try (var connection = connect(url); var sql = connection.createStatement()) {
                 var result = sql.executeQuery("SELECT last_number FROM registration_counter");
                 assertTrue(result.next()); assertEquals(8, result.getLong(1));

@@ -12,10 +12,12 @@ import org.springframework.web.bind.annotation.RestController;
 import pl.srm.registrationapi.registration.dto.response.RegistrationDetailResponse;
 import pl.srm.registrationapi.registration.dto.response.RegistrationResponse;
 import pl.srm.registrationapi.registration.dto.response.RegistrationSummaryResponse;
+import pl.srm.registrationapi.registration.dto.request.RegistrationEditRequest;
 import pl.srm.registrationapi.registration.dto.request.StatusUpdateRequest;
 import pl.srm.registrationapi.registration.model.Registration;
 import pl.srm.registrationapi.registration.service.submission.ParticipantRegistrationService;
 import pl.srm.registrationapi.registration.service.management.RegistrationManagementService;
+import pl.srm.registrationapi.registration.service.management.RegistrationEditService;
 import pl.srm.registrationapi.registration.service.submission.StaffRegistrationService;
 
 import java.util.List;
@@ -27,13 +29,16 @@ public class RegistrationController {
     private final ParticipantRegistrationService participantService;
     private final StaffRegistrationService staffService;
     private final RegistrationManagementService managementService;
+    private final RegistrationEditService editService;
 
     public RegistrationController(ParticipantRegistrationService participantService,
                                   StaffRegistrationService staffService,
-                                  RegistrationManagementService managementService) {
+                                  RegistrationManagementService managementService,
+                                  RegistrationEditService editService) {
         this.participantService = participantService;
         this.staffService = staffService;
         this.managementService = managementService;
+        this.editService = editService;
     }
 
     @PostMapping("/participant")
@@ -62,6 +67,13 @@ public class RegistrationController {
     public RegistrationSummaryResponse updateStatus(@PathVariable String code,
                                                     @Valid @RequestBody StatusUpdateRequest request) {
         return managementService.updateStatus(code, request);
+    }
+
+    @PatchMapping("/{code}/data")
+    public RegistrationDetailResponse updateRegistrationData(@PathVariable String code,
+                                                              @Valid @RequestBody RegistrationEditRequest request) {
+        editService.update(code, request);
+        return managementService.getDetailByCode(code);
     }
 
     @GetMapping("/participant")

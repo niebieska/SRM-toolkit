@@ -8,6 +8,7 @@ import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 import jakarta.persistence.UniqueConstraint;
+import jakarta.persistence.Version;
 
 import java.time.LocalDateTime;
 
@@ -49,6 +50,10 @@ public class Registration {
 
     @Column(name = "updated_at")
     private LocalDateTime updatedAt;
+
+    @Version
+    @Column(name = "version", nullable = false)
+    private long version;
 
     public Registration() {
     }
@@ -163,4 +168,8 @@ public class Registration {
     public void setUpdatedAt(LocalDateTime updatedAt) {
         this.updatedAt = updatedAt;
     }
+
+    public long getVersion() { return version; }
+
+    public void setVersion(long version) { this.version = version; }
 }

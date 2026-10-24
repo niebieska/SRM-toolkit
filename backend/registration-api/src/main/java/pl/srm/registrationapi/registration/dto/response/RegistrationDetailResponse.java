@@ -17,6 +17,8 @@ public record RegistrationDetailResponse(
         String lastName,
         Integer age,
         @JsonRawValue String payload,
-        List<RegistrationStatusHistoryEntryResponse> statusHistory
+        List<RegistrationStatusHistoryEntryResponse> statusHistory,
+        long version,
+        List<RegistrationEditHistoryEntryResponse> editHistory
 ) {
 }
