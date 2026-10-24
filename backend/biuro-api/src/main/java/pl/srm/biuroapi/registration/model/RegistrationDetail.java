@@ -15,6 +15,8 @@ public record RegistrationDetail(
         String lastName,
         Integer age,
         Map<String, Object> payload,
-        List<RegistrationStatusHistoryEntry> statusHistory
+        List<RegistrationStatusHistoryEntry> statusHistory,
+        Long version,
+        List<RegistrationEditHistoryEntry> editHistory
 ) {
 }
