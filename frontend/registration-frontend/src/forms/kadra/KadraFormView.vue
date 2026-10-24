@@ -81,6 +81,10 @@ const emptyForm = () => ({
 
   firstName: '',
   lastName: '',
+  motherName: '',
+  fatherName: '',
+  birthSurname: '',
+  birthSurnameDifferent: false,
   pesel: '',
   isAdult: false,
   gender: null,

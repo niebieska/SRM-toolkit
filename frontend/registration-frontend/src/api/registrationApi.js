@@ -132,7 +132,12 @@ export function buildParticipantPayload(f) {
 export function buildStaffPayload(f) {
     return {
         turnusCode: f.turnusCode,
-        person: buildPersonBlock(f),
+        person: {
+            ...buildPersonBlock(f),
+            motherName: f.motherName?.trim(),
+            fatherName: f.fatherName?.trim(),
+            birthSurname: (f.birthSurnameDifferent ? f.birthSurname : f.lastName)?.trim(),
+        },
         address: {
             street: f.street,
             houseNumber: f.houseNumber,

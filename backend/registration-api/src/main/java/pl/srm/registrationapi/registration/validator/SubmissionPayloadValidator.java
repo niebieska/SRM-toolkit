@@ -69,6 +69,9 @@ public class SubmissionPayloadValidator {
             if (value.equals("tak")) text(answer, "detail", 4000);
         }
         if (type == RegistrationType.STAFF) {
+            text(person, "motherName", 100);
+            text(person, "fatherName", 100);
+            text(person, "birthSurname", 150);
             text(root, "role", 50);
             staffRoles.validate(root, context.isMinor(), catalogue);
         }

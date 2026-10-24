@@ -90,12 +90,22 @@
   "certificatesByRole": {
     "kucharka": [
       {
+        "id": "ksiazeczka_sanepid",
+        "label": "Książeczka sanepidowska",
+        "hasDetails": false
+      },
+      {
         "id": "inne",
         "label": "Inne uprawnienia (jakie?)",
         "hasDetails": true
       }
     ],
     "kierowca": [
+      {
+        "id": "prawo_jazdy_b",
+        "label": "Prawo jazdy kat. B",
+        "hasDetails": false
+      },
       {
         "id": "inne",
         "label": "Inne uprawnienia (jakie?)",
@@ -104,6 +114,33 @@
     ],
     "animator": [
       {
+        "id": "wychowawca_wypoczynku",
+        "label": "Wychowawca wypoczynku",
+        "hasDetails": false
+      },
+      {
+        "id": "kpp",
+        "label": "KPP – Kwalifikowana Pierwsza Pomoc",
+        "hasDetails": false
+      },
+      {
+        "id": "prawo_jazdy_b",
+        "label": "Prawo jazdy kat. B",
+        "hasDetails": false
+      },
+      {
+        "id": "inne",
+        "label": "Inne uprawnienia (jakie?)",
+        "hasDetails": true
+      }
+    ],
+    "animator_kandydat_na_animatora": [
+      {
+        "id": "kurs_wychowawcy_w_trakcie",
+        "label": "Kurs wychowawcy wypoczynku (w trakcie)",
+        "hasDetails": false
+      },
+      {
         "id": "inne",
         "label": "Inne uprawnienia (jakie?)",
         "hasDetails": true
@@ -111,12 +148,162 @@
     ],
     "ksiadz": [
       {
+        "id": "kierownik_wypoczynku",
+        "label": "Kierownik wypoczynku",
+        "hasDetails": false
+      },
+      {
+        "id": "prawo_jazdy_b",
+        "label": "Prawo jazdy kat. B",
+        "hasDetails": false
+      },
+      {
+        "id": "kpp",
+        "label": "KPP – Kwalifikowana Pierwsza Pomoc",
+        "hasDetails": false
+      },
+      {
+        "id": "inne",
+        "label": "Inne uprawnienia (jakie?)",
+        "hasDetails": true
+      }
+    ],
+    "ksiadz_prowadzacy": [
+      {
+        "id": "kierownik_wypoczynku",
+        "label": "Kierownik wypoczynku",
+        "hasDetails": false
+      },
+      {
+        "id": "inne",
+        "label": "Inne uprawnienia (jakie?)",
+        "hasDetails": true
+      }
+    ],
+    "ksiadz_instruktor_narty": [
+      {
+        "id": "kierownik_wypoczynku",
+        "label": "Kierownik wypoczynku",
+        "hasDetails": false
+      },
+      {
+        "id": "kpp",
+        "label": "KPP – Kwalifikowana Pierwsza Pomoc",
+        "hasDetails": false
+      },
+      {
+        "id": "prawo_jazdy_b",
+        "label": "Prawo jazdy kat. B",
+        "hasDetails": false
+      },
+      {
+        "id": "instruktor_narciarstwa",
+        "label": "Uprawnienia instruktora narciarstwa",
+        "hasDetails": false
+      },
+      {
+        "id": "inne",
+        "label": "Inne uprawnienia (jakie?)",
+        "hasDetails": true
+      }
+    ],
+    "ksiadz_instruktor_snowboard": [
+      {
+        "id": "kierownik_wypoczynku",
+        "label": "Kierownik wypoczynku",
+        "hasDetails": false
+      },
+      {
+        "id": "kpp",
+        "label": "KPP – Kwalifikowana Pierwsza Pomoc",
+        "hasDetails": false
+      },
+      {
+        "id": "prawo_jazdy_b",
+        "label": "Prawo jazdy kat. B",
+        "hasDetails": false
+      },
+      {
+        "id": "instruktor_snowboardu",
+        "label": "Uprawnienia instruktora snowboardu",
+        "hasDetails": false
+      },
+      {
         "id": "inne",
         "label": "Inne uprawnienia (jakie?)",
         "hasDetails": true
       }
     ],
     "instruktor": [
+      {
+        "id": "wychowawca_wypoczynku",
+        "label": "Wychowawca wypoczynku",
+        "hasDetails": false
+      },
+      {
+        "id": "kpp",
+        "label": "KPP – Kwalifikowana Pierwsza Pomoc",
+        "hasDetails": false
+      },
+      {
+        "id": "prawo_jazdy_b",
+        "label": "Prawo jazdy kat. B",
+        "hasDetails": false
+      },
+      {
+        "id": "inne",
+        "label": "Inne uprawnienia (jakie?)",
+        "hasDetails": true
+      }
+    ],
+    "instruktor_narty": [
+      {
+        "id": "wychowawca_wypoczynku",
+        "label": "Wychowawca wypoczynku",
+        "hasDetails": false
+      },
+      {
+        "id": "kpp",
+        "label": "KPP – Kwalifikowana Pierwsza Pomoc",
+        "hasDetails": false
+      },
+      {
+        "id": "prawo_jazdy_b",
+        "label": "Prawo jazdy kat. B",
+        "hasDetails": false
+      },
+      {
+        "id": "instruktor_narciarstwa",
+        "label": "Uprawnienia instruktora narciarstwa",
+        "hasDetails": false
+      },
+      {
+        "id": "inne",
+        "label": "Inne uprawnienia (jakie?)",
+        "hasDetails": true
+      }
+    ],
+    "instruktor_snowboard": [
+      {
+        "id": "wychowawca_wypoczynku",
+        "label": "Wychowawca wypoczynku",
+        "hasDetails": false
+      },
+      {
+        "id": "kpp",
+        "label": "KPP – Kwalifikowana Pierwsza Pomoc",
+        "hasDetails": false
+      },
+      {
+        "id": "prawo_jazdy_b",
+        "label": "Prawo jazdy kat. B",
+        "hasDetails": false
+      },
+      {
+        "id": "instruktor_snowboardu",
+        "label": "Uprawnienia instruktora snowboardu",
+        "hasDetails": false
+      },
       {
         "id": "inne",
         "label": "Inne uprawnienia (jakie?)",

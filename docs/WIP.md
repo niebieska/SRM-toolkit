@@ -1,5 +1,13 @@
 # Work in progress
 
+## 2026-10-25 — Winter certificate options
+
+- Expanded the file-based Winter certificate catalogue with the relevant Summer
+  options for Animator/candidate, Ksiądz/Prowadzący, Kucharka and Kierowca.
+  Added separate optional ski and snowboard instructor declarations for both
+  instructor roles and Ksiądz instructor functions. Missing certificates remain
+  non-blocking; selecting Inne still requires a description.
+
 ## 2026-10-24 — Status history placement
 
 - Agreed to show **Historia statusów** as a separate final section at the end of
@@ -29,6 +37,22 @@
 - Compacted the registration summary: name/type/status, code, Turnus/date alongside
   with a small right inset and rejection reason below. All 19 Biuro frontend test
   files and production build passed before committing; whitespace checks passed.
+
+## 2026-10-21 — Staff family names and birth surname
+
+- Added required Imię matki, Imię ojca and Nazwisko rodowe for new staff
+  submissions, including adults and minors. The checkbox **Nazwisko rodowe inne
+  niż nazwisko** sits below Nazwisko; only checking it reveals the separate field
+  beside parent names. Otherwise the current surname is submitted as birth surname.
+  Toggling retains previously entered manual text; parent/guardian fields remain
+  separate and participant submissions are unchanged.
+- Stored in the existing person JSON as motherName, fatherName and birthSurname;
+  Biuro details have Polish labels. No database migration or historical backfill.
+  Update Registration frontend and API together: the API now requires these fields
+  on new staff submissions; an older already-open form may need to be reloaded.
+- Registration API: 186 passed, 11 optional database tests skipped. All six
+  Registration frontend test files and production build passed, including payload
+  mapping and Vue checkbox/toggle/remount validation. Manual visual review pending.
 
 ## 2026-10-21 — Full-hour catalogue refresh deferred
 

@@ -55,6 +55,20 @@ class StaffRoleValidatorTest {
         ((ObjectNode) root.path("certificates")).put("patent_zeglarski", true);
         assertThrows(RegistrationException.class, () -> validator.validate(root, false, winter));
     }
+    @Test void winterInstructorCertificatesMatchTheSelectedDiscipline() {
+        var ski = payload("instruktor", "narty");
+        ((ObjectNode) ski.path("certificates")).put("instruktor_narciarstwa", true);
+        assertDoesNotThrow(() -> validator.validate(ski, false, winter));
+        ((ObjectNode) ski.path("certificates")).put("instruktor_snowboardu", true);
+        assertThrows(RegistrationException.class, () -> validator.validate(ski, false, winter));
+
+        var snowboard = payload("instruktor", "snowboard");
+        ((ObjectNode) snowboard.path("certificates")).put("instruktor_snowboardu", true);
+        assertDoesNotThrow(() -> validator.validate(snowboard, false, winter));
+        var priestSki = payload("ksiadz", "instruktor_narty");
+        ((ObjectNode) priestSki.path("certificates")).put("instruktor_narciarstwa", true);
+        assertDoesNotThrow(() -> validator.validate(priestSki, false, winter));
+    }
     @Test void missingCatalogueDoesNotFallBackToSummer() {
         assertEquals("TURNUS_CATALOGUE_UNAVAILABLE", assertThrows(RegistrationException.class,
                 () -> validator.validate(payload("sternik", ""), false, null)).getCode());
