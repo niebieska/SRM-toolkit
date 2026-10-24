@@ -88,14 +88,24 @@ class RegistrationApiClientTest {
                 .andRespond(withSuccess("[]", MediaType.APPLICATION_JSON));
         server.expect(requestTo("http://registration-api:8080/api/registrations/ABC"))
                 .andExpect(header(HttpHeaders.AUTHORIZATION, credentials))
-                .andRespond(withSuccess("{\"registrationCode\":\"ABC\",\"minor\":false}", MediaType.APPLICATION_JSON));
+                .andRespond(withSuccess("""
+                        {"registrationCode":"ABC","minor":false,"statusHistory":[
+                          {"id":1,"previousStatus":"NEW","newStatus":"ACCEPTED",
+                           "changedAt":"2027-01-02T10:00:00","actorUsername":"operator"}]}
+                        """, MediaType.APPLICATION_JSON));
         server.expect(requestTo("http://registration-api:8080/api/registrations/ABC/status"))
                 .andExpect(method(org.springframework.http.HttpMethod.PATCH))
                 .andExpect(header(HttpHeaders.AUTHORIZATION, credentials))
+                .andExpect(content().json("""
+                        {"status":"WAITLIST","rejectionReason":null,
+                         "actorAccountId":"actor-id","actorUsername":"operator"}
+                        """))
                 .andRespond(withSuccess("{\"registrationCode\":\"ABC\",\"minor\":false,\"status\":\"WAITLIST\"}", MediaType.APPLICATION_JSON));
         assertTrue(client.fetchRegistrations().isEmpty());
-        assertEquals("ABC", client.fetchRegistration("ABC").registrationCode());
-        assertEquals("WAITLIST", client.updateStatus("ABC", new StatusUpdateRequest("WAITLIST", null)).status());
+        var detail = client.fetchRegistration("ABC");
+        assertEquals("ABC", detail.registrationCode());
+        assertEquals("operator", detail.statusHistory().getFirst().actorUsername());
+        assertEquals("WAITLIST", client.updateStatus("ABC", new StatusUpdateRequest("WAITLIST", null), "actor-id", "operator").status());
         server.verify();
     }
 
@@ -124,7 +134,7 @@ class RegistrationApiClientTest {
             switch (operation) {
                 case "list" -> client.fetchRegistrations();
                 case "detail" -> client.fetchRegistration("ABC");
-                default -> client.updateStatus("ABC", new StatusUpdateRequest("WAITLIST", null));
+                default -> client.updateStatus("ABC", new StatusUpdateRequest("WAITLIST", null), "actor-id", "operator");
             }
         });
         assertEquals(HttpStatus.BAD_GATEWAY, failure.getStatusCode());

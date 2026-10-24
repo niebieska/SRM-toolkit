@@ -40,7 +40,7 @@ class RestClientConfigTest {
         try {
             var client = new RegistrationApiClient(new RestClientConfig().restClientBuilder(Duration.ofSeconds(60)),
                     "http://127.0.0.1:" + server.getAddress().getPort(), "test-service", "test-only");
-            assertEquals("ACCEPTED", client.updateStatus("REG-1", new StatusUpdateRequest("ACCEPTED", null)).status());
+            assertEquals("ACCEPTED", client.updateStatus("REG-1", new StatusUpdateRequest("ACCEPTED", null), "actor-id", "operator").status());
             assertEquals("PATCH", method.get());
             assertEquals("Basic " + java.util.Base64.getEncoder().encodeToString(
                     "test-service:test-only".getBytes(StandardCharsets.UTF_8)), authorization.get());
