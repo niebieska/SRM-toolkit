@@ -29,7 +29,9 @@ import pl.srm.registrationapi.registration.model.Registration;
 import pl.srm.registrationapi.registration.repository.RegistrationRepository;
 import pl.srm.registrationapi.registration.repository.RegistrationStatusHistoryRepository;
 import pl.srm.registrationapi.registration.service.management.RegistrationStatusService;
+import pl.srm.registrationapi.registration.service.management.RegistrationManagementService;
 import pl.srm.registrationapi.registration.service.management.StatusNotificationService;
+import pl.srm.registrationapi.registration.util.PeselHelper;
 import java.net.InetSocketAddress;
 import java.net.ServerSocket;
 import java.nio.charset.StandardCharsets;
@@ -138,8 +140,12 @@ class EmailServiceClientTest {
         when(repository.findByRegistrationCode("REG-P-T1-1")).thenReturn(Optional.of(registration));
         when(repository.save(registration)).thenReturn(registration);
         var notifications = new StatusNotificationService(client(Duration.ofSeconds(1)), new ObjectMapper());
-        var service = new RegistrationStatusService(repository, mock(RegistrationStatusHistoryRepository.class), notifications);
-        assertEquals("ACCEPTED", service.updateStatus("REG-P-T1-1", new StatusUpdateRequest("ACCEPTED", null, "actor-id", "operator")).getStatus());
+        var historyRepository = mock(RegistrationStatusHistoryRepository.class);
+        var statusService = new RegistrationStatusService(repository, historyRepository);
+        var service = new RegistrationManagementService(repository, historyRepository,
+                new ObjectMapper(), new PeselHelper(), statusService, notifications);
+        assertEquals("ACCEPTED", service.updateStatus("REG-P-T1-1",
+                new StatusUpdateRequest("ACCEPTED", null, "actor-id", "operator")).status());
         verify(repository).save(registration); assertEquals(1, calls.get());
         assertTrue(messages().contains("UNCONFIRMED"));
     }

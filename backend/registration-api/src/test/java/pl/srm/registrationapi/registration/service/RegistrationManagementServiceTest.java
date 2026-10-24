@@ -12,6 +12,7 @@ import pl.srm.registrationapi.registration.repository.RegistrationStatusHistoryR
 import org.springframework.data.domain.Sort;
 import pl.srm.registrationapi.registration.service.management.RegistrationManagementService;
 import pl.srm.registrationapi.registration.service.management.RegistrationStatusService;
+import pl.srm.registrationapi.registration.service.management.StatusNotificationService;
 import pl.srm.registrationapi.registration.util.PeselHelper;
 
 import java.time.LocalDateTime;
@@ -26,13 +27,15 @@ class RegistrationManagementServiceTest {
     private final RegistrationRepository repository = mock(RegistrationRepository.class);
     private final RegistrationStatusHistoryRepository historyRepository = mock(RegistrationStatusHistoryRepository.class);
     private final RegistrationStatusService statusService = mock(RegistrationStatusService.class);
+    private final StatusNotificationService notificationService = mock(StatusNotificationService.class);
 
     private final RegistrationManagementService service = new RegistrationManagementService(
             repository,
             historyRepository,
             new ObjectMapper(),
             new PeselHelper(),
-            statusService
+            statusService,
+            notificationService
     );
     @Test
     void returnsAllRegistrationsOrderedByCreatedAtDesc() {
@@ -97,7 +100,9 @@ class RegistrationManagementServiceTest {
         assertEquals("REJECTED", response.status());
         assertEquals("Brak miejsc", response.rejectionReason());
 
-        verify(statusService).updateStatus("REG-P-ZAGLE26T1-1", request);
+        var order = inOrder(statusService, notificationService);
+        order.verify(statusService).updateStatus("REG-P-ZAGLE26T1-1", request);
+        order.verify(notificationService).sendStatusUpdate(registration);
         verify(repository, never()).save(any());
     }
     @Test

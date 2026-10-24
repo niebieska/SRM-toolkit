@@ -8,7 +8,6 @@ import pl.srm.registrationapi.registration.model.RegistrationStatusHistory;
 import pl.srm.registrationapi.registration.repository.RegistrationRepository;
 import pl.srm.registrationapi.registration.repository.RegistrationStatusHistoryRepository;
 import pl.srm.registrationapi.registration.service.management.RegistrationStatusService;
-import pl.srm.registrationapi.registration.service.management.StatusNotificationService;
 
 import java.time.LocalDateTime;
 import java.util.Optional;
@@ -28,8 +27,7 @@ class RegistrationStatusServiceTest {
 
     private final RegistrationRepository repository = mock(RegistrationRepository.class);
     private final RegistrationStatusHistoryRepository historyRepository = mock(RegistrationStatusHistoryRepository.class);
-    private final StatusNotificationService notificationService = mock(StatusNotificationService.class);
-    private final RegistrationStatusService service = new RegistrationStatusService(repository, historyRepository, notificationService);
+    private final RegistrationStatusService service = new RegistrationStatusService(repository, historyRepository);
 
     @Test
     void acceptsWaitlistStatusAndClearsRejectionReason() {
@@ -52,7 +50,6 @@ class RegistrationStatusServiceTest {
         assertEquals("WAITLIST", history.getValue().getNewStatus());
         assertEquals("operator-123", history.getValue().getActorAccountId());
         assertEquals("operator", history.getValue().getActorUsername());
-        verify(notificationService).sendStatusUpdate(registration);
     }
 
     @Test
@@ -72,7 +69,6 @@ class RegistrationStatusServiceTest {
         verify(historyRepository).save(history.capture());
         assertEquals("NEW", history.getValue().getPreviousStatus());
         assertEquals("Brak wymaganych dokumentow", history.getValue().getRejectionReason());
-        verify(notificationService).sendStatusUpdate(registration);
     }
 
     @Test
@@ -84,7 +80,6 @@ class RegistrationStatusServiceTest {
         service.updateStatus("REG-P-ZAGLE26T1-1", request("ACCEPTED", null));
 
         verifyNoInteractions(historyRepository);
-        verify(notificationService).sendStatusUpdate(registration);
     }
 
     @Test
@@ -100,7 +95,6 @@ class RegistrationStatusServiceTest {
         assertEquals("INVALID_STATUS", exception.getCode());
         verify(repository).findByRegistrationCode("REG-P-ZAGLE26T1-1");
         verify(repository, never()).save(any());
-        verifyNoInteractions(notificationService);
         verifyNoInteractions(historyRepository);
     }
 

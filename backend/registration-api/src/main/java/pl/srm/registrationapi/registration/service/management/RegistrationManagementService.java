@@ -30,16 +30,19 @@ public class RegistrationManagementService {
     private final ObjectMapper objectMapper;
     private final PeselHelper peselHelper;
     private final RegistrationStatusService  statusService;
+    private final StatusNotificationService notificationService;
 
     public RegistrationManagementService(RegistrationRepository repository,
                                          RegistrationStatusHistoryRepository historyRepository,
                                          ObjectMapper objectMapper,
-                                         PeselHelper peselHelper, RegistrationStatusService statusService) {
+                                         PeselHelper peselHelper, RegistrationStatusService statusService,
+                                         StatusNotificationService notificationService) {
         this.repository = repository;
         this.historyRepository = historyRepository;
         this.objectMapper = objectMapper;
         this.peselHelper = peselHelper;
         this.statusService = statusService;
+        this.notificationService = notificationService;
     }
 
     public RegistrationSummaryResponse getByCode(String code) {
@@ -79,6 +82,7 @@ public class RegistrationManagementService {
 
     public RegistrationSummaryResponse updateStatus(String code, StatusUpdateRequest request) {
         Registration updated = statusService.updateStatus(code, request);
+        notificationService.sendStatusUpdate(updated);
         return toSummary(updated);
     }
 

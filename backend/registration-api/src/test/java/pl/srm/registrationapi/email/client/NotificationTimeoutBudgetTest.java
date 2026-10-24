@@ -16,6 +16,8 @@ import pl.srm.registrationapi.registration.model.Registration;
 import pl.srm.registrationapi.registration.repository.RegistrationRepository;
 import pl.srm.registrationapi.registration.repository.RegistrationStatusHistoryRepository;
 import pl.srm.registrationapi.registration.service.management.RegistrationStatusService;
+import pl.srm.registrationapi.registration.service.management.RegistrationManagementService;
+import pl.srm.registrationapi.registration.util.PeselHelper;
 import pl.srm.registrationapi.registration.service.management.StatusNotificationService;
 import java.io.IOException;
 import java.net.InetSocketAddress;
@@ -78,7 +80,10 @@ class NotificationTimeoutBudgetTest {
                 var read = Duration.parse(context.getEnvironment().getProperty("email.service.read-timeout")).dividedBy(10);
                 var inner = new EmailServiceClient(RestClient.builder(), "http://127.0.0.1:" + email.getAddress().getPort(), connect, read);
                 var notifications = new StatusNotificationService(inner, new ObjectMapper());
-                var service = new RegistrationStatusService(repository, mock(RegistrationStatusHistoryRepository.class), notifications);
+                var historyRepository = mock(RegistrationStatusHistoryRepository.class);
+                var statusService = new RegistrationStatusService(repository, historyRepository);
+                var service = new RegistrationManagementService(repository, historyRepository,
+                        new ObjectMapper(), new PeselHelper(), statusService, notifications);
                 registration.createContext("/status", exchange -> {
                     try {
                         exchange.getRequestBody().readAllBytes();

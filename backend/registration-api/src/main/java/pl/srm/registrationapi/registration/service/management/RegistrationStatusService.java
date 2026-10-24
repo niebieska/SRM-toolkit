@@ -26,14 +26,11 @@ public class RegistrationStatusService {
 
     private final RegistrationRepository repository;
     private final RegistrationStatusHistoryRepository historyRepository;
-    private final StatusNotificationService notificationService;
 
     public RegistrationStatusService(RegistrationRepository repository,
-                                     RegistrationStatusHistoryRepository historyRepository,
-                                     StatusNotificationService notificationService) {
+                                     RegistrationStatusHistoryRepository historyRepository) {
         this.repository = repository;
         this.historyRepository = historyRepository;
-        this.notificationService = notificationService;
     }
 
     @Transactional
@@ -65,8 +62,6 @@ public class RegistrationStatusService {
                     request.actorAccountId(), request.actorUsername(), saved.getRejectionReason()
             ));
         }
-
-        notificationService.sendStatusUpdate(saved);
 
         return saved;
     }
