@@ -37,10 +37,7 @@ const FIELD_LABELS = {
   role: 'Rola',
   subrole: 'Funkcja',
 
-  'consents.dataProcessing': 'Zgoda na przetwarzanie danych',
   'consents.imageUsage': 'Zgoda na wykorzystanie wizerunku',
-  'consents.regulations': 'Akceptacja regulaminu',
-  'consents.truthDeclaration': 'Oświadczenie o prawdziwości danych',
 
   'health.q1.question': 'Pytanie',
   'health.q1.answer': 'Odpowiedź',
@@ -62,7 +59,6 @@ const SECTION_LABELS = {
   ice: 'Kontakt awaryjny',
   role: 'Rola',
   certificates: 'Uprawnienia',
-  certificateDetails: 'Szczegóły uprawnień',
   health: 'Kwestionariusz',
   consents: 'Zgody',
   turnusCode: 'Turnus',
@@ -282,4 +278,3 @@ export function formatFieldValue(value,path = '') {
   if (typeof value === 'object') return JSON.stringify(value)
   return String(value)
 }
-

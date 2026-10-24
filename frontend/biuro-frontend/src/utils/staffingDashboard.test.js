@@ -14,7 +14,7 @@ source = source.replace(/from '([^']+)'/g, (match, path) => {
   return path.startsWith('.') ? `from '${new URL(path.endsWith('.js') ? path : path + '.js', file).href}'` : match
 })
 source = source.replace('__expose();', '')
-source = source.replace('return __returned__', '__expose({ filters, stats, staffingRoles, statsLoading, statsError, loadTurnusStats }); return __returned__')
+source = source.replace('return __returned__', '__expose({ filters, stats, staffingRoles, statsLoading, statsError, loadTurnusStats, turnusOptions, activeTurnusOptions }); return __returned__')
 const { default: Dashboard } = await import(`data:text/javascript;base64,${Buffer.from(source).toString('base64')}`)
 Dashboard.render = () => null
 const renderer = createRenderer({ createComment: () => ({}), insert() {}, remove() {}, parentNode: () => null,
@@ -81,4 +81,17 @@ test('an upstream error clears role counts rather than keeping misleading old da
   await vm.loadTurnusStats()
   assert.deepEqual(vm.staffingRoles, [])
   assert.equal(vm.statsError, 'Brak połączenia ze zgłoszeniami.')
+})
+
+test('Zgłoszenia Turnus filter includes only active Turnusy', async t => {
+  const { vm } = await mount(t, async () => new Response('[]'))
+  vm.turnusOptions = [
+    { turnusCode: 'ACTIVE', active: true },
+    { turnusCode: 'INACTIVE', active: false },
+    { turnusCode: 'UNKNOWN', active: undefined },
+  ]
+  await nextTick()
+
+  assert.deepEqual(vm.activeTurnusOptions.map(turnus => turnus.turnusCode), ['ACTIVE'])
+  assert.match(descriptor.template.content, /v-for="turnus in activeTurnusOptions"/)
 })
