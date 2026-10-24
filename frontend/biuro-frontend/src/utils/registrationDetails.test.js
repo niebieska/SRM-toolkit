@@ -1,12 +1,12 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
-import { registrationSections, formatFieldValue } from './registrationDetails.js'
+import { registrationSections, combineQualificationSections, formatFieldValue } from './registrationDetails.js'
 
 const registration = (registrationType, minor) => ({ registrationType, minor, age: 25,
   payload: { person: { firstName: 'Anna', isAdult: !minor }, address: { city: 'Łódź' },
     guardian: { firstName: 'Maria' }, ice: { firstName: 'Adam' },
-    role: 'animator', subrole: 'kandydat_na_animatora', certificates: { kpp: false },
-    certificateDetails: { inne: 'Kurs' }, consents: { imageUsage: false },
+    role: 'animator', subrole: 'kandydat_na_animatora', certificates: { kpp: true },
+    certificateDetails: { kpp: 'Kurs' }, consents: { imageUsage: false },
     health: { q1: { question: 'Zapisane pytanie?', answer: 'tak', detail: 'Pierwsza\ndruga linia' } } } })
 const paths = sections => sections.flatMap(section => section.fields.map(field => field.path))
 
@@ -52,6 +52,71 @@ test('parent and guardian names are shown last in guardian details', () => {
   }
   const guardian = registrationSections(data).find(section => section.key === 'guardian')
   assert.equal(guardian.fields.at(-1).path, 'guardian.names')
+})
+
+test('consent details omit mandatory acknowledgments but retain optional and unknown entries', () => {
+  const data = registration('PARTICIPANT', false)
+  data.payload.consents = {
+    dataProcessing: true,
+    regulations: true,
+    truthDeclaration: true,
+    imageUsage: false,
+    futureOptionalConsent: true,
+  }
+  const consents = registrationSections(data).find(section => section.key === 'consents')
+  assert.deepEqual(consents.fields.map(field => field.path), [
+    'consents.imageUsage', 'consents.futureOptionalConsent',
+  ])
+})
+
+test('consent section is omitted when it contains only mandatory acknowledgments', () => {
+  const data = registration('PARTICIPANT', false)
+  data.payload.consents = { dataProcessing: true, regulations: true, truthDeclaration: true }
+  assert.equal(registrationSections(data).some(section => section.key === 'consents'), false)
+})
+
+test('qualification sections are omitted when none are selected and stale details are ignored', () => {
+  const data = registration('STAFF', false)
+  data.payload.certificates = { kpp: false }
+  data.payload.certificateDetails = { kpp: 'Stara informacja' }
+  const sections = registrationSections(data)
+  assert.equal(sections.some(section => ['certificates', 'certificateDetails'].includes(section.key)), false)
+
+  data.payload.certificates = { kpp: true }
+  const selectedSections = registrationSections(data)
+  assert.deepEqual(selectedSections.find(section => section.key === 'certificates').fields.map(field => field.path), ['certificates.kpp'])
+  assert.deepEqual(selectedSections.find(section => section.key === 'certificateDetails').fields.map(field => field.path), ['certificateDetails.kpp'])
+})
+
+test('the generic Inne selection is represented by its description, not an Inne: Tak row', () => {
+  const data = registration('STAFF', false)
+  data.payload.certificates = { inne: true }
+  data.payload.certificateDetails = { inne: 'Instruktor' }
+  const sections = registrationSections(data)
+  assert.equal(sections.some(section => section.fields.some(field => field.path === 'certificates.inne')), false)
+  assert.deepEqual(sections.find(section => section.key === 'certificateDetails').fields.map(field => ({
+    label: field.label,
+    value: field.value,
+  })), [{ label: 'Inne uprawnienia', value: 'Instruktor' }])
+
+  data.payload.certificates = {}
+  const legacySections = registrationSections(data)
+  assert.equal(legacySections.some(section => section.fields.some(field => field.path === 'certificates.inne')), false)
+  assert.deepEqual(legacySections.find(section => section.key === 'certificateDetails').fields.map(field => field.value), ['Instruktor'])
+})
+
+test('custom qualification details without a checkbox row stay beside the staff role', () => {
+  const data = registration('STAFF', false)
+  data.payload.certificates = { inne: true }
+  data.payload.certificateDetails = { inne: 'pomocnik instruktora sitn' }
+  const sections = combineQualificationSections(registrationSections(data))
+  const keys = sections.map(section => section.key)
+  assert.equal(keys.indexOf('certificates'), keys.indexOf('role') + 1)
+  assert.ok(keys.indexOf('health') > keys.indexOf('certificates'))
+  assert.deepEqual(sections.find(section => section.key === 'certificates').fields.map(field => ({
+    label: field.label,
+    value: field.value,
+  })), [{ label: 'Inne uprawnienia', value: 'pomocnik instruktora sitn' }])
 })
 
 test('older missing fields and unfamiliar sections remain readable without fabricating values', () => {

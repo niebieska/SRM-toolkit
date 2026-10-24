@@ -4,7 +4,7 @@ import { useAuthStore } from '../stores/auth'
 import { fetchRegistrationDetail } from '../api/registrationApi'
 import StatusBadge from './StatusBadge.vue'
 import { formatDateTime } from '../utils/dateUtils'
-import { registrationSections, formatFieldValue } from '../utils/registrationDetails'
+import { registrationSections, combineQualificationSections, formatFieldValue } from '../utils/registrationDetails'
 
 const props = defineProps({
   code: {
@@ -116,16 +116,7 @@ function visibleRegistrationSections(registration) {
       })
     }
   }
-  const certificateSection = sections.find(section => section.key === 'certificates')
-  const certificateDetails = sections.find(section => section.key === 'certificateDetails')
-
-  if (certificateDetails) {
-    if (certificateSection) certificateSection.fields.push(...certificateDetails.fields)
-    else sections.push({ ...certificateDetails, key: 'certificates', label: 'Uprawnienia' })
-    return sections.filter(section => section.key !== 'certificateDetails')
-  }
-
-  return sections
+  return combineQualificationSections(sections)
 }
 </script>
 

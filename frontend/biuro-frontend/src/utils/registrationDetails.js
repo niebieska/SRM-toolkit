@@ -32,6 +32,8 @@ const FIELD_LABELS = {
   'ice.relation': 'Relacja',
   'ice.phone': 'Telefon',
 
+  'certificateDetails.inne': 'Inne uprawnienia',
+
   role: 'Rola',
   subrole: 'Funkcja',
 
@@ -66,6 +68,12 @@ const SECTION_LABELS = {
   turnusCode: 'Turnus',
 }
 
+const MANDATORY_CONSENT_PATHS = new Set([
+  'consents.dataProcessing',
+  'consents.regulations',
+  'consents.truthDeclaration',
+])
+
 function isPlainObject(value) {
   return value !== null && typeof value === 'object' && !Array.isArray(value)
 }
@@ -90,6 +98,11 @@ export function registrationSections(registration) {
   const minor = typeof registration.minor === 'boolean' ? registration.minor : null
   const type = registration.registrationType
   const sections = rawPayloadSections(payload)
+  const selectedCertificateIds = new Set(
+    Object.entries(isPlainObject(payload?.certificates) ? payload.certificates : {})
+      .filter(([, selected]) => selected === true)
+      .map(([id]) => id),
+  )
   const known = new Set(['person', 'address', 'guardian', 'ice', 'role', 'subrole',
     'certificates', 'certificateDetails', 'health', 'consents', 'turnusCode'])
   const result = []
@@ -98,6 +111,21 @@ export function registrationSections(registration) {
     if (section.key === 'guardian' && minor === false) continue
     if (section.key === 'ice' && minor === true) continue
     if (type === 'PARTICIPANT' && ['certificates', 'certificateDetails'].includes(section.key)) continue
+    if (section.key === 'certificates') {
+      section.fields = section.fields.filter(field => field.path.startsWith('certificates.')
+        && field.value === true && field.path !== 'certificates.inne')
+      if (!section.fields.length) continue
+    }
+    if (section.key === 'certificateDetails') {
+      section.fields = section.fields.filter(field => {
+        const match = field.path.match(/^certificateDetails\.([^.]+)/)
+        // Older payloads can retain the custom qualification description without its checkbox flag.
+        const legacyCustomQualification = match?.[1] === 'inne' && payload?.certificates?.inne === undefined
+        return match && (selectedCertificateIds.has(match[1]) || legacyCustomQualification)
+          && field.value !== null && field.value !== undefined && String(field.value).trim() !== ''
+      })
+      if (!section.fields.length) continue
+    }
     if (section.key === 'basic') {
       for (const field of section.fields) {
         const key = field.path
@@ -128,6 +156,10 @@ export function registrationSections(registration) {
         return { key, question, fields }
       })
     }
+    if (section.key === 'consents') {
+      section.fields = section.fields.filter(field => !MANDATORY_CONSENT_PATHS.has(field.path))
+      if (!section.fields.length) continue
+    }
     if (section.fields.length) result.push(section)
   }
   if (other.length) result.push({ key: 'other', label: 'Pozostałe informacje', fields: other })
@@ -137,6 +169,27 @@ export function registrationSections(registration) {
   }
   const order = ['person', 'address', 'guardian', 'ice', 'role', 'certificates', 'certificateDetails', 'health', 'consents', 'payload', 'other']
   return result.sort((a, b) => order.indexOf(a.key) - order.indexOf(b.key))
+}
+
+export function combineQualificationSections(sections) {
+  const result = sections.map(section => ({ ...section, fields: [...section.fields] }))
+  const certificateIndex = result.findIndex(section => section.key === 'certificates')
+  const detailsIndex = result.findIndex(section => section.key === 'certificateDetails')
+  if (detailsIndex < 0) return result
+
+  const details = result[detailsIndex]
+  if (certificateIndex >= 0) {
+    result[certificateIndex].fields.push(...details.fields)
+  } else {
+    const roleIndex = result.findIndex(section => section.key === 'role')
+    const nextSectionIndex = result.findIndex(section => ['health', 'consents', 'other'].includes(section.key))
+    const insertIndex = roleIndex >= 0
+      ? roleIndex + 1
+      : nextSectionIndex >= 0 ? nextSectionIndex : result.length
+    result.splice(insertIndex, 0, { ...details, key: 'certificates', label: 'Uprawnienia' })
+  }
+
+  return result.filter(section => section.key !== 'certificateDetails')
 }
 
 function flattenFields(node, path = []) {
