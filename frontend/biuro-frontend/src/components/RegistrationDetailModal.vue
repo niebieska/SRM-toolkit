@@ -24,6 +24,28 @@ const personName = computed(() => {
   return [detail.value?.firstName || person?.firstName, detail.value?.lastName || person?.lastName]
     .filter(Boolean).join(' ')
 })
+const statusHistoryTimeline = computed(() => {
+  if (!detail.value) return []
+
+  const changes = (detail.value.statusHistory || []).map(entry => ({
+    id: `change-${entry.id}`,
+    status: entry.newStatus,
+    changedAt: entry.changedAt,
+    actorUsername: entry.actorUsername,
+    rejectionReason: entry.rejectionReason,
+  }))
+
+  return [
+    ...changes,
+    {
+      id: 'initial',
+      status: 'NEW',
+      changedAt: detail.value.createdAt,
+      actorUsername: null,
+      rejectionReason: null,
+    },
+  ]
+})
 
 onMounted(async () => {
   try {
@@ -286,22 +308,19 @@ function visibleRegistrationSections(registration) {
 
         <section aria-labelledby="status-history-heading" class="rounded-lg border border-slate-200 p-4">
           <h3 id="status-history-heading" class="text-sm font-semibold text-slate-700">Historia statusów</h3>
-          <ol v-if="detail.statusHistory?.length" class="mt-3 space-y-3">
-            <li v-for="entry in detail.statusHistory" :key="entry.id" class="border-t border-slate-100 pt-3 first:border-0 first:pt-0">
-              <div class="flex flex-wrap items-center gap-2 text-sm">
-                <StatusBadge :status="entry.previousStatus" />
-                <span aria-hidden="true" class="text-slate-400">→</span>
-                <StatusBadge :status="entry.newStatus" />
+          <ol class="relative mt-3 border-l border-slate-200">
+            <li v-for="entry in statusHistoryTimeline" :key="entry.id" class="relative ml-4 pb-4 last:pb-0">
+              <span class="absolute -left-[21px] top-1 h-2.5 w-2.5 rounded-full border-2 border-white bg-slate-400" aria-hidden="true"></span>
+              <div class="flex flex-wrap items-center gap-x-2 gap-y-1">
+                <StatusBadge :status="entry.status" />
+                <span class="text-xs text-slate-600">{{ formatDateTime(entry.changedAt) }}</span>
+                <span v-if="entry.actorUsername" class="text-xs text-slate-500">· {{ entry.actorUsername }}</span>
               </div>
-              <p class="mt-1 text-xs text-slate-600">
-                {{ formatDateTime(entry.changedAt) }} · Login: {{ entry.actorUsername }}
-              </p>
               <p v-if="entry.rejectionReason" class="mt-1 whitespace-pre-wrap break-words text-sm text-slate-700">
                 Powód odrzucenia: {{ entry.rejectionReason }}
               </p>
             </li>
           </ol>
-          <p v-else class="mt-2 text-sm text-slate-500">Brak zapisanych zmian statusu.</p>
         </section>
 
       </template>
