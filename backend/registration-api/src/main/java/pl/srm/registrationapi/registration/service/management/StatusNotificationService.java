@@ -44,6 +44,11 @@ public class StatusNotificationService {
             variables.put("registrationCode", registration.getRegistrationCode());
             variables.put("status", registration.getStatus());
             variables.put("statusLabel", statusLabel(registration.getStatus()));
+            variables.put("registrationType", registration.getRegistrationType());
+            variables.put("isMinor", Boolean.toString(registration.isMinor()));
+            variables.put("includeParticipantCard", Boolean.toString(
+                    "PARTICIPANT".equals(registration.getRegistrationType())
+                            || ("STAFF".equals(registration.getRegistrationType()) && registration.isMinor())));
             variables.put("rejectionReason", registration.getRejectionReason() == null
                     ? ""
                     : registration.getRejectionReason());
