@@ -71,6 +71,12 @@ class RegistrationMigrationTest {
                 result = sql.executeQuery("SELECT COUNT(*) FROM information_schema.tables "
                         + "WHERE table_schema = DATABASE() AND table_name = 'registration_status_history'");
                 assertTrue(result.next()); assertEquals(1, result.getInt(1));
+                result = sql.executeQuery("SELECT COUNT(*) FROM information_schema.tables "
+                        + "WHERE table_schema = DATABASE() AND table_name = 'registration_edit_history'");
+                assertTrue(result.next()); assertEquals(1, result.getInt(1));
+                result = sql.executeQuery("SELECT COUNT(*) FROM information_schema.columns "
+                        + "WHERE table_schema = DATABASE() AND table_name = 'registration' AND column_name = 'version'");
+                assertTrue(result.next()); assertEquals(1, result.getInt(1));
             }
             assertEquals(0, flyway(url, null).migrate().migrationsExecuted);
         });

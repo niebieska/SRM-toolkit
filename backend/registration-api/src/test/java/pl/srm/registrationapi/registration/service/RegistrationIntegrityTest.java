@@ -9,11 +9,13 @@ import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.context.bean.override.mockito.MockitoSpyBean;
 import pl.srm.registrationapi.registration.dto.request.StatusUpdateRequest;
+import pl.srm.registrationapi.registration.dto.request.RegistrationEditRequest;
 import pl.srm.registrationapi.registration.exception.RegistrationException;
 import pl.srm.registrationapi.registration.parser.RegistrationContext;
 import pl.srm.registrationapi.registration.service.submission.RegistrationPersistenceService;
 import pl.srm.registrationapi.registration.model.Registration;
 import pl.srm.registrationapi.registration.service.management.RegistrationManagementService;
+import pl.srm.registrationapi.registration.service.management.RegistrationEditService;
 import pl.srm.registrationapi.registration.service.management.StatusNotificationService;
 
 import java.util.ArrayList;
@@ -47,6 +49,7 @@ class RegistrationIntegrityTest {
     @Autowired RegistrationPersistenceService service;
     @Autowired JdbcTemplate jdbc;
     @Autowired RegistrationManagementService managementService;
+    @Autowired RegistrationEditService editService;
     @MockitoBean StatusNotificationService notificationService;
     @MockitoSpyBean pl.srm.registrationapi.registration.repository.RegistrationStatusHistoryRepository historyRepository;
 
@@ -251,6 +254,62 @@ class RegistrationIntegrityTest {
         var latestDetail = managementService.getDetailByCode(code);
         assertEquals("ACCEPTED", latestDetail.status());
         assertEquals(1, latestDetail.statusHistory().size());
+    }
+
+    @Test
+    void registrationEditPersistsPayloadVersionAndActorHistory() throws Exception {
+        String code = service.saveParticipant(context("EDIT-PERSIST", "edit-person"), editablePayload());
+
+        editService.update(code, new RegistrationEditRequest(0L,
+                java.util.Map.of("person.firstName", "Alicja"), "account-id", "operator"));
+
+        String payload = jdbc.queryForObject(
+                "SELECT payload FROM registration WHERE registration_code = ?", String.class, code);
+        assertTrue(payload.contains("\"firstName\":\"Alicja\""));
+        assertEquals(1L, jdbc.queryForObject(
+                "SELECT version FROM registration WHERE registration_code = ?", Long.class, code));
+        assertEquals(1, jdbc.queryForObject("""
+                SELECT COUNT(*) FROM registration_edit_history h
+                JOIN registration r ON r.id = h.registration_id
+                WHERE r.registration_code = ? AND h.actor_account_id = 'account-id'
+                  AND h.actor_username = 'operator' AND h.changed_fields = '["person.firstName"]'
+                """, Integer.class, code));
+    }
+
+    @Test
+    void failedEditHistoryInsertRollsBackPayloadVersionAndTimestamp() {
+        String code = service.saveParticipant(context("EDIT-ROLLBACK", "rollback-person"), editablePayload());
+        String originalPayload = jdbc.queryForObject(
+                "SELECT payload FROM registration WHERE registration_code = ?", String.class, code);
+        jdbc.execute("CREATE TRIGGER fail_edit_history_insert BEFORE INSERT ON registration_edit_history " +
+                "FOR EACH ROW SIGNAL SQLSTATE '45000' SET MESSAGE_TEXT = 'forced edit history failure'");
+        try {
+            assertThrows(RuntimeException.class, () -> editService.update(code,
+                    new RegistrationEditRequest(0L, java.util.Map.of("person.firstName", "Alicia"),
+                            "account-id", "operator")));
+
+            assertEquals(originalPayload, jdbc.queryForObject(
+                    "SELECT payload FROM registration WHERE registration_code = ?", String.class, code));
+            assertEquals(0L, jdbc.queryForObject(
+                    "SELECT version FROM registration WHERE registration_code = ?", Long.class, code));
+            assertNull(jdbc.queryForObject(
+                    "SELECT updated_at FROM registration WHERE registration_code = ?", java.sql.Timestamp.class, code));
+            assertEquals(0, jdbc.queryForObject("""
+                    SELECT COUNT(*) FROM registration_edit_history h
+                    JOIN registration r ON r.id = h.registration_id WHERE r.registration_code = ?
+                    """, Integer.class, code));
+        } finally {
+            jdbc.execute("DROP TRIGGER IF EXISTS fail_edit_history_insert");
+        }
+    }
+
+    private String editablePayload() {
+        return """
+                {"person":{"firstName":"Anna","lastName":"Nowak","contact":{"email":"anna@example.org","phone":"+48123456789"}},
+                 "address":{"street":"Leśna","houseNumber":"1","postalCode":"00-001","city":"Warszawa"},
+                 "ice":{"firstName":"Jan","lastName":"Nowak","relation":"inna","relationOther":"mąż","phone":"+48123456789"},
+                 "health":{"q1":{"answer":"nie","detail":null},"q2":{"answer":"nie","detail":null},"q3":{"answer":"nie","detail":null}}}
+                """;
     }
 
     @Test

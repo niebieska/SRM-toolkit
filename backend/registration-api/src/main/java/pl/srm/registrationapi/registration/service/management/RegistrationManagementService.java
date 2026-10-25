@@ -5,6 +5,8 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Isolation;
 import org.springframework.transaction.annotation.Transactional;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import pl.srm.registrationapi.registration.dto.response.RegistrationDetailResponse;
 import pl.srm.registrationapi.registration.dto.response.RegistrationStatusHistoryEntryResponse;
 import pl.srm.registrationapi.registration.dto.response.RegistrationEditHistoryEntryResponse;
@@ -26,6 +28,7 @@ import pl.srm.registrationapi.registration.util.PeselHelper;
 
 @Service
 public class RegistrationManagementService {
+    private static final Logger LOGGER = LoggerFactory.getLogger(RegistrationManagementService.class);
 
     private static final Set<String> ALLOWED_STATUSES = Set.of("ACCEPTED", "REJECTED");
 
@@ -86,6 +89,8 @@ public class RegistrationManagementService {
                                         entry.getActorUsername(), objectMapper.readValue(entry.getChangedFields(),
                                         objectMapper.getTypeFactory().constructCollectionType(List.class, String.class)));
                             } catch (Exception ex) {
+                                LOGGER.warn("Cannot read changed fields for registration edit history entry {}",
+                                        entry.getId(), ex);
                                 return new RegistrationEditHistoryEntryResponse(entry.getId(), entry.getChangedAt(),
                                         entry.getActorUsername(), List.of());
                             }
