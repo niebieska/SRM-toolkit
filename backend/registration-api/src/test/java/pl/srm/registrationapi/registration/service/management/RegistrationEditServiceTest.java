@@ -1,4 +1,4 @@
-package pl.srm.registrationapi.registration.service;
+package pl.srm.registrationapi.registration.service.management;
 
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -10,7 +10,6 @@ import pl.srm.registrationapi.registration.model.Registration;
 import pl.srm.registrationapi.registration.model.RegistrationEditHistory;
 import pl.srm.registrationapi.registration.repository.RegistrationEditHistoryRepository;
 import pl.srm.registrationapi.registration.repository.RegistrationRepository;
-import pl.srm.registrationapi.registration.service.management.RegistrationEditService;
 
 import java.util.List;
 import java.util.Map;
@@ -26,8 +25,11 @@ class RegistrationEditServiceTest {
     private final RegistrationRepository registrationRepository = mock(RegistrationRepository.class);
     private final RegistrationEditHistoryRepository historyRepository = mock(RegistrationEditHistoryRepository.class);
     private final ObjectMapper mapper = new ObjectMapper();
+    private final RegistrationEditPolicy policy = new RegistrationEditPolicy();
+    private final RegistrationEditValidator validator = new RegistrationEditValidator(policy);
+    private final RegistrationPayloadEditor payloadEditor = new RegistrationPayloadEditor(mapper, policy, validator);
     private final RegistrationEditService service = new RegistrationEditService(
-            registrationRepository, historyRepository, mapper);
+            registrationRepository, historyRepository, payloadEditor, mapper);
     private Registration registration;
 
     @BeforeEach

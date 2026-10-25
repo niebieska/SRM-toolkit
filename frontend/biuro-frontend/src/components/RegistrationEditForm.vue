@@ -4,7 +4,7 @@ import { useAuthStore } from '../stores/auth'
 import { updateRegistrationData } from '../api/registrationApi'
 
 const props = defineProps({ detail: { type: Object, required: true }, reloadError: { type: String, default: '' } })
-const emit = defineEmits(['saved', 'cancel', 'dirty-change'])
+const emit = defineEmits(['saved', 'cancel', 'dirty-change', 'reload'])
 const auth = useAuthStore()
 const original = structuredClone(toRaw(props.detail.payload || {}))
 const draft = ref(structuredClone(original))
