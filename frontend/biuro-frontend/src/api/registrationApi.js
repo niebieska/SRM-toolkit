@@ -9,6 +9,7 @@ export function fetchRegistrations(token, filters = {}) {
 }
 export const updateRegistrationStatus = (token, code, payload) => request(`${base}/${encodeURIComponent(code)}/status`, { token, method: 'PATCH', payload })
 export const fetchRegistrationDetail = (token, code) => request(`${base}/${encodeURIComponent(code)}`, { token })
+export const updateRegistrationData = (token, code, payload) => request(`${base}/${encodeURIComponent(code)}/data`, { token, method: 'PATCH', payload })
 export async function fetchTurnusStats(token, turnusCode) {
   const body = await request(`${base}/stats/${encodeURIComponent(turnusCode)}`, { token })
   if (!body?.participants || !body?.staff || !validStaffingStatistics(body))

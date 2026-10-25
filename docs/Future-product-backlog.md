@@ -22,29 +22,34 @@ explicitly promoted into Registration-workflow-release-plan.md and recorded in W
 
 ## Registration and domain extensions
 
-- Registration creation by an authenticated Biuro operator (participant/staff),
-  for phone or on-site entries. Recorded 2026-10-15; priority to be decided after
-  current prioritized work is finished, not added to the committed MVP scope yet.
-  Prefer reusing existing submission validation, numbering and duplicate protection.
-  Decide closed-Turnus access, initial status, notification behavior, consent
-  recording and operator attribution before implementation. NEW is a proposal,
-  not an agreed initial-status rule for this workflow.
-- Biuro registration editing: scope discussion recorded 2026-10-16; deferred while
-  remaining release work is completed. Assume PESEL was entered correctly and keep
-  it read-only, together with registration code, Turnus and registration type.
-  Status changes continue through the existing separate workflow.
-  Candidate editable fields: names, address, person/guardian/ICE contacts, health
-  information and staff role/subrole/qualifications. Confirm the exact field list
-  before implementation; reuse backend validation and season rules. Include an
-  audit trail and protection against overwriting newer changes. Consent editing
-  and notification behavior require explicit decisions; operator edits must not
-  imply a new declaration of consent or automatically resend confirmation emails.
-  A contact/address-only first version remains an option. This is not promoted
-  into the committed MVP scope.
+- **Biuro staff registration creation** for phone or on-site intake. Scope agreed
+  2026-10-25; priority remains to be decided, and it is not thereby promoted to an
+  MVP release gate. Add an OPERATOR-only Biuro form and protected Biuro API path to
+  an internal Registration API endpoint. Reuse the staff catalogue, validation,
+  duplicate protection and registration numbering. Email addresses are optional
+  on this manual path; public staff registration rules remain unchanged. Other
+  required staff data and consents remain required.
+  Create the record as NEW, then transition it to ACCEPTED in the same database
+  transaction, recording the authenticated operator in status history. The saved
+  registration is ACCEPTED immediately; no separate status-history schema is
+  planned. Send the existing confirmation with status ACCEPTED when an email address
+  is available; otherwise skip sending. Reuse existing Turnus active/open checks
+  and current capacity behavior. The accepted registration appears in normal
+  statistics and lists. Approximate implementation size: 14–22 focused hours,
+  including tests; not a delivery commitment.
+- Biuro registration editing: implementation started on `feature/registration-editing`
+  on 2026-10-25; it is not promoted to an MVP release gate. The initial scope keeps
+  PESEL, registration code, Turnus, registration type, status, consents and staff
+  role/qualifications read-only. It permits corrections to names, address, personal
+  and guardian/ICE contact details, staff family-name fields, and existing health
+  answers/details/additional information. OPERATOR identity, time and changed field
+  names are audited; saves use version checks to reject stale edits. Edits do not
+  send email or imply a new consent. Review this initial field scope before merge.
 - Turnus transfer remains a separate workflow creating a linked new registration
   and preserving the original registration/code/history, as detailed in WIP.
-- Soft delete and operational notes. Registration status history is now a required
-  MVP task; see [status history](Registration-status-history.md).
+- Soft delete and operational notes remain deferred. Registration status history
+  is implemented in PR #46; deployed/browser acceptance is tracked in the release
+  plan and [status history](Registration-status-history.md).
 - Person model, identity/deduplication and cross-season registration history.
 - Bulk actions and additional Excel/PDF formats beyond agreed release exports.
 - Staff requirement planning beyond configured role/certificate selection.

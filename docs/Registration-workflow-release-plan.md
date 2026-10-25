@@ -8,10 +8,12 @@ First-release-functional-review.md and Turnus-management-plan.md.
 Operational deployment gates live in [deployment-checklist.md](deployment-checklist.md).
 This file owns functional acceptance; WIP.md records progress and evidence.
 
-Implementation status reconciled 2026-10-16 against local `development` at
-`2cdac33` (export PR #40). This records completed implementation, not deployed
-acceptance or a new full regression run. Earlier dated assessments are historical;
-implementation documents and WIP record subsequent corrections.
+The initial implementation baseline was reconciled 2026-10-16 against local
+`development` at `2cdac33` (export PR #40). Subsequent items are reconciled
+selectively as they are verified; the status-history entry below was updated
+2026-10-25 for PR #46. These notes distinguish implementation from deployed
+acceptance and do not claim a new full regression run. Earlier dated assessments
+are historical; implementation documents and WIP record later corrections.
 
 ## Current state and acceptance gates
 
@@ -75,12 +77,15 @@ Details: [catalogue](Turnus-catalogue-implementation.md),
 
 ### 3. Make decision and notification outcomes dependable
 
-- [ ] Required for MVP (agreed 2026-10-20): add **Historia statusów** in registration
-  details with previous/new status, time, authenticated acting account and rejection
-  reason. Persist the change/history atomically, preserve existing permissions and
-  do not invent historical entries. See [status history scope](Registration-status-history.md).
-  This promotes status history from stabilization into MVP functional acceptance;
-  notification history/resend remain separate follow-ups.
+- [x] Implement required MVP **Historia statusów** in registration details: actual
+  status changes record previous/new status, server time, authenticated actor and
+  rejection reason in the same transaction as the status update. The detail response
+  includes ordered history and the modal shows it after registration data. No
+  historical entries are invented; status history remains audit-only. Implemented
+  in PR #46. See [status history scope](Registration-status-history.md).
+- [ ] Complete browser/deployed acceptance of status history, including actor,
+  ordering, rejection reason and existing-registration behavior. Notification
+  history/resend remain separate follow-ups.
 - [x] Implement agreed capacity policy: separate positive limits; reject reductions
   below the accepted count of the affected type. Acceptance remains enabled
   at/beyond capacity; opening/closure is manual under the single-operator assumption.

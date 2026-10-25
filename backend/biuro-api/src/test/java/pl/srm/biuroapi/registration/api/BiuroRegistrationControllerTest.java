@@ -5,13 +5,18 @@ import org.springframework.http.HttpStatus;
 import org.springframework.web.server.ResponseStatusException;
 import pl.srm.biuroapi.auth.account.AccountPrincipal;
 import pl.srm.biuroapi.auth.account.AccountRole;
+import pl.srm.biuroapi.registration.model.RegistrationDetail;
 import pl.srm.biuroapi.registration.client.RegistrationApiClient;
+import java.util.List;
+import java.util.Map;
+import pl.srm.biuroapi.registration.api.RegistrationEditRequest;
 import pl.srm.biuroapi.registration.service.RegistrationStatisticsService;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 import java.util.Set;
 
 class BiuroRegistrationControllerTest {
@@ -48,6 +53,18 @@ class BiuroRegistrationControllerTest {
         controller.updateStatus("REG-1", request, actor());
 
         verify(registrationApiClient).updateStatus("REG-1", request, "account-id", "operator");
+    }
+
+    @Test
+    void registrationEditForwardsAuthenticatedActorToRegistrationApi() {
+        RegistrationEditRequest request = new RegistrationEditRequest(2L, Map.of("person.firstName", "Alicja"));
+        RegistrationDetail expected = new RegistrationDetail("REG-1", "PARTICIPANT", "T1", false,
+                "NEW", null, null, null, null, null, Map.of(), List.of(), 3L, List.of());
+        when(registrationApiClient.updateRegistrationData("REG-1", request, "account-id", "operator"))
+                .thenReturn(expected);
+
+        assertEquals(expected, controller.updateRegistrationData("REG-1", request, actor()));
+        verify(registrationApiClient).updateRegistrationData("REG-1", request, "account-id", "operator");
     }
 
     private AccountPrincipal actor() {

@@ -59,6 +59,13 @@ public class BiuroRegistrationController {
         return registrationApiClient.updateStatus(code, request, actor.id(), actor.username());
     }
 
+    @PatchMapping("/{code}/data")
+    public RegistrationDetail updateRegistrationData(@PathVariable String code,
+                                                     @Valid @RequestBody RegistrationEditRequest request,
+                                                     @AuthenticationPrincipal AccountPrincipal actor) {
+        return registrationApiClient.updateRegistrationData(code, request, actor.id(), actor.username());
+    }
+
 
 
     private void validateRequest(StatusUpdateRequest request) {

@@ -3,6 +3,8 @@ package pl.srm.registrationapi.common.exception;
 import org.junit.jupiter.api.Test;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.validation.BeanPropertyBindingResult;
+import org.springframework.web.bind.MethodArgumentNotValidException;
 import pl.srm.registrationapi.common.dto.ApiError;
 import pl.srm.registrationapi.registration.exception.RegistrationException;
 
@@ -28,5 +30,17 @@ class GlobalExceptionHandlerTest {
 
         assertEquals(HttpStatus.UNPROCESSABLE_ENTITY, response.getStatusCode());
         assertEquals("AGE_TOO_LOW", response.getBody().code());
+    }
+
+    @Test
+    void mapsBeanValidationFailuresToBadRequest() {
+        var bindingResult = new BeanPropertyBindingResult(null, "request");
+        bindingResult.reject("NotBlank");
+        var exception = new MethodArgumentNotValidException(null, bindingResult);
+
+        var response = handler.handleValidation(exception);
+
+        assertEquals(HttpStatus.BAD_REQUEST, response.getStatusCode());
+        assertEquals("INVALID_REQUEST", response.getBody().code());
     }
 }

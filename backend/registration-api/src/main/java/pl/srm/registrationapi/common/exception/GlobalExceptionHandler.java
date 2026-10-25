@@ -1,5 +1,7 @@
 package pl.srm.registrationapi.common.exception;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.MethodArgumentNotValidException;
@@ -10,12 +12,14 @@ import pl.srm.registrationapi.registration.exception.RegistrationException;
 
 @RestControllerAdvice
 public class GlobalExceptionHandler {
+    private static final Logger LOGGER = LoggerFactory.getLogger(GlobalExceptionHandler.class);
 
     @ExceptionHandler(RegistrationException.class)
     public ResponseEntity<ApiError> handleRegistrationException(RegistrationException ex) {
         HttpStatus status = switch (ex.getCode()) {
             case "TURNUS_CATALOGUE_UNAVAILABLE" -> HttpStatus.SERVICE_UNAVAILABLE;
             case "ALREADY_REGISTERED" -> HttpStatus.CONFLICT;
+            case "EDIT_CONFLICT" -> HttpStatus.CONFLICT;
             case "AGE_TOO_LOW" -> HttpStatus.UNPROCESSABLE_ENTITY;
             case "TURNUS_NOT_FOUND", "REGISTRATION_NOT_FOUND" -> HttpStatus.NOT_FOUND;
             case "TURNUS_INACTIVE", "REGISTRATION_CLOSED" -> HttpStatus.GONE;
@@ -38,6 +42,7 @@ public class GlobalExceptionHandler {
 
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ApiError> handleGeneric(Exception ex) {
+        LOGGER.error("Unhandled Registration API exception", ex);
         return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                 .body(new ApiError("INTERNAL_ERROR", "Wystąpił nieoczekiwany błąd."));
     }

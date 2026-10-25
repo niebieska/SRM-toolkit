@@ -1,5 +1,34 @@
 # Work in progress
 
+## 2026-10-25 — Biuro staff registration creation scope
+
+- Agreed to narrow manual Biuro registration creation to staff entries for
+  phone/on-site intake. It does not require the staff member to self-register;
+  email addresses are optional for this Biuro path. The public staff registration
+  flow remains unchanged; other required staff data and consents still apply.
+- Minimal implementation: OPERATOR-only Biuro form/API forwards through the trusted
+  Registration API service path, reusing staff catalogue validation, duplicate
+  checks and numbering. Create as NEW and transition to ACCEPTED in the same
+  database transaction, attributing the acceptance to the operator. Send the
+  existing confirmation as ACCEPTED if an email is provided; otherwise skip it.
+  Reuse existing Turnus active/open checks and capacity behavior.
+- Priority remains undecided and this is not promoted to an MVP gate. Rough estimate
+  is 14–22 focused hours including tests. Details are in the
+  [future product backlog](Future-product-backlog.md).
+
+## 2026-10-25 — Registration editing first implementation
+
+- Started `feature/registration-editing` from development. The details modal has
+  an inline edit mode, with the edit action at the lower left and save/cancel
+  controls in the same modal. The initial field scope preserves PESEL, Turnus,
+  registration identity, status, consents and staff roles/qualifications; it
+  allows corrections to names, contact/address data and questionnaire answers.
+- The Registration API allowlists editable fields, validates the updated data,
+  serializes writes and rejects stale versions. It records operator, time and field
+  names in a separate edit audit table. No email is sent after edits. Review the
+  field scope and run tests before merging; no test/build run has been made yet.
+- Details are in the [future product backlog](Future-product-backlog.md).
+
 ## 2026-10-25 — Winter certificate options
 
 - Expanded the file-based Winter certificate catalogue with the relevant Summer
@@ -12,8 +41,8 @@
 
 - Agreed to show **Historia statusów** as a separate final section at the end of
   the registration details modal, after the submitted registration data. This
-  clarifies placement only; the required history fields and MVP status are
-  unchanged. Implementation remains pending.
+  placement was implemented in PR #46. The required history fields and MVP status
+  remain unchanged; deployed/browser acceptance is still pending.
 - Confirmed that the UI offers no action for the registration's current status.
   A real transition back to a previously used status, such as re-accepting after
   another status, uses the existing update and notification workflow. Status
@@ -30,7 +59,8 @@
 - Guardian for saved minors, ICE for saved adults, role/qualifications for staff.
   Health questions are grouped with saved answers/explanations; unknown sections
   retain a Pozostałe informacje fallback. No API/database/permission changes or
-  status-history implementation. Current age does not change saved classification.
+  status-history implementation were included in that UI branch. Status history
+  was added later in PR #46. Current age does not change saved classification.
 - Presentation regressions and manual acceptance scope are documented in
   [Registration details UI](Registration-details-ui.md). Broader layout, native
   dialog and request-lifecycle changes are not included in this first step.
@@ -101,15 +131,15 @@
 
 ## 2026-10-20 — Status history promoted to MVP requirement
 
-- Required, not implemented: read-only **Historia statusów** in registration
+- Promoted read-only **Historia statusów** in registration
   details, with old/new status, server time, authenticated account attribution and
   rejection reason. Status/history writes must be atomic. Existing records begin
   collecting history after implementation; no invented backfill.
 - Scope recorded in [Registration status history](Registration-status-history.md)
   and the functional release plan. This supersedes earlier notes placing status
-  audit solely in later stabilization. Account audit already exists; registration
-  decision history does not. Notification history/resend remain separate follow-ups.
-- Documentation only; no implementation or acceptance completion claimed.
+  audit solely in later stabilization. The implementation was merged later in PR
+  #46; deployed/browser acceptance remains tracked separately. Notification
+  history/resend remain separate follow-ups.
 
 ## 2026-10-19 — SMTP failure diagnostics
 

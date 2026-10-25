@@ -10,10 +10,12 @@ import org.springframework.http.MediaType;
 import org.springframework.test.web.client.MockRestServiceServer;
 import org.springframework.web.client.RestClient;
 import org.springframework.web.server.ResponseStatusException;
+import pl.srm.biuroapi.registration.api.RegistrationEditRequest;
 import pl.srm.biuroapi.registration.api.StatusUpdateRequest;
 
 import java.net.ConnectException;
 import java.time.LocalDate;
+import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.springframework.test.web.client.match.MockRestRequestMatchers.*;
@@ -106,6 +108,31 @@ class RegistrationApiClientTest {
         assertEquals("ABC", detail.registrationCode());
         assertEquals("operator", detail.statusHistory().getFirst().actorUsername());
         assertEquals("WAITLIST", client.updateStatus("ABC", new StatusUpdateRequest("WAITLIST", null), "actor-id", "operator").status());
+        server.verify();
+    }
+
+    @Test
+    void editRequestForwardsVersionChangesAndAuthenticatedActor() {
+        server.expect(requestTo("http://registration-api:8080/api/registrations/ABC/data"))
+                .andExpect(method(org.springframework.http.HttpMethod.PATCH))
+                .andExpect(header(HttpHeaders.AUTHORIZATION, credentials))
+                .andExpect(content().json("""
+                        {"expectedVersion":4,"changes":{"person.firstName":"Alicja"},
+                         "actorAccountId":"actor-id","actorUsername":"operator"}
+                        """))
+                .andRespond(withSuccess("""
+                        {"registrationCode":"ABC","minor":false,"version":5,"editHistory":[
+                          {"id":9,"changedAt":"2027-01-02T10:00:00","actorUsername":"operator",
+                           "changedFields":["person.firstName"]}]}
+                        """, MediaType.APPLICATION_JSON));
+
+        var updated = client.updateRegistrationData("ABC",
+                new RegistrationEditRequest(4L, java.util.Map.of("person.firstName", "Alicja")),
+                "actor-id", "operator");
+
+        assertEquals("ABC", updated.registrationCode());
+        assertEquals(5L, updated.version());
+        assertEquals(List.of("person.firstName"), updated.editHistory().getFirst().changedFields());
         server.verify();
     }
 

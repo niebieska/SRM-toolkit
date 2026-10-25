@@ -1,6 +1,7 @@
 # Registration status history — required for MVP
 
-Agreed 2026-10-20. Status: planned, not implemented.
+Agreed 2026-10-20. Implementation merged in PR #46 to `development`.
+Deployed/browser acceptance remains part of the release verification.
 
 ## Required outcome
 
@@ -35,8 +36,8 @@ disabled.
 
 ## Boundaries and decisions
 
-- Required for MVP functional acceptance; controlled synthetic TEST deployment
-  may precede it. Implementation and deployed acceptance remain open.
+- Required for MVP functional acceptance. Implementation is complete; controlled
+  synthetic TEST deployment and deployed/browser acceptance remain open.
 - No public form changes, registration editing, Person history, notification
   history or resend controls in this task.
 - History is audit-only: it records actual changes and does not restrict which

@@ -5,8 +5,11 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Isolation;
 import org.springframework.transaction.annotation.Transactional;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import pl.srm.registrationapi.registration.dto.response.RegistrationDetailResponse;
 import pl.srm.registrationapi.registration.dto.response.RegistrationStatusHistoryEntryResponse;
+import pl.srm.registrationapi.registration.dto.response.RegistrationEditHistoryEntryResponse;
 import pl.srm.registrationapi.registration.dto.response.RegistrationSummaryResponse;
 import pl.srm.registrationapi.registration.dto.request.StatusUpdateRequest;
 import pl.srm.registrationapi.registration.model.Registration;
@@ -14,6 +17,7 @@ import pl.srm.registrationapi.registration.exception.RegistrationException;
 import pl.srm.registrationapi.registration.model.RegistrationType;
 import pl.srm.registrationapi.registration.repository.RegistrationRepository;
 import pl.srm.registrationapi.registration.repository.RegistrationStatusHistoryRepository;
+import pl.srm.registrationapi.registration.repository.RegistrationEditHistoryRepository;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -24,11 +28,13 @@ import pl.srm.registrationapi.registration.util.PeselHelper;
 
 @Service
 public class RegistrationManagementService {
+    private static final Logger LOGGER = LoggerFactory.getLogger(RegistrationManagementService.class);
 
     private static final Set<String> ALLOWED_STATUSES = Set.of("ACCEPTED", "REJECTED");
 
     private final RegistrationRepository repository;
     private final RegistrationStatusHistoryRepository historyRepository;
+    private final RegistrationEditHistoryRepository editHistoryRepository;
     private final ObjectMapper objectMapper;
     private final PeselHelper peselHelper;
     private final RegistrationStatusService  statusService;
@@ -36,11 +42,13 @@ public class RegistrationManagementService {
 
     public RegistrationManagementService(RegistrationRepository repository,
                                          RegistrationStatusHistoryRepository historyRepository,
+                                         RegistrationEditHistoryRepository editHistoryRepository,
                                          ObjectMapper objectMapper,
                                          PeselHelper peselHelper, RegistrationStatusService statusService,
                                          StatusNotificationService notificationService) {
         this.repository = repository;
         this.historyRepository = historyRepository;
+        this.editHistoryRepository = editHistoryRepository;
         this.objectMapper = objectMapper;
         this.peselHelper = peselHelper;
         this.statusService = statusService;
@@ -72,6 +80,21 @@ public class RegistrationManagementService {
                                 entry.getId(), entry.getPreviousStatus(), entry.getNewStatus(),
                                 entry.getChangedAt(), entry.getActorUsername(), entry.getRejectionReason()
                         ))
+                        .toList(),
+                registration.getVersion(),
+                editHistoryRepository.findByRegistrationIdOrderByChangedAtDescIdDesc(registration.getId()).stream()
+                        .map(entry -> {
+                            try {
+                                return new RegistrationEditHistoryEntryResponse(entry.getId(), entry.getChangedAt(),
+                                        entry.getActorUsername(), objectMapper.readValue(entry.getChangedFields(),
+                                        objectMapper.getTypeFactory().constructCollectionType(List.class, String.class)));
+                            } catch (Exception ex) {
+                                LOGGER.warn("Cannot read changed fields for registration edit history entry {}",
+                                        entry.getId(), ex);
+                                return new RegistrationEditHistoryEntryResponse(entry.getId(), entry.getChangedAt(),
+                                        entry.getActorUsername(), List.of());
+                            }
+                        })
                         .toList()
         );
     }

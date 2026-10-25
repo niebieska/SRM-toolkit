@@ -9,6 +9,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Component;
 import org.springframework.util.Assert;
 import org.springframework.web.client.RestClient;
+import org.springframework.web.client.RestClientResponseException;
 import org.springframework.web.server.ResponseStatusException;
 import pl.srm.biuroapi.registration.api.StatusUpdateRequest;
 import pl.srm.biuroapi.registration.model.RegistrationDetail;
@@ -27,6 +28,8 @@ public class RegistrationApiClient {
 
     private record StatusChangePayload(String status, String rejectionReason,
                                        String actorAccountId, String actorUsername) {}
+    private record RegistrationChangePayload(Long expectedVersion, java.util.Map<String, Object> changes,
+                                             String actorAccountId, String actorUsername) {}
 
     public RegistrationApiClient(RestClient.Builder restClientBuilder,
                                  @Value("${registration.api.url:http://localhost:8080}") String registrationApiUrl,
@@ -122,6 +125,33 @@ public class RegistrationApiClient {
             throw ex;
         } catch (Exception exception) {
             log.error("Nie udało się zaktualizować statusu zgłoszenia {}", code, exception);
+            throw new ResponseStatusException(HttpStatus.BAD_GATEWAY, "Błąd komunikacji z registration-api");
+        }
+    }
+
+    public RegistrationDetail updateRegistrationData(String code, pl.srm.biuroapi.registration.api.RegistrationEditRequest request,
+                                                       String actorAccountId, String actorUsername) {
+        try {
+            RegistrationDetail body = restClient.patch()
+                    .uri(registrationApiUrl + "/api/registrations/{code}/data", code)
+                    .body(new RegistrationChangePayload(request.expectedVersion(), request.changes(), actorAccountId, actorUsername))
+                    .retrieve()
+                    .body(RegistrationDetail.class);
+            if (body == null) throw new ResponseStatusException(HttpStatus.BAD_GATEWAY, "Brak odpowiedzi z registration-api");
+            return body;
+        } catch (ResponseStatusException ex) {
+            throw ex;
+        } catch (RestClientResponseException exception) {
+            if (exception.getStatusCode().is4xxClientError()) {
+                String message = exception.getStatusCode().value() == 409
+                        ? "Zgłoszenie zostało wcześniej zmienione. Odśwież szczegóły przed zapisem."
+                        : "Nie można zapisać zmian. Sprawdź wprowadzone dane.";
+                throw new ResponseStatusException(exception.getStatusCode(), message);
+            }
+            log.error("Nie udało się zaktualizować danych zgłoszenia {}", code, exception);
+            throw new ResponseStatusException(HttpStatus.BAD_GATEWAY, "Błąd komunikacji z registration-api");
+        } catch (Exception exception) {
+            log.error("Nie udało się zaktualizować danych zgłoszenia {}", code, exception);
             throw new ResponseStatusException(HttpStatus.BAD_GATEWAY, "Błąd komunikacji z registration-api");
         }
     }
