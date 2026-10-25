@@ -78,7 +78,7 @@ public class RegistrationEditService {
         for (var entry : request.changes().entrySet()) {
             String path = entry.getKey();
             if (!allowed.contains(path)) throw invalid("Nie można edytować pola: " + path + ".");
-            JsonNode value = entry.getValue();
+            JsonNode value = objectMapper.valueToTree(entry.getValue());
             validateValue(path, value);
             JsonNode current = at(payload, path);
             if (!sameNode(current, value)) {
