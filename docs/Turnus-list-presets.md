@@ -23,7 +23,10 @@ groups stay separate and include only accepted registrations from Phase 1.
 Własny additionally offers E-mail osoby, Imię i nazwisko rodzica / ICE,
 E-mail opiekuna, Relacja kontaktu, Miasto, Uprawnienia kadry and Zgoda na
 wykorzystanie wizerunku. They are not selected automatically and do not change
-any predefined view's columns.
+any predefined view's columns. The selection panel groups options as Wspólne and
+Kadra. Kadra-only options are hidden when the list is filtered to Uczestnicy.
+Options flow down each column before continuing in the next column. The combined
+special-needs/organizational-information column appears in Wspólne for both lists.
 
 - Contact name/relation follows saved minor/adult status: guardian for minors,
   ICE for adults. The "other relationship" detail is preserved.
@@ -32,10 +35,19 @@ any predefined view's columns.
   The Uprawnienia kadry column is shown only in the staff table, including Własny.
   Biuro resolves labels through the applicable season role/function catalogue;
   unknown historical identifiers remain visible rather than discarded.
+- Własny can optionally show chronic-condition details and allergies/dietary
+  details for either group, plus one **Szczególne potrzeby / dodatkowe informacje**
+  column. It displays participant special-needs details for participants and
+  staff organizational information for staff. Health answers (Tak/Nie) are not
+  displayed; only saved detail text is shown. Empty values remain unavailable.
+- These optional fields are available to every role that can access the assigned
+  Turnus list, including VIEWER, and can be included in exports when selected.
+- Staff-only options include birth year, mother's first name, father's first name
+  and birth surname.
 - Image consent displays Tak / Nie only for explicit boolean values. Missing or
   invalid historical values remain unavailable (shown as —), not inferred as refusal.
-- Registration API adds a typed additionalData block to its protected DTO; Biuro
-  adds qualificationLabels. No raw health data or unrelated consents are included.
+- Registration API adds typed health/staff detail blocks to its protected DTO; Biuro
+  relays them and adds qualificationLabels. Other consents remain excluded.
   Deploy Registration API, Biuro API and frontend together for the new columns.
 
 ## Behavior
@@ -45,7 +57,8 @@ any predefined view's columns.
   group and staff-role filters and does not make another API request.
 - Selecting Własny starts from the currently selected preset's columns and sort.
   Checkboxes allow choosing columns in the existing page; available column order
-  is fixed, with no drag-and-drop or saved templates.
+  is fixed, with no drag-and-drop or saved templates. The picker displays its
+  grouped options top-to-bottom in each column, then continues in the next column.
 - No columns selected shows an explicit selection prompt for both tables.
 - Removing a sorted custom column chooses surname if available, otherwise the
   first remaining column. Staff role sorting remains possible because that column
@@ -87,7 +100,9 @@ any predefined view's columns.
    controls should reset. Review desktop/mobile usability with saved registrations.
 7. Select each additional custom column. Compare adult ICE/minor guardian details,
    person/guardian emails, city, staff qualifications/details and image consent
-   with saved entries. Missing consent must not appear as Nie. Verify presets
-   remain unchanged after using the extra columns.
+   with saved entries. Select the health-detail columns and confirm they show
+   detail text only. Check staff family details and birth year, and verify exports
+   include selected values only. Missing consent must not appear as Nie. Verify
+   presets remain unchanged after using the extra columns.
 
 Live-backend manual acceptance remains pending.

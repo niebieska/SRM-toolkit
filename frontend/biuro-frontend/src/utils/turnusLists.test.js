@@ -78,7 +78,8 @@ test('presets select agreed fields and keep staff role/function in the staff sec
 
 test('custom columns use known fields once and empty selection is explicit', () => {
   const columns = columnsForList('custom', ['pesel', 'pesel', 'unknown', 'gender'], 'STAFF')
-  assert.deepEqual(columns.map(column => column.key), ['pesel', 'gender', 'roleLabel'])
+  assert.deepEqual(columns.map(column => column.key), ['pesel', 'gender'])
+  assert.deepEqual(columnsForList('custom', ['roleLabel'], 'STAFF').map(column => column.key), ['roleLabel'])
   assert.deepEqual(columnsForList('custom', [], 'STAFF'), [])
   assert.deepEqual(columnsForList('custom', [], 'PARTICIPANT'), [])
 })

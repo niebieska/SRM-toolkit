@@ -13,7 +13,9 @@ import org.springframework.stereotype.Service;
 import pl.srm.registrationapi.registration.dto.response.TurnusListPerson;
 import pl.srm.registrationapi.registration.dto.response.TurnusListPerson.Address;
 import pl.srm.registrationapi.registration.dto.response.TurnusListPerson.AdditionalData;
+import pl.srm.registrationapi.registration.dto.response.TurnusListPerson.HealthDetails;
 import pl.srm.registrationapi.registration.dto.response.TurnusListPerson.Qualification;
+import pl.srm.registrationapi.registration.dto.response.TurnusListPerson.StaffDetails;
 import pl.srm.registrationapi.registration.model.Registration;
 import pl.srm.registrationapi.registration.repository.RegistrationRepository;
 import pl.srm.registrationapi.registration.util.PeselHelper;
@@ -77,7 +79,23 @@ public class TurnusListService {
                 text(contact.path("relation")), text(contact.path("relationOther")),
                 text(root.path("guardian").path("contact").path("email")),
                 staff ? qualifications(root) : List.of(),
-                imageConsent.isBoolean() ? imageConsent.booleanValue() : null);
+                imageConsent.isBoolean() ? imageConsent.booleanValue() : null,
+                healthDetails(root, staff), staff ? staffDetails(root) : null);
+    }
+
+    private HealthDetails healthDetails(JsonNode root, boolean staff) {
+        JsonNode health = root.path("health");
+        return new HealthDetails(text(health.path("q1").path("detail")),
+                text(health.path("q2").path("detail")),
+                staff ? null : text(health.path("q3").path("detail")));
+    }
+
+    private StaffDetails staffDetails(JsonNode root) {
+        JsonNode person = root.path("person");
+        JsonNode organizationalInfo = root.path("health").path("additionalInfo");
+        if (organizationalInfo.isObject()) organizationalInfo = organizationalInfo.path("value");
+        return new StaffDetails(text(person.path("motherName")), text(person.path("fatherName")),
+                text(person.path("birthSurname")), text(organizationalInfo));
     }
 
     private List<Qualification> qualifications(JsonNode root) {

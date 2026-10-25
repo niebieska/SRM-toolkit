@@ -4,7 +4,7 @@ import { useRoute } from 'vue-router'
 import BiuroHeader from '../components/BiuroHeader.vue'
 import { useAuthStore } from '../stores/auth'
 import { fetchTurnusLists, fetchViewerLists } from '../api/turnusApi'
-import { availableListColumns, columnsForList, filterAndSortList, listColumns, listValue, listViews, validateTurnusLists } from '../utils/turnusLists.js'
+import { availableListColumns, columnsForList, customColumnGroups, filterAndSortList, listColumns, listValue, listViews, validateTurnusLists } from '../utils/turnusLists.js'
 import { downloadTurnusList, PdfLayoutError } from '../utils/turnusListExport.js'
 
 const route = useRoute(), auth = useAuthStore()
@@ -26,6 +26,9 @@ const groups = computed(() => [
     sortKey: sortKey.value, direction: direction.value }),
   columns: columnsForList(selectedView.value, customColumns.value, item.type),
 })))
+const visibleCustomColumnGroups = computed(() => customColumnGroups.filter(item =>
+  item.key === 'common'
+  || (item.key === 'staff' && group.value !== 'PARTICIPANT')))
 const incompleteCount = computed(() => entries.value.filter(e => e.person.incompleteData).length)
 const exportCount = computed(() => groups.value.reduce((sum, item) => sum + (item.columns.length ? item.rows.length : 0), 0))
 const filtered = computed(() => Boolean(search.value || group.value))
@@ -155,11 +158,16 @@ function displayDate(value) {
         <p v-if="exportSuccess" role="status" class="text-sm text-slate-600">{{ exportSuccess }}</p>
         <fieldset v-if="selectedView === 'custom'" :disabled="exporting" class="rounded-xl border border-slate-200 bg-white px-3 pb-3">
           <legend class="px-1 text-sm font-semibold text-slate-800">Kolumny</legend>
-          <div class="grid grid-cols-1 gap-x-6 gap-y-1 sm:grid-cols-3">
-            <label v-for="column in availableListColumns" :key="column.key" class="flex cursor-pointer items-center gap-2 rounded py-1 text-sm text-slate-700">
-              <input type="checkbox" :checked="customColumns.includes(column.key)" class="h-4 w-4 accent-slate-800 focus-visible:ring-2 focus-visible:ring-slate-500" @change="setColumn(column.key, $event.target.checked)" />
-              {{ column.label }}
-            </label>
+          <div class="space-y-3">
+            <fieldset v-for="columnGroup in visibleCustomColumnGroups" :key="columnGroup.key" class="rounded-lg border border-slate-200 px-3 pb-2">
+              <legend class="px-1 text-xs font-semibold text-slate-600">{{ columnGroup.label }}</legend>
+              <div class="columns-1 gap-x-8 sm:columns-2 lg:columns-3">
+                <label v-for="column in columnGroup.columns" :key="column.key" class="mb-1 flex w-full break-inside-avoid cursor-pointer items-center gap-2 rounded py-1 text-sm text-slate-700">
+                  <input type="checkbox" :checked="customColumns.includes(column.key)" class="h-4 w-4 shrink-0 accent-slate-800 focus-visible:ring-2 focus-visible:ring-slate-500" @change="setColumn(column.key, $event.target.checked)" />
+                  {{ column.label }}
+                </label>
+              </div>
+            </fieldset>
           </div>
         </fieldset>
         <p v-if="incompleteCount" role="status" class="rounded-lg bg-amber-50 p-3 text-sm text-amber-900">Niepełne dane w {{ incompleteCount }} zgłoszeniach. Brakujące wartości pozostawiono puste.</p>

@@ -2,6 +2,7 @@ const collator = new Intl.Collator('pl', { sensitivity: 'base', numeric: true })
 export const availableListColumns = [
   { key: 'firstName', label: 'Imię' },
   { key: 'lastName', label: 'Nazwisko' },
+  { key: 'roleLabel', label: 'Rola / funkcja' },
   { key: 'pesel', label: 'PESEL' },
   { key: 'address', label: 'Adres' },
   { key: 'birthDate', label: 'Data urodzenia' },
@@ -16,6 +17,30 @@ export const availableListColumns = [
   { key: 'city', label: 'Miasto' },
   { key: 'qualifications', label: 'Uprawnienia kadry' },
   { key: 'imageConsent', label: 'Zgoda na wykorzystanie wizerunku' },
+  { key: 'chronicConditionDetails', label: 'Choroby przewlekłe — szczegóły' },
+  { key: 'dietaryDetails', label: 'Alergie i dieta — szczegóły' },
+  { key: 'specialNeedsAndAdditionalInfo', label: 'Szczególne potrzeby / dodatkowe informacje' },
+  { key: 'birthYear', label: 'Rok urodzenia' },
+  { key: 'motherName', label: 'Imię matki' },
+  { key: 'fatherName', label: 'Imię ojca' },
+  { key: 'birthSurname', label: 'Nazwisko rodowe' },
+]
+
+const staffOnlyColumns = new Set([
+  'roleLabel', 'qualifications', 'birthYear', 'motherName', 'fatherName', 'birthSurname',
+])
+
+export const customColumnGroups = [
+  {
+    key: 'common',
+    label: 'Wspólne',
+    columns: availableListColumns.filter(column => !staffOnlyColumns.has(column.key)),
+  },
+  {
+    key: 'staff',
+    label: 'Kadra',
+    columns: availableListColumns.filter(column => staffOnlyColumns.has(column.key)),
+  },
 ]
 
 const generalColumnKeys = ['firstName', 'lastName', 'pesel', 'address', 'age', 'personPhone', 'contactPhone']
@@ -33,10 +58,10 @@ export function columnsForList(view, customKeys, type) {
   const selected = definition.key === 'custom' ? customKeys : definition.columns
   const columns = availableListColumns.filter(column => {
     if (definition.key === 'onsite' && type === 'STAFF' && ['address', 'age'].includes(column.key)) return false
-    if (column.key === 'qualifications' && type !== 'STAFF') return false
+    if (staffOnlyColumns.has(column.key) && type !== 'STAFF') return false
     return selected.includes(column.key)
   })
-  if (type !== 'STAFF' || !columns.length || definition.key === 'insurance') return columns
+  if (type !== 'STAFF' || !columns.length || definition.key === 'insurance' || definition.key === 'custom') return columns
   const surname = columns.findIndex(column => column.key === 'lastName')
   const position = surname < 0 ? Math.min(2, columns.length) : surname + 1
   return [...columns.slice(0, position), { key: 'roleLabel', label: 'Rola / funkcja' }, ...columns.slice(position)]
@@ -45,6 +70,16 @@ export function columnsForList(view, customKeys, type) {
 export function listValue(entry, key) {
   const extra = entry.person.additionalData
   if (key === 'email' || key === 'guardianEmail') return extra?.[key] ?? null
+  if (key === 'chronicConditionDetails' || key === 'dietaryDetails')
+    return extra?.healthDetails?.[key] ?? null
+  if (key === 'specialNeedsAndAdditionalInfo') {
+    return entry.person.registrationType === 'STAFF'
+      ? extra?.staffDetails?.organizationalInfo ?? null
+      : extra?.healthDetails?.specialNeedsDetails ?? null
+  }
+  if (['motherName', 'fatherName', 'birthSurname'].includes(key))
+    return extra?.staffDetails?.[key] ?? null
+  if (key === 'birthYear') return entry.person.birthDate?.slice(0, 4) ?? null
   if (key === 'city') return entry.person.address?.city ?? null
   if (key === 'contactName') return [extra?.contactFirstName, extra?.contactLastName].filter(Boolean).join(' ') || null
   if (key === 'contactRelation') return contactRelation(extra)
