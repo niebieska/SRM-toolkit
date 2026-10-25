@@ -50,7 +50,7 @@ function setColumn(key, selected) {
   if (selected) keys.add(key)
   else keys.delete(key)
   customColumns.value = availableListColumns.filter(column => keys.has(column.key)).map(column => column.key)
-  if (!customColumns.value.includes(sortKey.value) && sortKey.value !== 'roleLabel') {
+  if (!customColumns.value.includes(sortKey.value)) {
     sortKey.value = customColumns.value.includes('lastName') ? 'lastName' : customColumns.value[0] || 'lastName'
     direction.value = 'asc'
   }
