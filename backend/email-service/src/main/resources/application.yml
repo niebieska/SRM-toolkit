@@ -18,12 +18,16 @@ spring:
 email:
   from: ${MAIL_FROM:noreply@srm.pl}
   enabled: ${MAIL_ENABLED:true}
-templates:
-  regulations-url: https://rekolekcje.scj.pl/informacje-organizacyjne/
-  info-url: https://rekolekcje.scj.pl/informacje-organizacyjne/
-  contact-email: zgloszenia.rek@scj.pl
-  contact-phone: "+48 602 439 696"
-  logo-url: https://rekolekcje.scj.pl/beta/wp-content/uploads/logo3.png
+  templates:
+    regulations-url: ${EMAIL_REGULATIONS_URL:https://rekolekcje.scj.pl/informacje-organizacyjne/}
+    info-url: ${EMAIL_INFO_URL:https://rekolekcje.scj.pl/informacje-organizacyjne/}
+    contact-email: ${EMAIL_CONTACT_EMAIL:zgloszenia.rek@scj.pl}
+    contact-phone: ${EMAIL_CONTACT_PHONE:+48 602 439 696}
+    logo-url: ${EMAIL_LOGO_URL:https://rekolekcje.scj.pl/beta/wp-content/uploads/logo3.png}
+    participant-card-adult-url: ${PARTICIPANT_CARD_ADULT_URL:https://rekolekcje.scj.pl/beta/wp-content/uploads/karta2020.pdf}
+    participant-card-minor-url: ${PARTICIPANT_CARD_MINOR_URL:https://rekolekcje.scj.pl/beta/wp-content/uploads/karta2020.pdf}
+    participant-bank-account: ${PARTICIPANT_BANK_ACCOUNT:}
+    participant-deposit-amount: ${PARTICIPANT_DEPOSIT_AMOUNT:}
 
 logging:
   level:

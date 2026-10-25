@@ -3,6 +3,7 @@ package pl.srm.emailservice.email.template;
 import org.springframework.core.io.Resource;
 import org.springframework.core.io.ResourceLoader;
 import org.springframework.stereotype.Component;
+import org.springframework.util.StringUtils;
 import org.thymeleaf.context.Context;
 import org.thymeleaf.spring6.SpringTemplateEngine;
 
@@ -33,16 +34,24 @@ public class TemplateRenderer {
         }
 
         Map<String, Object> templateVariables = new HashMap<>();
+        if (variables != null) {
+            templateVariables.putAll(variables);
+        }
 
+        // Configuration-owned links and contact details must not be replaceable by
+        // values supplied with an email request.
         templateVariables.put("regulationsUrl", properties.regulationsUrl());
         templateVariables.put("infoUrl", properties.infoUrl());
         templateVariables.put("contactEmail", properties.contactEmail());
         templateVariables.put("contactPhone", properties.contactPhone());
         templateVariables.put("logoUrl", properties.logoUrl());
-
-        if (variables != null) {
-            templateVariables.putAll(variables);
-        }
+        templateVariables.put("participantCardAdultUrl", properties.participantCardAdultUrl());
+        templateVariables.put("participantCardMinorUrl", properties.participantCardMinorUrl());
+        templateVariables.put("participantBankAccount", properties.participantBankAccount());
+        templateVariables.put("participantDepositAmount", properties.participantDepositAmount());
+        templateVariables.put("participantPaymentInstructionsConfigured",
+                StringUtils.hasText(properties.participantBankAccount())
+                        && StringUtils.hasText(properties.participantDepositAmount()));
 
         Context context = new Context();
         context.setVariables(templateVariables);

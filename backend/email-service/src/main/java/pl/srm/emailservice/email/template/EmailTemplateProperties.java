@@ -8,6 +8,10 @@ public record EmailTemplateProperties(
         String infoUrl,
         String contactEmail,
         String contactPhone,
-        String logoUrl
+        String logoUrl,
+        String participantCardAdultUrl,
+        String participantCardMinorUrl,
+        String participantBankAccount,
+        String participantDepositAmount
 ) {
 }

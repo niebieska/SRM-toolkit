@@ -6,7 +6,7 @@
 </head>
 <body style="font-family: Arial, sans-serif; color: #1d1d1d; line-height: 1.5;">
 <div style="max-width: 640px; margin: 0 auto; padding: 24px; border: 1px solid #e5e5e5; border-radius: 8px;">
-    <p>Dzień dobry, <strong th:text="${recipientName}">Uczestniku</strong>,</p>
+    <p>Dzień dobry,</p>
     <p>Informujemy o zmianie statusu zgłoszenia dla osoby: <strong th:text="${registeredName}">Jan Kowalski</strong>.</p>
 
     <div style="margin: 20px 0; padding: 16px; background: #f5f7ff; border-radius: 6px;">
@@ -30,20 +30,39 @@
 
     <div th:if="${status == 'ACCEPTED'}"
          style="margin: 20px 0; padding: 14px; border-left: 4px solid #2e7d32; background: #f4fff5;">
-        <p style="margin: 0 0 12px 0;">
+        <p th:if="${registrationType == 'PARTICIPANT' and participantPaymentInstructionsConfigured}"
+           style="margin: 0 0 12px 0;">
             Zgłoszenie zostało zaakceptowane.
             Aby potwierdzić udział w turnusie, prosimy o wpłatę zaliczki zgodnie z poniższymi danymi.
         </p>
+        <p th:if="${registrationType == 'PARTICIPANT' and !participantPaymentInstructionsConfigured}"
+           style="margin: 0 0 12px 0;">
+            Zgłoszenie zostało zaakceptowane. Szczegóły dotyczące wpłaty zaliczki przekażemy osobno.
+        </p>
+        <p th:if="${registrationType == 'STAFF'}" style="margin: 0 0 12px 0;">
+            Zgłoszenie do kadry zostało zaakceptowane. Dziękujemy za gotowość do przyjazdu na turnus.
+            Jeśli przyjazd nie będzie możliwy, prosimy o jak najszybszą informację.
+        </p>
 
-        <div style="margin-top: 12px; padding: 12px; background: #ffffff; border: 1px solid #d9e8d9; border-radius: 4px;">
+        <div th:if="${registrationType == 'PARTICIPANT' and participantPaymentInstructionsConfigured}"
+             style="margin-top: 12px; padding: 12px; background: #ffffff; border: 1px solid #d9e8d9; border-radius: 4px;">
             <p style="margin: 0 0 8px 0;"><strong>Dane do przelewu</strong></p>
             <p style="margin: 0; line-height: 1.7;">
                 <strong>Odbiorca:</strong> Sercańskie Rekolekcje Młodzieżowe<br/>
-                <strong>Numer rachunku:</strong> XX XXXX XXXX XXXX XXXX XXXX XXXX<br/>
-                <strong>Kwota zaliczki:</strong> 500 zł<br/>
+                <strong>Numer rachunku:</strong>
+                <span th:text="${participantBankAccount}">00 0000 0000 0000 0000 0000 0000</span><br/>
+                <strong>Kwota zaliczki:</strong>
+                <span th:text="${participantDepositAmount}">500 zł</span><br/>
                 <strong>Tytuł przelewu:</strong>
                 <span th:text="${transferTitle}">UCZ-2026-00042 - Jan Kowalski</span>
             </p>
+        </div>
+
+        <div th:if="${includeParticipantCard == 'true'}" style="margin: 20px 0 0 0;">
+            <a th:href="${isMinor == 'true' ? participantCardMinorUrl : participantCardAdultUrl}"
+               style="display: inline-block; padding: 12px 20px; background: #2e7d32; color: #ffffff; text-decoration: none; border-radius: 5px; font-weight: bold;">
+                Pobierz kartę uczestnictwa (PDF)
+            </a>
         </div>
     </div>
 
