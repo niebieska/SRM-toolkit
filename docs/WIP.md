@@ -29,6 +29,27 @@
   field scope and run tests before merging; no test/build run has been made yet.
 - Details are in the [future product backlog](Future-product-backlog.md).
 
+## 2026-10-25 — Participant card link in accepted-status email
+
+- Accepted-status email now has a **Pobierz kartę uczestnictwa (PDF)** button
+  for participant registrations and minor staff registrations. Adult staff emails
+  do not show it. Minor registrations continue to route the message to the guardian.
+- Acceptance content is now type-specific: participant emails retain the deposit
+  instructions; staff emails receive a brief acceptance message and no participant
+  transfer details.
+- Adult and minor destinations are separately configurable in email-service;
+  both default to the supplied `karta2020.pdf` URL. Template variables cannot
+  override configured links or contact details. Corrected the `email.templates`
+  YAML nesting so these and existing template settings bind as intended.
+- Participant bank account and deposit amount are configurable separately.
+  Both default to blank; if either is missing, the participant email says payment
+  details will be sent separately and does not render the transfer panel.
+- Full Registration API suite passed (202 tests, 15 MariaDB-gated tests skipped)
+  and full email-service suite passed (26 tests) before final test-only/unused
+  metadata cleanup. Focused tests after that cleanup passed (2 Registration API,
+  6 email-service, including application configuration binding). No external
+  mailbox delivery was attempted.
+
 ## 2026-10-25 — Winter certificate options
 
 - Expanded the file-based Winter certificate catalogue with the relevant Summer
