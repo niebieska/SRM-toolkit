@@ -79,7 +79,7 @@ class TurnusListsServiceTest {
         when(turnuses.get("T1")).thenReturn(turnus(TurnusDefinition.SeasonType.SUMMER));
         var data = new AdditionalData(null, null, null, null, null, null,
                 List.of(new Qualification("patent_zeglarski", null), new Qualification("inne", "Instruktor"),
-                        new Qualification("historical", "Old qualification")), null);
+                        new Qualification("historical", "Old qualification")), null, null, null);
         var staff = new TurnusListPerson("S1", "STAFF", "Jan", "Nowak", null, null, null,
                 null, null, null, null, "ksiadz", "sternik", true, false, data);
         var participant = new TurnusListPerson("P1", "PARTICIPANT", "Anna", "Nowak", null, null, null,

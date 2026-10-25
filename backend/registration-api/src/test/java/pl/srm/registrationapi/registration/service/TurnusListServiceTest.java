@@ -118,4 +118,34 @@ class TurnusListServiceTest {
             assertTrue(extra.qualifications().isEmpty());
         }
     }
+
+    @Test void exposesOnlyHealthDetailsAndAddsFamilyAndOrganizationalDataForStaff() {
+        when(repository.findByTurnusCodeAndStatus("T1", "ACCEPTED")).thenReturn(List.of(registration("STAFF", """
+                {"person":{"motherName":"Maria","fatherName":"Jan","birthSurname":"Kowalska"},
+                 "health":{"q1":{"answer":"tak","detail":"Astma"},
+                   "q2":{"answer":"nie","detail":""},
+                   "additionalInfo":{"value":"Późniejszy przyjazd"}}}
+                """)));
+
+        var additional = service.accepted("T1").getFirst().additionalData();
+
+        assertEquals("Astma", additional.healthDetails().chronicConditionDetails());
+        assertNull(additional.healthDetails().dietaryDetails());
+        assertNull(additional.healthDetails().specialNeedsDetails());
+        assertEquals("Maria", additional.staffDetails().motherName());
+        assertEquals("Jan", additional.staffDetails().fatherName());
+        assertEquals("Kowalska", additional.staffDetails().birthSurname());
+        assertEquals("Późniejszy przyjazd", additional.staffDetails().organizationalInfo());
+
+        when(repository.findByTurnusCodeAndStatus("T1", "ACCEPTED")).thenReturn(List.of(registration("PARTICIPANT", """
+                {"health":{"q1":{"answer":"tak","detail":"Alergia"},
+                  "q2":{"answer":"tak","detail":"Orzechy"},
+                  "q3":{"answer":"tak","detail":"Potrzeba spokojnego miejsca"}}}
+                """)));
+        additional = service.accepted("T1").getFirst().additionalData();
+        assertEquals("Alergia", additional.healthDetails().chronicConditionDetails());
+        assertEquals("Orzechy", additional.healthDetails().dietaryDetails());
+        assertEquals("Potrzeba spokojnego miejsca", additional.healthDetails().specialNeedsDetails());
+        assertNull(additional.staffDetails());
+    }
 }

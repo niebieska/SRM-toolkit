@@ -148,6 +148,9 @@ Details: [catalogue](Turnus-catalogue-implementation.md),
 - [x] Check export scope, real binaries, Polish text, identifiers, PDF pagination
   and browser downloads using synthetic data. Latest Biuro frontend tests/build:
   all 14 test files pass; existing PDF lazy-chunk size warning remains.
+- [ ] Extend Własny with optional health-detail columns and staff family/birth-year
+  details, grouped by applicability. Verify selection, VIEWER access and selected
+  values in XLSX/CSV/PDF; see [custom list fields](Turnus-list-presets.md).
 - [ ] Confirm insurer compatibility and intended Excel/LibreOffice, CSV import and
   PDF print output with operators. Prefer XLSX for typed PESEL/phone identifiers.
 - [ ] Verify exclusions, staff selection, new/empty Turnusy, Polish characters,

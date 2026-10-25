@@ -45,6 +45,39 @@ test('staff-only selection excludes participants without applicable columns from
   assert.equal(createListExport(source).sections[0].label, 'Kadra')
 })
 
+test('selected health and staff details are preserved in CSV, XLSX and PDF data', () => {
+  const keys = ['chronicConditionDetails', 'dietaryDetails', 'specialNeedsAndAdditionalInfo',
+    'birthYear', 'motherName']
+  const source = options('custom', keys)
+  source.groups[0].rows[0].person.additionalData = { healthDetails: {
+    chronicConditionDetails: 'Astma', dietaryDetails: 'Orzechy', specialNeedsDetails: 'Spokojne miejsce',
+  } }
+  source.groups[1].rows[0].person.birthDate = '2000-02-03'
+  source.groups[1].rows[0].person.additionalData = { staffDetails: {
+    motherName: 'Maria', organizationalInfo: 'Późniejszy przyjazd',
+  }, healthDetails: {
+    chronicConditionDetails: 'Astma kadry', dietaryDetails: 'Alergia kadry',
+  } }
+
+  const snapshot = createListExport(source)
+  const participant = snapshot.sections[0]
+  const staff = snapshot.sections[1]
+  assert.deepEqual(participant.rows[0], ['Astma', 'Orzechy', 'Spokojne miejsce'])
+  assert.deepEqual(staff.rows[0], ['Astma kadry', 'Alergia kadry', 'Późniejszy przyjazd', '2000', 'Maria'])
+
+  const csv = createCsv(snapshot)
+  for (const value of ['Astma', 'Orzechy', 'Spokojne miejsce', 'Astma kadry', 'Alergia kadry', 'Późniejszy przyjazd', '2000', 'Maria'])
+    assert.ok(csv.includes(`"${value}"`), `CSV should contain ${value}`)
+
+  const sheets = createWorkbookSheets(snapshot)
+  assert.deepEqual(sheets[0].data[1].map(cell => cell?.value ?? ''), participant.rows[0])
+  assert.deepEqual(sheets[1].data[1].map(cell => cell?.value ?? ''), staff.rows[0])
+
+  const pdf = createPdfDefinition(snapshot)
+  assert.deepEqual(pdf.content[3].table.body[2].map(cell => cell.text), participant.rows[0])
+  assert.deepEqual(pdf.content[4].table.body[2].map(cell => cell.text), staff.rows[0])
+})
+
 test('CSV has BOM consistent headers group type and escaped formula-like text and identifiers', () => {
   const source = options()
   source.groups[0].rows[0].person.firstName = '=1+1'
@@ -93,7 +126,7 @@ test('PDF keeps all selected columns, repeated section/column headings and non-s
 })
 
 test('PDF rejects too-wide custom selections and oversized rows without omitting data', () => {
-  const source = options('custom', ['firstName', 'lastName', 'pesel', 'address', 'email', 'guardianEmail', 'contactName', 'qualifications'])
+  const source = options('custom', ['firstName', 'lastName', 'roleLabel', 'pesel', 'address', 'email', 'guardianEmail', 'contactName', 'qualifications'])
   const snapshot = createListExport(source)
   assert.throws(() => createPdfDefinition(snapshot), error => error instanceof PdfLayoutError && /mniej kolumn/.test(error.message))
   assert.equal(snapshot.sections[1].columns.length, 9)

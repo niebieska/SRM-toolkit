@@ -1,5 +1,21 @@
 # Work in progress
 
+## 2026-10-25 — Własny list data availability
+
+- Started `feature/turnus-list-custom-data` from current `development` after PR #50.
+- Agreed to make health and dietary detail text, a combined **Szczególne potrzeby /
+  dodatkowe informacje** column, staff year of birth, mother's/father's first names
+  and birth surname optional Własny columns. The combined column shows participant
+  special-needs details or staff organizational information, depending on type.
+  Do not display health questionnaire Tak/Nie answers; blank detail values remain blank.
+- Group custom-column options into Wspólne and Kadra. Hide Kadra-specific options
+  when Uczestnicy is selected. The picker fills top-to-bottom in each column before
+  continuing in the next. Presets remain unchanged.
+- VIEWER can access and export all data for assigned Turnuses, including these
+  optional details. New columns remain unselected unless chosen.
+- Implementation and acceptance are in progress; verify typed API projection,
+  UI grouping/order and selected fields in XLSX/CSV/PDF before closing the task.
+
 ## 2026-10-25 — Biuro staff registration creation scope
 
 - Agreed to narrow manual Biuro registration creation to staff entries for

@@ -1,6 +1,6 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
-import { columnsForList, filterAndSortList, listValue, validateTurnusLists } from './turnusLists.js'
+import { columnsForList, customColumnGroups, filterAndSortList, listValue, validateTurnusLists } from './turnusLists.js'
 
 const row = (code, type, firstName, lastName, age, role = null) => ({
   person: { registrationCode: code, registrationType: type, firstName, lastName, gender: 'female', role, minor: false },
@@ -29,6 +29,25 @@ test('formats role/function and gender without manufacturing missing values', ()
   assert.equal(listValue({ ...rows[2], roleLabel: 'Ksiądz', subroleLabel: 'Sternik' }, 'roleLabel'), 'Ksiądz — Sternik')
   assert.equal(listValue(rows[0], 'gender'), 'Kobieta')
   assert.equal(listValue(rows[0], 'guardianPhone'), undefined)
+})
+test('custom columns expose health details and staff-only family and role fields', () => {
+  const participant = { ...rows[0], person: { ...rows[0].person, additionalData: {
+    healthDetails: { chronicConditionDetails: 'Astma', dietaryDetails: 'Orzechy', specialNeedsDetails: 'Spokojne miejsce' },
+  } } }
+  assert.equal(listValue(participant, 'chronicConditionDetails'), 'Astma')
+  assert.equal(listValue(participant, 'dietaryDetails'), 'Orzechy')
+  assert.equal(listValue(participant, 'specialNeedsAndAdditionalInfo'), 'Spokojne miejsce')
+
+  const staff = { ...rows[2], person: { ...rows[2].person, birthDate: '2000-01-01', additionalData: {
+    staffDetails: { motherName: 'Maria', fatherName: 'Jan', birthSurname: 'Kowalska', organizationalInfo: 'Późniejszy przyjazd' },
+  } } }
+  assert.equal(listValue(staff, 'motherName'), 'Maria')
+  assert.equal(listValue(staff, 'fatherName'), 'Jan')
+  assert.equal(listValue(staff, 'birthSurname'), 'Kowalska')
+  assert.equal(listValue(staff, 'birthYear'), '2000')
+  assert.equal(listValue(staff, 'specialNeedsAndAdditionalInfo'), 'Późniejszy przyjazd')
+  assert.ok(customColumnGroups.find(group => group.key === 'staff').columns.some(column => column.key === 'roleLabel'))
+  assert.equal(listValue({ ...rows[0], person: { ...rows[0].person, additionalData: null } }, 'dietaryDetails'), null)
 })
 test('validates selected Turnus, empty lists, group values and age fields', () => {
   const body = { turnus: { turnusCode: 'T1' }, entries: rows }
@@ -78,7 +97,8 @@ test('presets select agreed fields and keep staff role/function in the staff sec
 
 test('custom columns use known fields once and empty selection is explicit', () => {
   const columns = columnsForList('custom', ['pesel', 'pesel', 'unknown', 'gender'], 'STAFF')
-  assert.deepEqual(columns.map(column => column.key), ['pesel', 'gender', 'roleLabel'])
+  assert.deepEqual(columns.map(column => column.key), ['pesel', 'gender'])
+  assert.deepEqual(columnsForList('custom', ['roleLabel'], 'STAFF').map(column => column.key), ['roleLabel'])
   assert.deepEqual(columnsForList('custom', [], 'STAFF'), [])
   assert.deepEqual(columnsForList('custom', [], 'PARTICIPANT'), [])
 })

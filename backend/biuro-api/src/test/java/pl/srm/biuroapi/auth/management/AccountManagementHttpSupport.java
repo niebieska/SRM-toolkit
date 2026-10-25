@@ -77,7 +77,7 @@ abstract class AccountManagementHttpSupport {
                 new TurnusListPerson.Address("Testowa", "1", "00-000", "Testowo"), LocalDate.of(2000, 1, 1),
                 "female", "001234567", null, "009876543", null, null, false, false,
                 new TurnusListPerson.AdditionalData("test@example.invalid", "Jan", "Testowy", "inna", "Kontakt",
-                        null, List.of(), false))));
+                        null, List.of(), false, null, null))));
     }
     String account(String username, Set<AccountRole> roles, Set<String> codes) {
         String id = UUID.randomUUID().toString();
