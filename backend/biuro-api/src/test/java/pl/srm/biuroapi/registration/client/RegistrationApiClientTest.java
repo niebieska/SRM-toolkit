@@ -213,6 +213,39 @@ class RegistrationApiClientTest {
         server.verify();
     }
 
+    @Test
+    void turnusListDeserializesCustomHealthAndStaffDetails() {
+        server.expect(requestTo("http://registration-api:8080/api/registrations/turnus-list?turnusCode=T1"))
+                .andExpect(header(HttpHeaders.AUTHORIZATION, credentials))
+                .andRespond(withSuccess("""
+                        [
+                          {"registrationCode":"P1","registrationType":"PARTICIPANT",
+                           "incompleteData":false,"minor":true,
+                           "additionalData":{"healthDetails":{"chronicConditionDetails":"Astma",
+                             "dietaryDetails":"Orzechy","specialNeedsDetails":"Spokojne miejsce"},
+                             "staffDetails":null}},
+                          {"registrationCode":"S1","registrationType":"STAFF",
+                           "incompleteData":false,"minor":false,
+                           "additionalData":{"healthDetails":{"chronicConditionDetails":null,
+                             "dietaryDetails":null,"specialNeedsDetails":null},
+                             "staffDetails":{"motherName":"Maria","fatherName":"Jan",
+                               "birthSurname":"Kowalska","organizationalInfo":"Późniejszy przyjazd"}}}
+                        ]
+                        """, MediaType.APPLICATION_JSON));
+
+        var rows = client.fetchTurnusList("T1");
+
+        assertEquals("Astma", rows.getFirst().additionalData().healthDetails().chronicConditionDetails());
+        assertEquals("Orzechy", rows.getFirst().additionalData().healthDetails().dietaryDetails());
+        assertEquals("Spokojne miejsce", rows.getFirst().additionalData().healthDetails().specialNeedsDetails());
+        assertNull(rows.getFirst().additionalData().staffDetails());
+        assertEquals("Maria", rows.get(1).additionalData().staffDetails().motherName());
+        assertEquals("Jan", rows.get(1).additionalData().staffDetails().fatherName());
+        assertEquals("Kowalska", rows.get(1).additionalData().staffDetails().birthSurname());
+        assertEquals("Późniejszy przyjazd", rows.get(1).additionalData().staffDetails().organizationalInfo());
+        server.verify();
+    }
+
     @ParameterizedTest
     @ValueSource(strings = {"null", "{}", "not-json"})
     void invalidTurnusListDoesNotBecomeAnEmptyList(String body) {
