@@ -93,7 +93,7 @@ test('PDF keeps all selected columns, repeated section/column headings and non-s
 })
 
 test('PDF rejects too-wide custom selections and oversized rows without omitting data', () => {
-  const source = options('custom', ['firstName', 'lastName', 'pesel', 'address', 'email', 'guardianEmail', 'contactName', 'qualifications'])
+  const source = options('custom', ['firstName', 'lastName', 'roleLabel', 'pesel', 'address', 'email', 'guardianEmail', 'contactName', 'qualifications'])
   const snapshot = createListExport(source)
   assert.throws(() => createPdfDefinition(snapshot), error => error instanceof PdfLayoutError && /mniej kolumn/.test(error.message))
   assert.equal(snapshot.sections[1].columns.length, 9)
