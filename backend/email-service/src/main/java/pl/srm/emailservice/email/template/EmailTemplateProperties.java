@@ -2,7 +2,7 @@ package pl.srm.emailservice.email.template;
 
 import org.springframework.boot.context.properties.ConfigurationProperties;
 
-@ConfigurationProperties(prefix = "templates")
+@ConfigurationProperties(prefix = "email.templates")
 public record EmailTemplateProperties(
         String regulationsUrl,
         String infoUrl,

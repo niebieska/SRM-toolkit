@@ -18,7 +18,7 @@ class EmailTemplateConfigurationTest {
             assertThat(context).hasNotFailed();
             var properties = context.getBean(EmailTemplateProperties.class);
             assertThat(properties.regulationsUrl()).isNotBlank()
-                    .isEqualTo(context.getEnvironment().getProperty("templates.regulations-url"));
+                    .isEqualTo(context.getEnvironment().getProperty("email.templates.regulations-url"));
             assertThat(properties.infoUrl()).isNotBlank();
             assertThat(properties.contactEmail()).isNotBlank();
             assertThat(properties.contactPhone()).isNotBlank();
@@ -28,7 +28,7 @@ class EmailTemplateConfigurationTest {
 
     @Test
     void explicitServerContactSettingIsBound() {
-        runner.withPropertyValues("templates.contact-email=controlled@example.test").run(context ->
+        runner.withPropertyValues("email.templates.contact-email=controlled@example.test").run(context ->
                 assertThat(context.getBean(EmailTemplateProperties.class).contactEmail())
                         .isEqualTo("controlled@example.test"));
     }
