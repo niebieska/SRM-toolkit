@@ -12,6 +12,7 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
         "EMAIL_CONTACT_EMAIL=test@example.test",
         "EMAIL_CONTACT_PHONE=+48 111 222 333",
         "EMAIL_LOGO_URL=https://test.example/logo.png",
+        "EMAIL_SERVICE_PASSWORD=test-only-email-service-password",
         "PARTICIPANT_BANK_ACCOUNT=11 2222 3333 4444 5555 6666 7777",
         "PARTICIPANT_DEPOSIT_AMOUNT=500zł"
 })
