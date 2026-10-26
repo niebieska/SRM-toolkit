@@ -45,6 +45,18 @@ docker compose --env-file "$HOME/.config/srm/containers.env" -p srm-local up -d 
 docker compose --env-file "$HOME/.config/srm/containers.env" -p srm-local ps
 ```
 
+For a deliberate external SMTP test, include the opt-in override on each Compose
+command. For example, this validates the merged configuration without starting
+services or showing resolved secret values:
+
+```bash
+docker compose --env-file "$HOME/.config/srm/containers.env" -p srm-local \
+  -f docker-compose.yml -f docker-compose.external-smtp.yml config --quiet
+```
+
+The override enables real sending. Only use it with controlled recipient
+addresses and a private env file containing the SMTP password.
+
 Use a distinct project name for isolation. Do not reuse the volume of an existing
 development deployment. Builds skip Maven tests; run the documented backend and
 frontend regression suites separately before release.
@@ -65,9 +77,13 @@ frontend regression suites separately before release.
   Registration only when an operator requests registration data.
 - API health checks verify TCP readiness, not all workflows or catalogue freshness.
   Use the smoke checks below for application-level readiness.
-- The local email-service always targets MailHog with SMTP auth/TLS disabled,
-  even when the private file contains real-provider settings. No external mail is
-  sent. Real SMTP testing remains a separate controlled Maven/provider exercise.
+- By default, the local email-service targets MailHog with SMTP auth/TLS disabled;
+  no external mail is sent. To deliberately test the configured SMTP provider,
+  include `docker-compose.external-smtp.yml` in the Compose command. This override
+  requires `MAIL_HOST`, `MAIL_PORT`, `MAIL_USER`, `MAIL_PASSWORD`,
+  `MAIL_SMTP_AUTH`, `MAIL_STARTTLS` and `MAIL_FROM`, and enables actual sending.
+  Use only controlled recipient addresses: synthetic registrations may send to
+  the email address entered in the form. Never print resolved Compose config.
 - Backend images run as a non-root numeric user. Build contexts exclude `.env`
   files, Git metadata, local build outputs and common private-key files.
 
