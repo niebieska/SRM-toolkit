@@ -1,0 +1,12 @@
+# GCP TEST only: publish the two existing frontend Nginx containers over HTTP.
+# Never use this override for real registration data or production.
+services:
+  registration-frontend:
+    # Replace the loopback-only local port mapping from docker-compose.yml.
+    ports: !override
+      - "80:80"
+
+  biuro-frontend:
+    # Temporary public HTTP endpoint until the TLS edge proxy is introduced.
+    ports: !override
+      - "8080:80"
