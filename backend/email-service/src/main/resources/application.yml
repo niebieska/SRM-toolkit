@@ -16,6 +16,9 @@ spring:
       mail.smtp.writetimeout: ${MAIL_WRITE_TIMEOUT_MS:10000}
 
 email:
+  service:
+    username: ${EMAIL_SERVICE_USERNAME:registration-email-sender}
+    password: ${EMAIL_SERVICE_PASSWORD}
   from: ${MAIL_FROM:noreply@srm.pl}
   enabled: ${MAIL_ENABLED:true}
   templates:

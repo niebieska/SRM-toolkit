@@ -21,13 +21,18 @@ public class EmailServiceClient {
     public EmailServiceClient(RestClient.Builder builder,
             @Value("${email.service.url:http://localhost:8082}") String url,
             @Value("${email.service.connect-timeout:PT5S}") Duration connectTimeout,
-            @Value("${email.service.read-timeout:PT30S}") Duration readTimeout) {
+            @Value("${email.service.read-timeout:PT30S}") Duration readTimeout,
+            @Value("${email.service.username}") String username,
+            @Value("${email.service.password}") String password) {
+        Assert.hasText(username, "Email service username must not be blank");
+        Assert.hasText(password, "Email service password must not be blank");
         validateTimeout(connectTimeout);
         validateTimeout(readTimeout);
         var factory = new SimpleClientHttpRequestFactory();
         factory.setConnectTimeout(connectTimeout);
         factory.setReadTimeout(readTimeout);
-        this.restClient = builder.clone().baseUrl(url).requestFactory(factory).build();
+        this.restClient = builder.clone().baseUrl(url).requestFactory(factory)
+                .defaultHeaders(headers -> headers.setBasicAuth(username, password)).build();
     }
 
     public void sendEmail(String to, String templateName, Map<String, String> variables) {

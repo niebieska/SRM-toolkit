@@ -192,6 +192,34 @@
   separation of diagnostic details from the HTTP response.
 - This enables diagnosis of real SMTP failures; it does not itself resolve the
   provider/network issue or add automatic retries.
+## 2026-10-18 — Application security preparation for external TEST
+
+- Kept work on `feature/test-deployment-packaging`. Untracked root `.env` with `git rm --cached`; local file remains intact and ignored. No secret contents were copied or displayed, no history rewrite, and no real/external credentials were automatically rotated.
+- Removed Registration/Biuro database-password fallbacks. Added dedicated Basic authentication for Registration → email-service (`EMAIL_SERVICE_USERNAME`, required `EMAIL_SERVICE_PASSWORD`), positive credential validation and default-deny routing. SMTP disabled mode still requires service authentication. Compose maps the new credential only to its caller/server; existing service roles remain distinct.
+- Restricted the public Registration nginx proxy to POST participant/staff and GET catalogue/staff-options, preserving both Turnus aliases. Other API paths return 404; wrong methods return 405. Trusted Biuro processing retains its direct private Registration connection.
+- Protected reserved template link/contact variables from caller overrides and corrected the existing properties-prefix mismatch (`templates` YAML versus `email.templates` binding). Added actual-configuration binding and actual-template HTML escaping tests. Existing email text/layout was not changed.
+- Final full backend suites: 363 passed, zero failures/errors, 11 optional MariaDB tests skipped (Registration 196 total, Biuro 136, email 42). New coverage includes missing/blank credentials, malformed/wrong/other-service authentication, response preservation, authenticated HTTP headers without credential logging, missing DB-password fallback and status-save isolation on email 401/500.
+- All five container images rebuilt. Four checked-in opt-in public-proxy regressions passed against the synthetic stack, including valid-service-credential management denial and preserved catalogue/validation responses. Live smoke checks rejected unauthenticated/malformed/other-service email calls without sending; valid Registration → email calls produced confirmation/status messages in MailHog. Public registration, duplicate 409, Biuro acceptance and Turnus lists still work.
+- Final rebuilt email image also passed an authenticated MailHog send with actual escaped HTML and no caller link/contact override. Template secrets remain empty; local `.env` retention and untracking were verified. Compose configuration, shell/Node syntax and whitespace checks pass.
+- Updated private-env guidance, deployment checklist and security/rotation instructions. Real credential rotation, public HTTPS by static IP with renewal/proxy handling, rate controls, firewall and backup/restore remain deployment gates. No public server, external SMTP or host database was used. Verification containers were stopped; test volumes retained. Work is recorded in separate implementation, regression-test and documentation commits on this branch; no push or public deployment performed.
+
+
+## 2026-10-18 — Local deployment packaging committed
+
+- Committed Phase 1 on `feature/test-deployment-packaging` in separate backend-build, frontend-container/routing, Compose/database-startup and documentation commits.
+- Verification results from 2026-10-17 remain recorded below; commit preparation rechecked shell syntax, whitespace and blank template secrets. No implementation changes or repeated full build/smoke tests were needed.
+- This is local/controlled synthetic-data packaging. External TEST security, HTTPS, secret rotation and backup/restore remain pending. No push or server deployment performed.
+
+## 2026-10-17 — Local container packaging, deployment Phase 1
+
+- Created `feature/test-deployment-packaging` from merged development. Repaired root-context multi-stage backend builds and parent POM paths (`../../pom.xml`); the clean container build exposed the previously cache-masked parent-resolution error. Maven builder images avoid wrapper execute-permission assumptions.
+- Added the missing Registration frontend image and nginx same-origin API proxies/SPA fallback for both apps. Registration API helpers now share Vite-configurable API base selection; existing localhost Vite defaults and Maven/Vite startup remain available.
+- Compose now starts both schemas on a project-scoped MariaDB volume, with separate users and Biuro-before-Registration startup. Added initial Biuro schema/user provisioning; corrected strict unset-variable incompatibility found on the first fresh initialization, then verified a fresh volume including a quote/backslash password.
+- Local packaging uses MailHog only, loopback frontend/MailHog ports and no published API/database/SMTP ports. Required Compose secrets have no defaults; Java images run as UID 10001. Added a build-context ignore file, private-env guidance and reproducible Compose v2 commands.
+- Verification: all five application images built from container dependency caches initially empty; seven-service stack started successfully. Registration's five existing Node test files pass. HTTP smoke checks covered both app shells/deep links, denied anonymous management, bootstrap/forced password change/self-role grant, catalogue/staff options, valid registration, duplicate 409, acceptance, Turnus lists and confirmation/status mail in MailHog.
+- Recreated containers without deleting the volume: account credentials/roles, Turnus and accepted registration remained. Verified nginx syntax, built frontend URL replacement, non-root backend users, unpublished backend/database ports and failure on missing required Compose credentials. Bash syntax, Compose config and whitespace checks pass.
+- Used temporary standalone Compose v2.39.4 because installed Compose 1.25 is unsupported; did not replace system tooling. Synthetic credentials stayed in private `/tmp` files; no host database or external SMTP was used. Verification containers stopped; test volumes retained. No commits made.
+- Remaining phases: secret removal/rotation and service authentication, external TEST HTTPS/routing, backup/restore and full browser/operator/permission acceptance. Existing npm dependency advisories remain; package versions and UI styling were not changed.
 
 ## 2026-10-17 — Email reliability committed for controlled TEST
 

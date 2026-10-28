@@ -43,12 +43,15 @@ import java.util.Optional;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
+import org.springframework.http.HttpHeaders;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
 class EmailServiceClientTest {
     HttpServer server;
     final AtomicInteger calls = new AtomicInteger();
+    final AtomicReference<String> authorization = new AtomicReference<>();
     final Logger logger = (Logger) LoggerFactory.getLogger(EmailServiceClient.class);
     final ListAppender<ILoggingEvent> logs = new ListAppender<>();
     static final Map<String, String> VARIABLES = Map.of("registrationCode", "REG-P-T1-1", "private", "SECRET_PAYLOAD");
@@ -58,10 +61,11 @@ class EmailServiceClientTest {
     }
     @AfterEach void cleanup() { server.stop(0); logger.detachAppender(logs); logs.stop(); }
     String url() { return "http://127.0.0.1:" + server.getAddress().getPort(); }
-    EmailServiceClient client(Duration read) { return new EmailServiceClient(RestClient.builder(), url(), Duration.ofMillis(300), read); }
+    EmailServiceClient client(Duration read) { return new EmailServiceClient(RestClient.builder(), url(), Duration.ofMillis(300), read, "email-sender", "test-email-password"); }
     void respond(int status, String body) {
         server.createContext("/api/email/send", exchange -> {
             calls.incrementAndGet();
+            authorization.set(exchange.getRequestHeaders().getFirst("Authorization"));
             assertEquals("POST", exchange.getRequestMethod());
             exchange.getRequestBody().readAllBytes();
             byte[] bytes = body.getBytes(StandardCharsets.UTF_8);
@@ -113,11 +117,18 @@ class EmailServiceClientTest {
             assertTrue(messages().contains("REG-P-T1-1")); assertFalse(messages().contains("recipient@"));
         } finally { release.countDown(); }
     }
+    @Test void sendsDedicatedCredentialsWithoutLoggingThem() {
+        respond(200, "{\"success\":true}"); send();
+        String expected = "Basic " + HttpHeaders.encodeBasicAuth("email-sender", "test-email-password", null);
+        assertEquals(expected, authorization.get());
+        assertFalse(messages().contains("test-email-password"));
+        assertFalse(messages().contains(expected));
+    }
     @Test void refusedConnectionDoesNotEscapeAndIsNotReportedAsAcceptance() throws Exception {
         int port;
         try (var socket = new ServerSocket(0)) { port = socket.getLocalPort(); }
         var client = new EmailServiceClient(RestClient.builder(), "http://127.0.0.1:" + port,
-                Duration.ofMillis(150), Duration.ofMillis(150));
+                Duration.ofMillis(150), Duration.ofMillis(150), "email-sender", "test-email-password");
         assertDoesNotThrow(() -> client.sendEmail("recipient@example.test", "status-update", VARIABLES));
         assertTrue(messages().contains("UNCONFIRMED")); assertFalse(messages().contains("SMTP_ACCEPTED"));
     }
@@ -129,12 +140,13 @@ class EmailServiceClientTest {
     }
     @Test void invalidHttpTimeoutsFailFast() {
         for (Duration value : new Duration[]{Duration.ZERO, Duration.ofMillis(-1), Duration.ofNanos(1), Duration.ofDays(100)}) {
-            assertThrows(IllegalArgumentException.class, () -> new EmailServiceClient(RestClient.builder(), url(), value, Duration.ofSeconds(1)));
-            assertThrows(IllegalArgumentException.class, () -> new EmailServiceClient(RestClient.builder(), url(), Duration.ofSeconds(1), value));
+            assertThrows(IllegalArgumentException.class, () -> new EmailServiceClient(RestClient.builder(), url(), value, Duration.ofSeconds(1), "email-sender", "test-email-password"));
+            assertThrows(IllegalArgumentException.class, () -> new EmailServiceClient(RestClient.builder(), url(), Duration.ofSeconds(1), value, "email-sender", "test-email-password"));
         }
     }
-    @Test void statusRemainsSavedWhenActualEmailHttpRequestFails() {
-        respond(500, "{\"success\":false}");
+    @ParameterizedTest @ValueSource(ints = {401, 500})
+    void statusRemainsSavedWhenActualEmailHttpRequestFails(int status) {
+        respond(status, "{\"success\":false}");
         RegistrationRepository repository = mock(RegistrationRepository.class);
         Registration registration = new Registration("REG-P-T1-1", "PARTICIPANT", "T1", "hash", false, "NEW", null,
                 "{\"person\":{\"firstName\":\"Synthetic\",\"contact\":{\"email\":\"recipient@example.test\"}}}", LocalDateTime.now(), null);
@@ -149,7 +161,7 @@ class EmailServiceClientTest {
         assertEquals("ACCEPTED", service.updateStatus("REG-P-T1-1",
                 new StatusUpdateRequest("ACCEPTED", null, "actor-id", "operator")).status());
         verify(repository).save(registration); assertEquals(1, calls.get());
-        assertTrue(messages().contains("UNCONFIRMED"));
+        assertTrue(messages().contains(status == 401 ? "NOT_SENT" : "UNCONFIRMED"));
     }
     @ParameterizedTest @ValueSource(booleans = {false, true})
     void participantCodeStillReturnsAfterHttpEmailFailure(boolean minor) {

@@ -20,27 +20,35 @@ real registrations or a change to the agreed first-release scope.
 
 ### Build and runtime
 
-- [ ] Dockerfiles/Compose contexts match the repository layout and include both frontends and all required services.
+- [x] Dockerfiles/Compose contexts match the repository layout and include both frontends and all required services (local Phase 1 verified).
 - [ ] Maven wrapper execution and complete backend/frontend builds succeed from a clean checkout.
-- [ ] `docker compose build` succeeds; required images and runtime versions are documented.
+- [x] Compose v2 build succeeds for all five application images; runtime versions and local commands are documented in [Local container testing](Local-container-testing.md).
 - [ ] Frontend API URLs and backend CORS match the deployed environment.
-- [ ] Frontend hosting supports SPA refresh/deep links.
+- [x] Container frontend hosting supports SPA refresh/deep links (HTTP smoke checks passed).
 - [ ] Service URLs, database and SMTP variables match application configuration.
 - [ ] Document a reproducible local/server startup path without GUI terminal assumptions.
+
+Local container build/startup, same-origin proxy routing, MailHog delivery and
+volume persistence were verified on 2026-10-17. The server-specific items above
+and security/recovery gates below remain open. Builds invoke Maven directly in
+the builder image; host Maven-wrapper permissions were not changed.
 
 ### Security and access
 
 - [ ] Management endpoints require service authentication; Biuro endpoints require valid operator authentication.
 - [ ] Public submission and Turnus lookup remain usable; unauthenticated management access is rejected.
 - [ ] Database and internal services, including email-service, are not publicly exposed.
-- [ ] Authenticate email-service callers; allowlist template identifiers and prevent
-  caller variables from overriding trusted link/contact configuration. Verify
-  intended template escaping rather than assuming all rendering is unsafe.
+- [x] Authenticate email-service callers; allowlist template identifiers and prevent
+  caller variables from overriding trusted link/contact configuration. Actual-template
+  escaping and negative authentication are covered by automated tests (local TEST verified).
+- [x] Restrict public Registration proxy routes to submissions and catalogue reads;
+  management paths remain blocked even with valid service credentials.
 - [ ] Remove unnecessary published ports; bind development-only database/MailHog
   access to localhost when host access is needed.
 - [ ] HTTPS/reverse proxy and network exposure are configured and checked.
 - [ ] Use non-default operator credentials, JWT signing secret and shared service credentials.
-- [ ] Remove tracked secret files, rotate exposed credentials, and document required variables in `.env.example` without secrets.
+- [x] Untrack root `.env` and document required variables in `.env.example` without secrets.
+- [ ] Rotate all exposed credentials in active environments; use new private credentials for GCP. Git history still contains old values.
 - [ ] Required release credentials fail startup when missing/blank; validate JWT
   signing-key strength. Do not retain known JWT/operator/database password fallbacks.
 - [ ] Actuator exposes only intended health information; secrets and detailed environment data are not public.
@@ -48,6 +56,7 @@ real registrations or a change to the agreed first-release scope.
 
 ### Database and recovery
 
+- [ ] Run the GCP TEST reboot and MariaDB backup/isolated-restore checks in the [recovery runbook](GCP-test-recovery-runbook.md); record evidence.
 - [ ] Database storage persists across service/container recreation.
 - [ ] Flyway migrations run successfully and schema versions are recorded.
 - [ ] Existing databases without history are checked/backed up before explicit one-time baseline; automatic baselining is not permanently enabled.

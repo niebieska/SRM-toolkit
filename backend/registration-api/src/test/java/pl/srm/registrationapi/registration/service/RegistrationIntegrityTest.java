@@ -43,7 +43,7 @@ import static org.mockito.Mockito.verifyNoInteractions;
         "spring.datasource.url=${TEST_DB_URL}", "spring.datasource.username=${TEST_DB_USER}",
         "spring.datasource.password=${TEST_DB_PASSWORD}", "registration.service.password=integration-only",
         "spring.jpa.open-in-view=false", "turnus.catalogue.password=integration-only",
-        "turnus.catalogue.url=http://127.0.0.1:9"
+        "turnus.catalogue.url=http://127.0.0.1:9", "email.service.password=integration-only"
 })
 class RegistrationIntegrityTest {
     @Autowired RegistrationPersistenceService service;

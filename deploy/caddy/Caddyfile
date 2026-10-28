@@ -1,0 +1,7 @@
+http://formularz-srm.watroba.com.pl {
+    reverse_proxy registration-frontend:80
+}
+
+http://biuro-srm.watroba.com.pl {
+    reverse_proxy biuro-frontend:80
+}

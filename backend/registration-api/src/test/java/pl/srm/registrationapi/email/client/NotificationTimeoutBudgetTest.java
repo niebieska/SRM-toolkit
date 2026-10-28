@@ -43,7 +43,8 @@ class NotificationTimeoutBudgetTest {
     final ApplicationContextRunner runner = new ApplicationContextRunner()
             .withInitializer(new ConfigDataApplicationContextInitializer())
             .withInitializer(context -> context.getBeanFactory().setConversionService(ApplicationConversionService.getSharedInstance()))
-            .withUserConfiguration(RestClientConfig.class, EmailServiceClient.class);
+            .withUserConfiguration(RestClientConfig.class, EmailServiceClient.class)
+            .withPropertyValues("email.service.username=email-sender", "email.service.password=test-email-password");
 
     @Test void configuredDefaultsLeaveHeadroomForReturningTheSavedStatus() throws Exception {
         var biuroRead = biuroReadTimeout();
@@ -79,7 +80,7 @@ class NotificationTimeoutBudgetTest {
                 // nested HTTP regression short without hardcoding different ratios.
                 var connect = Duration.parse(context.getEnvironment().getProperty("email.service.connect-timeout")).dividedBy(10);
                 var read = Duration.parse(context.getEnvironment().getProperty("email.service.read-timeout")).dividedBy(10);
-                var inner = new EmailServiceClient(RestClient.builder(), "http://127.0.0.1:" + email.getAddress().getPort(), connect, read);
+                var inner = new EmailServiceClient(RestClient.builder(), "http://127.0.0.1:" + email.getAddress().getPort(), connect, read, "email-sender", "test-email-password");
                 var notifications = new StatusNotificationService(inner, new ObjectMapper());
                 var historyRepository = mock(RegistrationStatusHistoryRepository.class);
                 var editHistoryRepository = mock(RegistrationEditHistoryRepository.class);

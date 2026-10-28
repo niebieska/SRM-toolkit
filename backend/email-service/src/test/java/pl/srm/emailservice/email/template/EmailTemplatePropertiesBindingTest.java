@@ -12,8 +12,9 @@ import static org.junit.jupiter.api.Assertions.assertEquals;
         "EMAIL_CONTACT_EMAIL=test@example.test",
         "EMAIL_CONTACT_PHONE=+48 111 222 333",
         "EMAIL_LOGO_URL=https://test.example/logo.png",
-        "PARTICIPANT_BANK_ACCOUNT=",
-        "PARTICIPANT_DEPOSIT_AMOUNT="
+        "EMAIL_SERVICE_PASSWORD=test-only-email-service-password",
+        "PARTICIPANT_BANK_ACCOUNT=11 2222 3333 4444 5555 6666 7777",
+        "PARTICIPANT_DEPOSIT_AMOUNT=500zł"
 })
 class EmailTemplatePropertiesBindingTest {
     @Autowired
@@ -29,7 +30,7 @@ class EmailTemplatePropertiesBindingTest {
         assertEquals("https://rekolekcje.scj.pl/beta/wp-content/uploads/karta2020.pdf",
                 properties.participantCardAdultUrl());
         assertEquals(properties.participantCardAdultUrl(), properties.participantCardMinorUrl());
-        assertEquals("", properties.participantBankAccount());
-        assertEquals("", properties.participantDepositAmount());
+        assertEquals("11 2222 3333 4444 5555 6666 7777", properties.participantBankAccount());
+        assertEquals("500zł", properties.participantDepositAmount());
     }
 }

@@ -1,4 +1,4 @@
-const API_BASE = 'http://localhost:8080'
+import { API_BASE } from './config.js'
 const STAFF_HEALTH_QUESTIONS = {
     q1: 'Czy posiadasz choroby przewlekłe, o których organizator powinien wiedzieć?',
     q2: 'Czy występują u Ciebie alergie lub nietolerancje pokarmowe, które powinny zostać uwzględnione przy przygotowywaniu posiłków?',

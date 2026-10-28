@@ -25,6 +25,11 @@ implementation. Manual resend from Biuro is tracked in
   separate intended notifications; failure of the first HTTP email call does not
   prevent the second recipient attempt.
 
+Registration → email-service now requires a dedicated `EMAIL_SERVICE_PASSWORD`
+on both services, including when sending is disabled; the default username is
+`registration-email-sender`. This differs from SMTP authentication. Missing/blank
+service credentials prevent startup; wrong HTTP credentials cannot dispatch mail.
+
 Deploy the updated Registration and email-service versions together: older
 email-service code could report success after swallowing an SMTP failure.
 
@@ -32,8 +37,9 @@ email-service code could report success after swallowing an SMTP failure.
 
 Use the commented root [.env.example](../.env.example), filling secrets only in a
 private file. Maven needs explicitly exported variables; it does not load `.env`.
-The old Compose SMTP overrides still need separate correction; use direct Maven
-runs for this test. No actual SMTP credentials are committed by this work.
+The local Compose stack deliberately uses MailHog; use direct Maven
+runs with the private SMTP configuration for a real-provider test. See
+[local container testing](Local-container-testing.md). No actual SMTP credentials are committed by this work.
 
 | Variable | Consumer | Default | Meaning |
 |---|---|---|---|
@@ -128,7 +134,6 @@ Manual test sequence:
 ## Still separate
 
 Operator warning/resend controls, persisted notification history, transactional
-outbox/idempotency, automatic retries, Sent-folder copies, email-service caller
-authentication/network isolation, rate limiting and complete Compose/deployment
+outbox/idempotency, automatic retries, Sent-folder copies, rate limiting and external deployment
 hardening remain separate work. This phase is not approval for public exposure or
 real registration collection.

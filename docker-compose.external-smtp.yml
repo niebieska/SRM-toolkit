@@ -1,0 +1,13 @@
+# Explicit opt-in to the configured external test SMTP server.
+# This sends real email; keep recipient addresses controlled and secrets private.
+services:
+  email-service:
+    environment:
+      MAIL_HOST: ${MAIL_HOST:?Set MAIL_HOST}
+      MAIL_PORT: ${MAIL_PORT:?Set MAIL_PORT}
+      MAIL_USER: ${MAIL_USER:?Set MAIL_USER}
+      MAIL_PASSWORD: ${MAIL_PASSWORD:?Set MAIL_PASSWORD}
+      MAIL_SMTP_AUTH: ${MAIL_SMTP_AUTH:?Set MAIL_SMTP_AUTH}
+      MAIL_STARTTLS: ${MAIL_STARTTLS:?Set MAIL_STARTTLS}
+      MAIL_FROM: ${MAIL_FROM:?Set MAIL_FROM}
+      MAIL_ENABLED: 'true'
