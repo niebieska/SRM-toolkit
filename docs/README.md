@@ -14,6 +14,7 @@ Start with the registration workflow release plan for functional scope and the d
 - [Biuro accounts — Phase 2 management, permissions and audit](Biuro-accounts-phase-2.md)
 - [Biuro accounts — frontend integration and manual acceptance](Biuro-accounts-frontend.md)
 - [Deployment checklist](deployment-checklist.md)
+- [GCP TEST reboot, MariaDB backup and restore runbook](GCP-test-recovery-runbook.md)
 - [Local container packaging and verification](Local-container-testing.md)
 - [Docker local-run and monitoring handbook](Docker-local-run-handbook.md)
 - [Deployment security preparation and credential rotation](Deployment-security-preparation.md)

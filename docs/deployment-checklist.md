@@ -56,6 +56,7 @@ the builder image; host Maven-wrapper permissions were not changed.
 
 ### Database and recovery
 
+- [ ] Run the GCP TEST reboot and MariaDB backup/isolated-restore checks in the [recovery runbook](GCP-test-recovery-runbook.md); record evidence.
 - [ ] Database storage persists across service/container recreation.
 - [ ] Flyway migrations run successfully and schema versions are recorded.
 - [ ] Existing databases without history are checked/backed up before explicit one-time baseline; automatic baselining is not permanently enabled.
