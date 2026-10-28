@@ -1,12 +1,30 @@
-# GCP TEST only: publish the two existing frontend Nginx containers over HTTP.
+# GCP TEST only: route the two domain names to their frontend containers over HTTP.
 # Never use this override for real registration data or production.
 services:
   registration-frontend:
-    # Replace the loopback-only local port mapping from docker-compose.yml.
-    ports: !override
-      - "80:80"
+    # Frontends are reachable through the edge proxy, not directly from the host.
+    ports: !override []
 
   biuro-frontend:
-    # Temporary public HTTP endpoint until the TLS edge proxy is introduced.
-    ports: !override
-      - "8080:80"
+    ports: !override []
+
+  web-proxy:
+    image: caddy:2.11.7-alpine
+    ports:
+      - "80:80"
+    volumes:
+      - ./deploy/caddy/Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy-data:/data
+      - caddy-config:/config
+    depends_on:
+      registration-frontend:
+        condition: service_started
+      biuro-frontend:
+        condition: service_started
+    networks:
+      - srm-net
+    restart: unless-stopped
+
+volumes:
+  caddy-data: null
+  caddy-config: null
