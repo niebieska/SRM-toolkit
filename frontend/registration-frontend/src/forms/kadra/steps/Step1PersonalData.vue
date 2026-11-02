@@ -88,7 +88,7 @@
     </div>
 
     <!-- Contact -->
-    <div class="grid grid-cols-2 gap-4">
+    <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
       <div>
         <label class="block text-sm font-medium text-gray-700 mb-1">E-mail *</label>
         <input v-model="local.email" type="email" :class="fieldClass('email')"/>
@@ -115,7 +115,7 @@
           <p v-if="errors.guardianLastName" class="text-red-500 text-xs mt-1">{{ errors.guardianLastName }}</p>
         </div>
       </div>
-      <div class="grid grid-cols-2 gap-4">
+      <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
         <div>
           <label class="block text-sm font-medium text-gray-700 mb-1">Relacja *</label>
           <select v-model="local.guardianRelation" :class="fieldClass('guardianRelation')">
@@ -166,7 +166,7 @@
     <!-- ICE section (adult) -->
     <div v-if="isAdult && pesel.length === 11" class="border border-blue-200 rounded-lg p-4 bg-blue-50 space-y-4">
       <h3 class="font-semibold text-gray-700">Osoba do kontaktu w nagłych przypadkach (ICE)</h3>
-      <div class="grid grid-cols-2 gap-4">
+      <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
         <div>
           <label class="block text-sm font-medium text-gray-700 mb-1">Imię *</label>
           <input v-model="local.iceFirstName" type="text" :class="fieldClass('iceFirstName')"/>
