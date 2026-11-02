@@ -4,6 +4,7 @@ import DashboardView from '../views/DashboardView.vue'
 import TurnusListView from '../views/TurnusListView.vue'
 import TurnusEditorView from '../views/TurnusEditorView.vue'
 import TurnusListsView from '../views/TurnusListsView.vue'
+import TurnusPaymentsView from '../views/TurnusPaymentsView.vue'
 import PasswordView from '../views/PasswordView.vue'
 import AccountsView from '../views/AccountsView.vue'
 import ViewerTurnusesView from '../views/ViewerTurnusesView.vue'
@@ -24,10 +25,12 @@ const router = createRouter({
     { path: '/listy', component: ViewerTurnusesView, meta: lists },
     { path: '/brak-dostepu', component: SessionCheckView, meta: { requiresAuth: true } },
     { path: '/dashboard', component: DashboardView, meta: operator },
+    { path: '/wplaty', name: 'payments', component: TurnusPaymentsView, meta: operator },
     { path: '/turnusy', name: 'turnus-list', component: TurnusListView, meta: operator },
     { path: '/turnusy/nowy', name: 'turnus-create', component: TurnusEditorView, meta: operator },
     { path: '/turnusy/:code', name: 'turnus-detail', component: TurnusEditorView, meta: operator },
     { path: '/turnusy/:code/listy', name: 'turnus-lists', component: TurnusListsView, meta: lists },
+    { path: '/turnusy/:code/wplaty', name: 'turnus-payments', redirect: to => ({ name: 'payments', query: { turnus: to.params.code } }) },
     { path: '/:pathMatch(.*)*', redirect: '/' },
   ],
 })

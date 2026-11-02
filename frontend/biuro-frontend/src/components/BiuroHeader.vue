@@ -30,6 +30,7 @@ async function logout() {
     <p v-if="error" role="alert" class="text-sm text-red-700">{{ error }}</p>
     <nav aria-label="Główna nawigacja" class="flex flex-wrap gap-1 border-b border-slate-300">
       <RouterLink v-if="auth.isOperator" to="/dashboard" class="border-b-2 px-4 py-3 text-sm font-medium" :class="$route.path === '/dashboard' ? 'border-slate-800' : 'border-transparent text-slate-500'">Zgłoszenia</RouterLink>
+      <RouterLink v-if="auth.isOperator" to="/wplaty" class="border-b-2 px-4 py-3 text-sm font-medium" :class="$route.path.startsWith('/wplaty') ? 'border-slate-800' : 'border-transparent text-slate-500'">Wpłaty</RouterLink>
       <RouterLink v-if="auth.isOperator" to="/turnusy" class="border-b-2 px-4 py-3 text-sm font-medium" :class="$route.path.startsWith('/turnusy') ? 'border-slate-800' : 'border-transparent text-slate-500'">Turnusy</RouterLink>
       <RouterLink v-if="auth.isViewer && !auth.isOperator" to="/listy" class="border-b-2 px-4 py-3 text-sm font-medium" :class="$route.path === '/listy' || $route.name === 'turnus-lists' ? 'border-slate-800' : 'border-transparent text-slate-500'">Listy turnusów</RouterLink>
       <RouterLink v-if="auth.isAdmin" to="/konta" class="border-b-2 px-4 py-3 text-sm font-medium" :class="$route.path === '/konta' ? 'border-slate-800' : 'border-transparent text-slate-500'">Konta</RouterLink>
