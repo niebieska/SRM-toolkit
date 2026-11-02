@@ -5,24 +5,24 @@
     <div class="space-y-4">
       <HealthQuestion
           :number="1"
+          v-model:answer="local.health.q1.answer"
+          v-model:detail="local.health.q1.detail"
           question="Czy posiadasz choroby przewlekłe, o których organizator powinien wiedzieć?*"
           placeholder="Jakie? Prosze krótko opisać"
           :multiline="true"
           :answerError="errors.q1Answer"
           :detailError="errors.q1Detail"
-          @update:answer="local.health.q1.answer = $event"
-          @update:detail="local.health.q1.detail = $event"
       />
 
       <HealthQuestion
           :number="2"
+          v-model:answer="local.health.q2.answer"
+          v-model:detail="local.health.q2.detail"
           question="Czy występują u Ciebie alergie lub nietolerancje pokarmowe, które powinny zostać uwzględnione przy przygotowywaniu posiłków?*"
           placeholder="Jakie? Prosze krótko opisać"
           :multiline="true"
           :answerError="errors.q2Answer"
           :detailError="errors.q2Detail"
-          @update:answer="local.health.q2.answer = $event"
-          @update:detail="local.health.q2.detail = $event"
       />
 
       <div class="border border-gray-200 rounded-lg p-4 bg-white">
