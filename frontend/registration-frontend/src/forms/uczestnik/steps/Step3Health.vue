@@ -81,15 +81,15 @@ const participantGenitive = computed(() => {
 })
 
 const q1Text = computed(() =>
-    `Czy ${participant.value} posiada choroby przewlekłe, o których organizator powinien wiedzieć?`
+    `Czy ${participant.value} posiada choroby przewlekłe, o których organizator powinien wiedzieć?*`
 )
 
 const q2Text = computed(() =>
-    `Czy u ${participantGenitive.value} występują alergie lub nietolerancje pokarmowe, które powinny zostać uwzględnione przy przygotowywaniu posiłków?`
+    `Czy u ${participantGenitive.value} występują alergie lub nietolerancje pokarmowe, które powinny zostać uwzględnione przy przygotowywaniu posiłków?*`
 )
 
 const q3Text = computed(() =>
-    `Czy ${participant.value} ma specjalne potrzeby edukacyjne, w tym potrzeby wynikające z niepełnosprawności, niedostosowania społecznego lub zagrożenia niedostosowaniem społecznym?`
+    `Czy ${participant.value} ma specjalne potrzeby edukacyjne, w tym potrzeby wynikające z niepełnosprawności, niedostosowania społecznego lub zagrożenia niedostosowaniem społecznym?*`
 )
 
 const errors = reactive({})
