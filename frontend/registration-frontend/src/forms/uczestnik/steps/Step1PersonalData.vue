@@ -156,7 +156,7 @@
           <p v-if="errors.iceLastName" class="text-red-500 text-xs mt-1">{{ errors.iceLastName }}</p>
         </div>
       </div>
-      <div class="grid grid-cols-2 gap-4">
+      <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
         <div>
           <label class="block text-sm font-medium text-gray-700 mb-1">Relacja *</label>
           <select v-model="local.iceRelation" :class="fieldClass('iceRelation')">
