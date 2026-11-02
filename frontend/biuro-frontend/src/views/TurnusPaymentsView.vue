@@ -2,6 +2,7 @@
 import { computed, onBeforeUnmount, reactive, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import BiuroHeader from '../components/BiuroHeader.vue'
+import PolishDatePicker from '../components/PolishDatePicker.vue'
 import { useAuthStore } from '../stores/auth'
 import { fetchTurnuses } from '../api/turnusApi'
 import { createDemoPaymentRegistrations, paymentBalance, paymentStatus, paymentTotal } from '../utils/demoPayments'
@@ -32,6 +33,10 @@ let requestSequence = 0
 
 const registrations = ref([])
 const selectedRegistration = computed(() => registrations.value.find(item => item.id === selectedId.value) || null)
+const latestDiscountHistoryEntry = computed(() => {
+  const history = selectedRegistration.value?.discountHistory || []
+  return history.length ? history[history.length - 1] : null
+})
 const scopedRegistrations = computed(() => registrations.value.filter(item => !turnusFilter.value || item.turnusCode === turnusFilter.value))
 const visibleRegistrations = computed(() => scopedRegistrations.value.filter(item => {
   const statusMatches = !statusFilter.value || paymentStatus(item) === statusFilter.value
@@ -64,6 +69,12 @@ function formatDate(value) {
 }
 function statusLabel(registration) {
   return ({ NO_PAYMENT: 'Brak wpłaty', OWED: 'Do dopłaty', PAID: 'Opłacone' })[paymentStatus(registration)]
+}
+function paymentStatusSummary(registration) {
+  const status = paymentStatus(registration)
+  if (status === 'NO_PAYMENT') return `Brak wpłaty: ${formatMoney(paymentBalance(registration))}`
+  if (status === 'OWED') return `Do dopłaty: ${formatMoney(paymentBalance(registration))}`
+  return 'Opłacono'
 }
 function statusClass(registration) {
   return ({
@@ -297,7 +308,7 @@ onBeforeUnmount(() => { requestSequence++ })
             <header class="flex items-start justify-between gap-4">
               <div>
                 <h3 id="payment-lookup-title" class="text-lg font-semibold text-slate-900">Dodaj wpłatę</h3>
-                <p class="mt-1 text-sm text-slate-600">Wyszukaj zaakceptowane zgłoszenie z przypisaną opłatą.</p>
+                <p class="mt-1 text-sm text-slate-600">Wyszukaj zgłoszenie, do którego chcesz odnotować wpłatę.</p>
               </div>
               <button type="button" aria-label="Zamknij" class="rounded-lg px-2 py-1 text-xl leading-none text-slate-500 hover:bg-slate-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-500" @click="lookupOpen = false">×</button>
             </header>
@@ -327,19 +338,15 @@ onBeforeUnmount(() => { requestSequence++ })
         <section role="dialog" aria-modal="true" :aria-labelledby="'payment-dialog-title'" class="max-h-[92vh] w-full overflow-y-auto rounded-t-2xl bg-white shadow-xl sm:max-w-2xl sm:rounded-2xl">
           <header class="flex items-start justify-between gap-4 border-b border-slate-200 px-5 py-4 sm:px-6">
             <div class="min-w-0">
-              <h3 id="payment-dialog-title" class="text-lg font-semibold text-slate-900">{{ selectedRegistration.lastName }}, {{ selectedRegistration.firstName }}</h3>
+              <div class="flex flex-wrap items-center gap-2">
+                <h3 id="payment-dialog-title" class="text-lg font-semibold text-slate-900">{{ selectedRegistration.lastName }}, {{ selectedRegistration.firstName }}</h3>
+                <span class="inline-flex whitespace-nowrap rounded-full border px-2.5 py-1 text-xs font-medium" :class="statusClass(selectedRegistration)">{{ paymentStatusSummary(selectedRegistration) }}</span>
+              </div>
               <p class="mt-1 font-mono text-xs text-slate-500">{{ selectedRegistration.registrationCode }}</p>
             </div>
             <button type="button" aria-label="Zamknij" class="rounded-lg px-2 py-1 text-xl leading-none text-slate-500 hover:bg-slate-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-500" @click="closeDialog">×</button>
           </header>
           <div class="space-y-5 px-5 py-5 sm:px-6">
-            <div class="grid grid-cols-2 gap-3 sm:grid-cols-4">
-              <div class="rounded-lg bg-slate-50 p-3"><p class="text-xs text-slate-500">Opłata</p><p class="mt-1 font-semibold text-slate-900">{{ formatMoney(selectedRegistration.fee) }}</p></div>
-              <div class="rounded-lg bg-slate-50 p-3"><p class="text-xs text-slate-500">Rabat</p><p class="mt-1 font-semibold text-slate-900">{{ formatMoney(selectedRegistration.discount) }}</p></div>
-              <div class="rounded-lg bg-slate-50 p-3"><p class="text-xs text-slate-500">Wpłacono</p><p class="mt-1 font-semibold text-slate-900">{{ formatMoney(paymentTotal(selectedRegistration)) }}</p></div>
-              <div class="rounded-lg bg-slate-50 p-3"><p class="text-xs text-slate-500">Pozostało</p><p class="mt-1 font-semibold text-slate-900">{{ formatMoney(paymentBalance(selectedRegistration)) }}</p></div>
-            </div>
-
             <section aria-labelledby="payment-history-heading">
               <div class="mb-2 flex flex-wrap items-center justify-between gap-2">
                 <h4 id="payment-history-heading" class="text-sm font-semibold text-slate-900">Zarejestrowane wpłaty</h4>
@@ -362,11 +369,13 @@ onBeforeUnmount(() => { requestSequence++ })
               </div>
             </section>
 
-            <section v-if="selectedRegistration.discountHistory.length" aria-label="Historia rabatu" class="rounded-lg border border-slate-200 p-3">
-              <h4 class="text-xs font-semibold uppercase tracking-wide text-slate-500">Historia rabatu</h4>
-              <p v-for="(entry, index) in selectedRegistration.discountHistory" :key="index" class="mt-2 text-xs text-slate-600">
-                {{ formatMoney(entry.previousAmount) }} → {{ formatMoney(entry.amount) }} · {{ entry.actor }} · {{ entry.changedAt }}<span v-if="entry.description"> · {{ entry.description }}</span>
-              </p>
+            <section v-if="selectedRegistration.discount > 0" aria-label="Przyznany rabat" class="space-y-2">
+              <h4 class="text-sm font-semibold text-slate-900">Przyznany rabat</h4>
+              <article class="rounded-lg border border-slate-200 bg-white p-3">
+                <p class="text-sm font-semibold text-violet-800">Rabat: {{ formatMoney(selectedRegistration.discount) }}</p>
+                <p v-if="latestDiscountHistoryEntry?.description" class="mt-2 text-sm text-slate-700">{{ latestDiscountHistoryEntry.description }}</p>
+                <p v-if="latestDiscountHistoryEntry" class="mt-1 text-xs text-slate-500">{{ latestDiscountHistoryEntry.actor }} · {{ latestDiscountHistoryEntry.changedAt }}</p>
+              </article>
             </section>
             <div class="flex flex-wrap items-center justify-between gap-3 border-t border-slate-100 pt-4">
               <button type="button" class="rounded-lg border border-slate-300 px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-500" @click="openDiscountForm">Edytuj rabat</button>
@@ -388,7 +397,7 @@ onBeforeUnmount(() => { requestSequence++ })
               </div>
               <div v-else class="grid gap-3 sm:grid-cols-2">
                 <label class="text-sm font-medium text-slate-700">Data wpłaty
-                  <input v-model="paymentForm.date" type="date" required class="mt-1 h-10 w-full rounded-lg border border-slate-300 px-3 text-sm focus:ring-2 focus:ring-slate-500" />
+                  <PolishDatePicker v-model="paymentForm.date" required />
                 </label>
                 <label class="text-sm font-medium text-slate-700">Kwota (zł)
                   <input v-model.number="paymentForm.amount" type="number" min="0.01" step="0.01" required class="mt-1 h-10 w-full rounded-lg border border-slate-300 px-3 text-sm focus:ring-2 focus:ring-slate-500" />
