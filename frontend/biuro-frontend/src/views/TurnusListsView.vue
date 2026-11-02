@@ -120,6 +120,7 @@ function displayDate(value) {
       <nav aria-label="Sekcje turnusu" class="flex gap-1 border-b border-slate-200 text-sm">
         <RouterLink v-if="auth.isOperator" :to="{ name: 'turnus-detail', params: { code: route.params.code } }" class="rounded-t px-4 py-2 text-slate-600 hover:bg-white focus-visible:ring-2 focus-visible:ring-slate-500">Szczegóły</RouterLink>
         <RouterLink :to="{ name: 'turnus-lists', params: { code: route.params.code } }" aria-current="page" class="border-b-2 border-slate-800 px-4 py-2 font-semibold text-slate-900">Listy</RouterLink>
+        <RouterLink v-if="auth.isOperator" :to="{ name: 'turnus-payments', params: { code: route.params.code } }" class="rounded-t px-4 py-2 text-slate-600 hover:bg-white focus-visible:ring-2 focus-visible:ring-slate-500">Wpłaty</RouterLink>
       </nav>
       <p v-if="loading" role="status" class="text-sm text-slate-600">Wczytywanie list…</p>
       <div v-else-if="error" role="alert" class="rounded-xl border border-red-200 bg-red-50 p-3 text-sm text-red-800">
