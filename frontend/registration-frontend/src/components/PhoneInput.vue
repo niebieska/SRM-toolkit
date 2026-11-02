@@ -1,5 +1,5 @@
 <template>
-  <div class="flex items-start gap-1">
+  <div class="flex w-full min-w-0 items-start gap-1">
     <div class="flex items-center border rounded focus-within:ring-2 shrink-0"
          :class="error ? 'border-red-500 focus-within:ring-red-400' : 'border-gray-300 focus-within:ring-gray-400'">
       <span class="px-2 py-2 text-gray-500 select-none">+</span>
@@ -13,14 +13,14 @@
         @change="emitValue"
       />
     </div>
-    <div class="flex-1">
+    <div class="min-w-0 flex-1">
       <input
         v-model="digits"
         type="text"
         inputmode="numeric"
         maxlength="9"
         placeholder="123456789"
-        class="w-full border rounded px-3 py-2 focus:outline-none focus:ring-2"
+        class="w-full min-w-0 border rounded px-3 py-2 focus:outline-none focus:ring-2"
         :class="error ? 'border-red-500 focus:ring-red-400' : 'border-gray-300 focus:ring-gray-400'"
         @input="onDigitsInput"
         @change="emitValue"

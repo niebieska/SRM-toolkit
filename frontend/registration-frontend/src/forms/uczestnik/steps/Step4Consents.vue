@@ -90,14 +90,14 @@
 
     <p v-if="submitError" class="text-red-600 text-sm text-center">{{ submitError }}</p>
 
-    <div class="flex justify-between">
-      <button :disabled="submitting" @click="goPrev" class="border border-gray-300 text-gray-700 px-8 py-3 rounded-xl font-semibold hover:bg-gray-50 transition">
+    <div class="flex flex-col gap-3 sm:flex-row sm:justify-between">
+      <button :disabled="submitting" @click="goPrev" class="w-full border border-gray-300 text-gray-700 px-8 py-3 rounded-xl font-semibold hover:bg-gray-50 transition sm:w-auto">
         ← Wstecz
       </button>
       <button
           @click="goSubmit"
           :disabled="submitting"
-          class="bg-gray-800 text-white px-8 py-3 rounded-xl font-semibold hover:bg-gray-700 transition disabled:opacity-50"
+          class="w-full bg-gray-800 text-white px-8 py-3 rounded-xl font-semibold hover:bg-gray-700 transition disabled:opacity-50 sm:w-auto"
       >
         {{ submitting ? 'Wysyłanie…' : 'WYŚLIJ ZGŁOSZENIE' }}
       </button>
