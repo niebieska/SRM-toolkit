@@ -13,7 +13,7 @@ source = source.replace("from 'vue'", `from '${import.meta.resolve('vue')}'`)
 source = source.replace(/from '([^']+)'/g, (match, path) =>
   path.startsWith('.') ? `from '${new URL(path, componentUrl).href}'` : match)
 source = source.replace('__expose();', '')
-source = source.replace('return __returned__', '__expose({ local, selectedCertificates, catalogue, loading, roleError, goPrev, goNext }); return __returned__')
+source = source.replace('return __returned__', '__expose({ local, selectedCertificates, catalogue, loading, roleError, certificateDetailErrors, goPrev, goNext }); return __returned__')
 const { default: Step } = await import(`data:text/javascript;base64,${Buffer.from(source).toString('base64')}`)
 Step.render = () => null
 const renderer = createRenderer({
@@ -93,4 +93,16 @@ test('Winter minor candidate can advance; instructor needs exactly one disciplin
   await update({ isAdult: false })
   assert.equal(vm.local.role, '')
   assert.equal(vm.local.subrole, '')
+})
+
+test('selected certificate details enforce the configured maximum length', async t => {
+  const { vm, events } = await mount(t, {
+    turnusCode: 'SUMMER', role: 'kandydat_na_animatora', certificates: { inne: true },
+    certificateDetails: { inne: 'x'.repeat(501) },
+  }, false)
+  vm.goNext()
+
+  assert.equal(vm.certificateDetailErrors.inne, 'Inne (jakie?) może mieć maksymalnie 500 znaków.')
+  assert.equal(events.some(event => event[0] === 'next'), false)
+  assert.equal(vm.local.certificateDetails.inne.length, 501)
 })
