@@ -7,6 +7,7 @@ export function createDemoPaymentRegistrations(turnusCode) {
     firstName: 'Anna',
     lastName: 'Kowalska',
     registrationType: 'PARTICIPANT',
+    registrationStatus: 'ACCEPTED',
     fee: 1200,
     discount: 0,
     payments: [],
@@ -18,6 +19,7 @@ export function createDemoPaymentRegistrations(turnusCode) {
     firstName: 'Jan',
     lastName: 'Nowak',
     registrationType: 'PARTICIPANT',
+    registrationStatus: 'ACCEPTED',
     fee: 1200,
     discount: 200,
     payments: [
@@ -31,10 +33,18 @@ export function createDemoPaymentRegistrations(turnusCode) {
     firstName: 'Maria',
     lastName: 'Wiśniewska',
     registrationType: 'PARTICIPANT',
+    registrationStatus: 'ACCEPTED',
     fee: 1200,
     discount: 0,
     payments: [
-      { id: `${turnusCode}-demo-pay-003`, date: '2026-10-13', amount: 1200, method: 'Przelew', label: '', note: 'Wpłata całej kwoty' },
+      {
+        id: `${turnusCode}-demo-pay-003`, date: '2026-10-13', amount: 1200, method: 'Przelew', label: '', note: 'Wpłata całej kwoty',
+        history: [{
+          previous: { date: '2026-10-13', amount: 1000, method: 'Przelew', label: 'Zaliczka', note: '' },
+          current: { date: '2026-10-13', amount: 1200, method: 'Przelew', label: '', note: 'Wpłata całej kwoty' },
+          changedAt: '2026-10-14 10:15', actor: 'operator.demo', reason: 'Poprawiono kwotę zgodnie z potwierdzeniem przelewu',
+        }],
+      },
     ],
     discountHistory: [],
   },
@@ -44,6 +54,7 @@ export function createDemoPaymentRegistrations(turnusCode) {
     firstName: 'Zofia',
     lastName: 'Kaczmarek',
     registrationType: 'PARTICIPANT',
+    registrationStatus: 'ACCEPTED',
     fee: 1200,
     discount: 0,
     payments: [
@@ -57,6 +68,7 @@ export function createDemoPaymentRegistrations(turnusCode) {
     firstName: 'Piotr',
     lastName: 'Kamiński',
     registrationType: 'PARTICIPANT',
+    registrationStatus: 'ACCEPTED',
     fee: 1200,
     discount: 1200,
     payments: [],
@@ -68,6 +80,7 @@ export function createDemoPaymentRegistrations(turnusCode) {
     firstName: 'Jakub',
     lastName: 'Zieliński',
     registrationType: 'STAFF',
+    registrationStatus: 'ACCEPTED',
     role: 'Animator — kandydat na animatora',
     fee: 500,
     discount: 0,
@@ -80,6 +93,7 @@ export function createDemoPaymentRegistrations(turnusCode) {
     firstName: 'Agata',
     lastName: 'Wójcik',
     registrationType: 'STAFF',
+    registrationStatus: 'ACCEPTED',
     role: 'Kucharka',
     fee: 300,
     discount: 0,
@@ -88,7 +102,36 @@ export function createDemoPaymentRegistrations(turnusCode) {
     ],
     discountHistory: [],
   },
+  {
+    id: `${turnusCode}-demo-p-006`,
+    registrationCode: `REG-P-${turnusCode}-23`,
+    firstName: 'Tomasz',
+    lastName: 'Lewandowski',
+    registrationType: 'PARTICIPANT',
+    registrationStatus: 'NEW',
+    fee: 1200,
+    discount: 0,
+    payments: [],
+    discountHistory: [],
+  },
+  {
+    id: `${turnusCode}-demo-s-003`,
+    registrationCode: `REG-S-${turnusCode}-9`,
+    firstName: 'Ewa',
+    lastName: 'Kowalczyk',
+    registrationType: 'STAFF',
+    registrationStatus: 'ACCEPTED',
+    role: 'Kucharka',
+    fee: 0,
+    discount: 0,
+    payments: [],
+    discountHistory: [],
+  },
   ]
+}
+
+export function isPaymentEligible(registration) {
+  return registration.registrationStatus === 'ACCEPTED' && Number(registration.fee) > 0
 }
 
 export function paymentTotal(registration) {
