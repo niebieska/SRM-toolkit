@@ -5,7 +5,7 @@ import BiuroHeader from '../components/BiuroHeader.vue'
 import PolishDatePicker from '../components/PolishDatePicker.vue'
 import { useAuthStore } from '../stores/auth'
 import { fetchTurnuses } from '../api/turnusApi'
-import { createDemoPaymentRegistrations, paymentBalance, paymentStatus, paymentTotal } from '../utils/demoPayments'
+import { createDemoPaymentRegistrations, isPaymentEligible, paymentBalance, paymentStatus, paymentTotal } from '../utils/demoPayments'
 
 const route = useRoute()
 const router = useRouter()
@@ -37,7 +37,8 @@ const latestDiscountHistoryEntry = computed(() => {
   const history = selectedRegistration.value?.discountHistory || []
   return history.length ? history[history.length - 1] : null
 })
-const scopedRegistrations = computed(() => registrations.value.filter(item => !turnusFilter.value || item.turnusCode === turnusFilter.value))
+const eligibleRegistrations = computed(() => registrations.value.filter(isPaymentEligible))
+const scopedRegistrations = computed(() => eligibleRegistrations.value.filter(item => !turnusFilter.value || item.turnusCode === turnusFilter.value))
 const visibleRegistrations = computed(() => scopedRegistrations.value.filter(item => {
   const statusMatches = !statusFilter.value || paymentStatus(item) === statusFilter.value
   const typeMatches = !registrationTypeFilter.value || item.registrationType === registrationTypeFilter.value
@@ -114,13 +115,13 @@ function findRegistrationForPayment() {
   }
   const normalizedQuery = query.toLocaleLowerCase('pl-PL')
   const normalizedCode = query.toLocaleUpperCase('pl-PL')
-  const matches = registrations.value.filter(item =>
+  const matches = eligibleRegistrations.value.filter(item =>
     item.registrationCode.toLocaleUpperCase('pl-PL').includes(normalizedCode)
       || item.lastName.toLocaleLowerCase('pl-PL').includes(normalizedQuery)
   ).sort((left, right) => left.lastName.localeCompare(right.lastName, 'pl') || left.firstName.localeCompare(right.firstName, 'pl'))
   registrationLookupResults.value = matches
   if (!matches.length) {
-    registrationLookupError.value = 'Nie znaleziono zgłoszenia z przypisaną opłatą. Sprawdź numer i spróbuj ponownie.'
+    registrationLookupError.value = 'Nie znaleziono zaakceptowanego zgłoszenia z dodatnią opłatą. Sprawdź numer i spróbuj ponownie.'
     return
   }
   registrationLookupError.value = ''
@@ -168,10 +169,10 @@ function savePayment() {
     return
   }
   if (editingPayment.value) {
-    const previous = { date: editingPayment.value.date, amount: editingPayment.value.amount, method: editingPayment.value.method, label: editingPayment.value.label, note: editingPayment.value.note }
+    const previous = paymentSnapshot(editingPayment.value)
     Object.assign(editingPayment.value, { date: paymentForm.date, amount, method: paymentForm.method, label: paymentLabel, note: paymentForm.note.trim() })
     editingPayment.value.history ||= []
-    editingPayment.value.history.push({ previous, changedAt: new Date().toLocaleString('pl-PL'), actor: 'operator.demo', reason: paymentForm.reason.trim() })
+    editingPayment.value.history.push({ previous, current: paymentSnapshot(editingPayment.value), changedAt: new Date().toLocaleString('pl-PL'), actor: 'operator.demo', reason: paymentForm.reason.trim() })
     demoMessage.value = 'Zmieniono przykładową wpłatę. Zmiana nie została zapisana.'
   } else {
     selectedRegistration.value.payments.push({ id: `demo-pay-${Date.now()}`, date: paymentForm.date, amount, method: paymentForm.method, label: paymentLabel, note: paymentForm.note.trim(), history: [] })
@@ -179,6 +180,9 @@ function savePayment() {
   }
   formMode.value = ''
   formError.value = ''
+}
+function paymentSnapshot(payment) {
+  return { date: payment.date, amount: payment.amount, method: payment.method, label: payment.label, note: payment.note || '' }
 }
 function saveDiscount() {
   const amount = Number(discountForm.amount)
@@ -219,7 +223,7 @@ async function loadPayments() {
         ...item,
         turnusName: turnus.turnusName,
         turnusCode: turnus.turnusCode,
-        payments: item.payments.map(payment => ({ ...payment, history: [] })),
+        payments: item.payments.map(payment => ({ ...payment, history: (payment.history || []).map(entry => ({ ...entry })) })),
         discountHistory: item.discountHistory.map(entry => ({ ...entry })),
       })))
     }
@@ -310,7 +314,7 @@ onBeforeUnmount(() => { requestSequence++ })
               </tr>
             </tbody>
           </table>
-          <p class="border-t border-slate-100 px-4 py-3 text-xs text-slate-500">{{ visibleRegistrations.length }} z {{ scopedRegistrations.length }} przykładowych zgłoszeń</p>
+          <p class="border-t border-slate-100 px-4 py-3 text-xs text-slate-500">{{ visibleRegistrations.length }} z {{ scopedRegistrations.length }} zaakceptowanych zgłoszeń z opłatą</p>
         </section>
       </template>
 
@@ -374,7 +378,22 @@ onBeforeUnmount(() => { requestSequence++ })
                       <td class="px-3 py-2.5 text-slate-700">{{ payment.label || payment.note || 'Wpłata' }}</td>
                       <td class="px-3 py-2.5 text-slate-700">{{ payment.method }}</td>
                       <td class="whitespace-nowrap px-3 py-2.5 text-right font-medium text-slate-900">{{ formatMoney(payment.amount) }}</td>
-                      <td class="px-3 py-2.5 text-right"><button type="button" class="rounded px-2 py-1 text-xs font-medium text-slate-700 underline hover:bg-slate-50 focus-visible:ring-2 focus-visible:ring-slate-500" @click="openPaymentForm(payment)">Edytuj</button></td>
+                      <td class="px-3 py-2.5 text-right">
+                        <button type="button" class="rounded px-2 py-1 text-xs font-medium text-slate-700 underline hover:bg-slate-50 focus-visible:ring-2 focus-visible:ring-slate-500" @click="openPaymentForm(payment)">Edytuj</button>
+                        <details v-if="payment.history?.length" class="mt-1 text-left">
+                          <summary class="cursor-pointer rounded px-2 py-1 text-xs text-slate-600 hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-500">Historia korekt ({{ payment.history.length }})</summary>
+                          <ol class="mt-2 min-w-72 space-y-2 rounded-lg border border-slate-200 bg-slate-50 p-3">
+                            <li v-for="(entry, index) in payment.history" :key="`${payment.id}-history-${index}`" class="space-y-1 text-xs">
+                              <p class="font-medium text-slate-800">{{ entry.actor }} · {{ entry.changedAt }}</p>
+                              <p class="text-slate-600">{{ entry.reason }}</p>
+                              <div class="grid grid-cols-[auto_1fr] gap-x-2 text-slate-600">
+                                <span>Było</span><span>{{ formatDate(entry.previous.date) }} · {{ formatMoney(entry.previous.amount) }} · {{ entry.previous.method }} · {{ entry.previous.label || 'Wpłata' }}<template v-if="entry.previous.note"> · {{ entry.previous.note }}</template></span>
+                                <span>Jest</span><span>{{ formatDate(entry.current.date) }} · {{ formatMoney(entry.current.amount) }} · {{ entry.current.method }} · {{ entry.current.label || 'Wpłata' }}<template v-if="entry.current.note"> · {{ entry.current.note }}</template></span>
+                              </div>
+                            </li>
+                          </ol>
+                        </details>
+                      </td>
                     </tr>
                   </tbody>
                 </table>
