@@ -8,6 +8,7 @@
         :question="q1Text"
         v-model:answer="local.health.q1.answer"
         v-model:detail="local.health.q1.detail"
+        :maxDetailLength="FORM_FIELD_LIMITS.healthDetail"
         placeholder ="Jakie? Prosze krótko opisać"
         :multiline="true"
         :answerError="errors.q1Answer"
@@ -18,6 +19,7 @@
         :question="q2Text"
         v-model:answer="local.health.q2.answer"
         v-model:detail="local.health.q2.detail"
+        :maxDetailLength="FORM_FIELD_LIMITS.healthDetail"
         placeholder ="Jakie? Prosze krótko opisać"
         :multiline="true"
         :answerError="errors.q2Answer"
@@ -28,6 +30,7 @@
         :question="q3Text"
         v-model:answer="local.health.q3.answer"
         v-model:detail="local.health.q3.detail"
+        :maxDetailLength="FORM_FIELD_LIMITS.healthDetail"
         placeholder="Jakie? Proszę krótko opisać."
         :multiline="true"
         :answerError="errors.q3Answer"
@@ -48,6 +51,7 @@
 <script setup>
 import { ref, computed, reactive } from 'vue'
 import HealthQuestion from '../../../components/HealthQuestion.vue'
+import {applyLengthErrors, FORM_FIELD_LIMITS} from '../../../utils/formFieldLimits.js'
 
 const props = defineProps({
   formData: { type: Object, required: true },
@@ -106,6 +110,13 @@ function validate() {
       errors[`${q}Detail`] = 'Proszę podać szczegóły.'
     }
   })
+
+  applyLengthErrors(errors,
+    Object.fromEntries(questions.map(q => [`${q}Detail`, local.value.health[q]?.detail || ''])),
+    Object.fromEntries(questions.map(q => [`${q}Detail`, {
+      max: FORM_FIELD_LIMITS.healthDetail,
+      label: 'Szczegóły odpowiedzi',
+    }])))
 
   return Object.keys(errors).length === 0
 }

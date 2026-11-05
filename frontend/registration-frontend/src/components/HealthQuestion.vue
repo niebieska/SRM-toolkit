@@ -41,6 +41,9 @@
         :placeholder="placeholder"
         :class="['w-full border rounded px-3 py-2 text-sm focus:outline-none focus:ring-2', detailError ? 'border-red-500 focus:ring-red-400' : 'border-gray-300 focus:ring-gray-400']"
       />
+      <p class="mt-1 text-right text-xs" :class="detail.length > maxDetailLength ? 'text-red-600' : 'text-gray-500'">
+        {{ detail.length }} / {{ maxDetailLength }} znaków
+      </p>
       <p v-if="detailError" class="text-red-500 text-xs mt-1">{{ detailError }}</p>
     </div>
   </div>
@@ -54,6 +57,7 @@ const props = defineProps({
   question: { type: String, required: true },
   answer: { type: String, default: '' },
   detail: { type: String, default: '' },
+  maxDetailLength: { type: Number, default: 500 },
   placeholder: { type: String, default: 'Proszę opisać...' },
   multiline: { type: Boolean, default: true },
   answerError: { type: String, default: '' },

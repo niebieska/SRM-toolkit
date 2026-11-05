@@ -194,6 +194,7 @@ import {ref, computed, onMounted, watch, reactive} from 'vue'
 import {usePesel} from '../../../composables/usePesel.js'
 import {fetchTurnusy} from '../../../api/turnusApi.js'
 import {validatePesel, validateEmail, validatePhone} from '../../../utils/validators.js'
+import {applyLengthErrors, FORM_FIELD_LIMITS} from '../../../utils/formFieldLimits.js'
 import PhoneInput from '../../../components/PhoneInput.vue'
 
 const props = defineProps({
@@ -316,6 +317,46 @@ function validate() {
       errors.icePhone = 'Podaj prawidłowy numer telefonu osoby ICE (9 cyfr).'
     }
   }
+
+  const values = {
+    firstName: local.value.firstName,
+    lastName: local.value.lastName,
+    email: local.value.email,
+  }
+  const constraints = {
+    firstName: {max: FORM_FIELD_LIMITS.firstName, label: 'Imię'},
+    lastName: {max: FORM_FIELD_LIMITS.lastName, label: 'Nazwisko'},
+    email: {max: FORM_FIELD_LIMITS.email, label: 'E-mail'},
+  }
+  if (!isAdult.value && pesel.value.length === 11) {
+    Object.assign(values, {
+      guardianFirstName: local.value.guardianFirstName,
+      guardianLastName: local.value.guardianLastName,
+      guardianEmail: local.value.guardianEmail,
+      parentNames: local.value.parentNames,
+    })
+    Object.assign(constraints, {
+      guardianFirstName: {max: FORM_FIELD_LIMITS.firstName, label: 'Imię opiekuna'},
+      guardianLastName: {max: FORM_FIELD_LIMITS.lastName, label: 'Nazwisko opiekuna'},
+      guardianEmail: {max: FORM_FIELD_LIMITS.email, label: 'E-mail opiekuna'},
+      parentNames: {max: FORM_FIELD_LIMITS.parentNames, label: 'Imiona i nazwiska rodziców'},
+    })
+  }
+  if (isAdult.value && pesel.value.length === 11) {
+    Object.assign(values, {
+      iceFirstName: local.value.iceFirstName,
+      iceLastName: local.value.iceLastName,
+    })
+    Object.assign(constraints, {
+      iceFirstName: {max: FORM_FIELD_LIMITS.firstName, label: 'Imię osoby ICE'},
+      iceLastName: {max: FORM_FIELD_LIMITS.lastName, label: 'Nazwisko osoby ICE'},
+    })
+    if (local.value.iceRelation === 'inna') {
+      values.iceRelationOther = local.value.iceRelationOther
+      constraints.iceRelationOther = {max: FORM_FIELD_LIMITS.iceRelationOther, label: 'Relacja ICE'}
+    }
+  }
+  applyLengthErrors(errors, values, constraints)
 
   return Object.keys(errors).length === 0
 }

@@ -81,6 +81,7 @@
 <script setup>
 import { ref, reactive } from 'vue'
 import { validatePostalCode } from '../../../utils/validators.js'
+import {applyLengthErrors, FORM_FIELD_LIMITS} from '../../../utils/formFieldLimits.js'
 
 const props = defineProps({
   formData: { type: Object, required: true },
@@ -121,7 +122,27 @@ function validate() {
   }
   if (!local.value.city?.trim())        errors.city        = 'Podaj miejscowość.'
 
+  const values = {
+    street: local.value.street,
+    houseNumber: local.value.houseNumber,
+    city: local.value.city,
+  }
+  const constraints = {
+    street: {max: FORM_FIELD_LIMITS.street, label: 'Ulica'},
+    houseNumber: {max: FORM_FIELD_LIMITS.houseNumber, label: 'Nr domu/mieszkania'},
+    city: {max: FORM_FIELD_LIMITS.city, label: 'Miejscowość'},
+  }
   if (!props.isAdult && !local.value.sameAddress) {
+    Object.assign(values, {
+      parentStreet: local.value.parentStreet,
+      parentHouseNumber: local.value.parentHouseNumber,
+      parentCity: local.value.parentCity,
+    })
+    Object.assign(constraints, {
+      parentStreet: {max: FORM_FIELD_LIMITS.street, label: 'Ulica opiekuna'},
+      parentHouseNumber: {max: FORM_FIELD_LIMITS.houseNumber, label: 'Nr domu/mieszkania opiekuna'},
+      parentCity: {max: FORM_FIELD_LIMITS.city, label: 'Miejscowość opiekuna'},
+    })
     if (!local.value.parentStreet?.trim())      errors.parentStreet      = 'Podaj ulicę rodziców.'
     if (!local.value.parentHouseNumber?.trim()) errors.parentHouseNumber = 'Podaj numer domu rodziców.'
     if (!local.value.parentPostalCode?.trim()) {
@@ -131,6 +152,8 @@ function validate() {
     }
     if (!local.value.parentCity?.trim())        errors.parentCity        = 'Podaj miejscowość rodziców.'
   }
+
+  applyLengthErrors(errors, values, constraints)
 
   return Object.keys(errors).length === 0
 }
