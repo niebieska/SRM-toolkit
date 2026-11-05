@@ -1,6 +1,6 @@
 # SRM Toolkit — deployment readiness checklist
 
-Updated: 2026-10-08. This file tracks installation, configuration, security,
+Updated: 2026-10-28. This file tracks installation, configuration, security,
 operations and deployment verification. It does not define product feature scope.
 
 - Functional scope and acceptance: [Registration-workflow-release-plan.md](Registration-workflow-release-plan.md).
@@ -9,8 +9,9 @@ operations and deployment verification. It does not define product feature scope
 - Progress and evidence: [WIP.md](WIP.md).
 
 Unchecked means deployment acceptance is still pending, even where code has
-already been implemented and tested locally. Record environment, date and evidence
-in WIP rather than treating local implementation as deployed verification.
+already been implemented. GCP TEST is running with HTTP and synthetic data; the
+operator-reported checks are recorded in [WIP.md](WIP.md). Do not infer production
+readiness from the TEST deployment.
 
 ## A. Prerequisites for a controlled TEST/SIT deployment
 
@@ -21,34 +22,34 @@ real registrations or a change to the agreed first-release scope.
 ### Build and runtime
 
 - [x] Dockerfiles/Compose contexts match the repository layout and include both frontends and all required services (local Phase 1 verified).
-- [ ] Maven wrapper execution and complete backend/frontend builds succeed from a clean checkout.
+- [x] Application images were built from the packaging branch and started on the GCP TEST VM. Re-run builds from a clean checkout as part of release verification.
 - [x] Compose v2 build succeeds for all five application images; runtime versions and local commands are documented in [Local container testing](Local-container-testing.md).
-- [ ] Frontend API URLs and backend CORS match the deployed environment.
+- [x] Frontend API routing works through same-origin proxy paths in GCP TEST (both app roots returned HTTP 200; operator verified form submission and Biuro use).
 - [x] Container frontend hosting supports SPA refresh/deep links (HTTP smoke checks passed).
-- [ ] Service URLs, database and SMTP variables match application configuration.
-- [ ] Document a reproducible local/server startup path without GUI terminal assumptions.
+- [x] TEST service URLs and external SMTP configuration are set in the VM's private env file; operator confirmed SMTP delivery.
+- [x] Document reproducible local/server commands in [Local container testing](Local-container-testing.md) and [GCP HTTP access](GCP-test-http-access.md).
 
-Local container build/startup, same-origin proxy routing, MailHog delivery and
-volume persistence were verified on 2026-10-17. The server-specific items above
-and security/recovery gates below remain open. Builds invoke Maven directly in
-the builder image; host Maven-wrapper permissions were not changed.
+GCP TEST is externally reachable over HTTP at the two configured hostnames.
+This is an operator-reported synthetic-data test deployment, not a secure
+production release. HTTPS, reboot and database recovery remain separate gates.
+Builds invoke Maven directly in the builder image; host Maven-wrapper permissions
+were not changed.
 
 ### Security and access
 
-- [ ] Management endpoints require service authentication; Biuro endpoints require valid operator authentication.
-- [ ] Public submission and Turnus lookup remain usable; unauthenticated management access is rejected.
-- [ ] Database and internal services, including email-service, are not publicly exposed.
+- [x] Management endpoints require service authentication; Biuro operations require authenticated accounts (implementation and local automated coverage; complete deployed role-boundary acceptance remains pending).
+- [x] Public submission and Turnus lookup work through the Registration frontend proxy; management routes are restricted by the proxy and service authentication.
+- [x] Database and internal services are not published as host ports in the GCP TEST Compose setup; the operator removed GCP ingress for TCP 8080 and verified only TCP 80 was listening on the host.
 - [x] Authenticate email-service callers; allowlist template identifiers and prevent
   caller variables from overriding trusted link/contact configuration. Actual-template
   escaping and negative authentication are covered by automated tests (local TEST verified).
 - [x] Restrict public Registration proxy routes to submissions and catalogue reads;
   management paths remain blocked even with valid service credentials.
-- [ ] Remove unnecessary published ports; bind development-only database/MailHog
-  access to localhost when host access is needed.
-- [ ] HTTPS/reverse proxy and network exposure are configured and checked.
-- [ ] Use non-default operator credentials, JWT signing secret and shared service credentials.
+- [x] GCP TEST publishes only the Caddy HTTP entry point on TCP 80; internal APIs, MariaDB and MailHog have no public mappings. Development-only access stays on loopback.
+- [ ] HTTPS/reverse proxy for production and secure client access. Current GCP TEST intentionally uses HTTP only.
+- [x] GCP TEST uses private, non-default operator/JWT/service credentials (operator setup confirmed); review/rotate any credential previously exposed before production.
 - [x] Untrack root `.env` and document required variables in `.env.example` without secrets.
-- [ ] Rotate all exposed credentials in active environments; use new private credentials for GCP. Git history still contains old values.
+- [!] Rotate credentials previously exposed in chat/Git history where still active; verify SMTP credential rotation before any production use. Do not copy old values from Git history.
 - [ ] Required release credentials fail startup when missing/blank; validate JWT
   signing-key strength. Do not retain known JWT/operator/database password fallbacks.
 - [ ] Actuator exposes only intended health information; secrets and detailed environment data are not public.
@@ -56,7 +57,7 @@ the builder image; host Maven-wrapper permissions were not changed.
 
 ### Database and recovery
 
-- [ ] Run the GCP TEST reboot and MariaDB backup/isolated-restore checks in the [recovery runbook](GCP-test-recovery-runbook.md); record evidence.
+- [!] GCP TEST reboot and MariaDB backup/isolated-restore are not verified. These were explicitly parked for disposable synthetic TEST; they are not complete and do not satisfy the separate production/VPS recovery gate. See [recovery runbook](GCP-test-recovery-runbook.md).
 - [ ] Database storage persists across service/container recreation.
 - [ ] Flyway migrations run successfully and schema versions are recorded.
 - [ ] Existing databases without history are checked/backed up before explicit one-time baseline; automatic baselining is not permanently enabled.
@@ -66,22 +67,24 @@ the builder image; host Maven-wrapper permissions were not changed.
 
 ### SMTP and test isolation
 
-- [ ] Configure real test SMTP or a controlled mail sink; verify environment variable names and sender identity.
+- [x] Configure external test SMTP on GCP TEST; operator confirmed mail was sent. Local default remains MailHog. Verify template-specific recipients/content separately.
 - [ ] Prevent synthetic scenarios from sending to unintended real recipients.
 - [ ] Keep MailHog/local development SMTP usable.
 - [ ] Any test payment instructions are unmistakably test-only; prevent actual payment requests during synthetic tests.
-- [ ] Verify connectivity and observable send failures without losing saved registrations.
+- [x] SMTP connectivity and successful delivery were confirmed by the operator.
+- [ ] Reconfirm failure handling and saved-registration behavior in deployed acceptance.
 - [ ] Verify SMTP exceptions produce an accurate email-service failure response,
   and configured inter-service connect/read timeouts take effect. Workflow recovery
   and retry semantics are defined in the functional release plan.
 
 ### Deployed smoke checks
 
-- [ ] Services start, health checks work and intended routes are reachable.
+- [x] Services started healthy on GCP TEST; both public HTTP hostnames and local host-routed checks returned HTTP 200. Recheck after future deploys.
 - [ ] Login/logout work; invalid/expired credentials do not grant access.
 - [ ] Synthetic registration can be saved, reviewed and updated through the deployed applications.
-- [ ] Test notification reaches the intended controlled mailbox.
-- [ ] Restart/recreate services and confirm registrations, counters and Turnus data persist.
+- [x] Operator confirmed external SMTP delivery.
+- [ ] Complete recipient/template matrix and ensure test recipients remain controlled.
+- [ ] Recreate/update services without deleting volumes and confirm persistence. Controlled VM reboot and SQL backup/restore remain unverified/deferred for GCP TEST.
 - [ ] Record defects and environment-specific limitations in WIP.
 
 ## B. Additional gates before release for real registrations

@@ -28,7 +28,10 @@ qualifications do not block submission or acceptance.
 For later staffing statistics: Ksiądz + Prowadzący counts separately as Ksiądz
 prowadzący. All other priest functions count as Ksiądz, including instructor
 functions. One person occupies one staff place and one staffing category.
-Required headcounts and those statistics are NOT implemented in phase 1.
+Required headcounts and statistics were outside this phase's original scope. The
+Turnus editor and basic configured-role occupancy statistics were implemented
+later; see [staffing statistics](Staffing-statistics.md). Subrole breakdowns are
+still deferred.
 
 ## Configuration ownership and update path
 

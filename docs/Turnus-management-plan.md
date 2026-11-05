@@ -4,6 +4,12 @@ Decision date: 2026-10-08. Updated 2026-10-10: backend catalogue foundation
 implemented on `feat/turnus-catalogue`; consumer migration and UI remain open. This document records product decisions from the discussion, rather than
 assuming that the experimental prototype defines the requirements.
 
+This is the original scope baseline, not the current delivery checklist. Catalogue,
+season-role, capacity, staffing-statistics and list/export implementation status
+is tracked in the [registration workflow release plan](Registration-workflow-release-plan.md)
+and [WIP](WIP.md); unchecked items below must not be read as proof that the work is
+still unimplemented.
+
 ## Priority
 
 Workflow-first refinement: [Registration-workflow-release-plan.md](Registration-workflow-release-plan.md)
@@ -29,6 +35,11 @@ the client before final release acceptance. It applies to list display and age
 sorting, and does not change registration adult/minor eligibility or notification
 recipient rules. Client question: should operational/group-management lists use
 age at Turnus start, or another reference date?
+
+The later decision of 2026-11-02 sets the **registration minimum-age restriction**
+to rocznikowy calculation (Turnus start year minus birth year). That rule is
+separate from displayed list age above; it does not change the current adult/minor
+classification at registration submission.
 
 - [ ] Biuro users can create and edit Turnusy: name, dates, separate participant/staff
   capacities (minimum 1), shared active flag and independent manual registration
@@ -83,14 +94,12 @@ outside this deliverable.
 - Historical season browsing and which seasons appear publicly remain decisions
   to clarify; selecting one active season does not settle archival behavior.
 
-## Optional extension if time permits
+## Manual payments — separate scope
 
-- [ ] Manual payment tracking by a Biuro user against a registration: amount,
-  payment date, note, and total paid.
-
-Confirm deposit/balance rules and how to correct mistakes before implementing.
-No payment-provider integration is planned here. Defer this extension if it would
-delay the core delivery. Broader finance workflows remain future scope.
+The original 2026-10-08 suggestion to add payments only if time permits was
+superseded by the probable-MVP assessment on 2026-10-20. The current scope,
+open decisions and demo-only UI prototype are recorded in
+[Manual-payments.md](Manual-payments.md). MVP inclusion is still unconfirmed.
 
 ## Decisions needed before coding
 
@@ -112,7 +121,9 @@ delay the core delivery. Broader finance workflows remain future scope.
 4. Implement file-based season options, migrate consumers and verify consistent
    dates/capacity and staff-option validation throughout the workflow.
 5. Deliver accepted-person views and agreed lists/exports.
-6. Add manual payment tracking only if time allows.
+6. Apply the current payment priority from the
+   [registration workflow release plan](Registration-workflow-release-plan.md);
+   the original "only if time allows" wording is superseded.
 7. Complete outstanding hardening/deployment prerequisites, then deploy TEST/SIT.
 
 Suggested branch: feat/turnus-management. No branch creation or merge is implied

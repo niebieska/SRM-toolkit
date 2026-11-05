@@ -26,14 +26,18 @@
   Management paths return 404 even with valid Basic credentials; inappropriate
   methods on public paths return 405. Biuro's authenticated backend calls use the
   direct private Registration URL and remain available.
-- APIs, database and MailHog SMTP stay unpublished; frontends and MailHog UI bind
-  to loopback. This remains a local/private baseline until HTTPS is configured.
+- In GCP TEST, only the Caddy HTTP proxy publishes TCP 80. Application APIs,
+  MariaDB and MailHog are internal to Compose; operator removed public ingress
+  for TCP 8080. The application is intentionally HTTP-only and uses synthetic
+  data, so credentials and tokens are not protected in transit.
 - Authentication failure does not roll back a saved registration/status, trigger
   a resend or expose HTTP/SMTP passwords in notification logs.
 
-## Required operator actions before external TEST
+## TEST deployment state and credential handling
 
-Provision fresh, distinct values for the GCP deployment:
+GCP TEST is deployed with a private environment file and distinct application
+credentials. Do not print or copy those values into this document. For production
+or a fresh environment, provision fresh, distinct values for:
 
 - MariaDB root, Registration and Biuro database passwords.
 - Biuro JWT signing secret (at least 32 UTF-8 bytes).
@@ -60,25 +64,32 @@ Disable bootstrap and remove its temporary password after first-admin setup.
 An existing administrator remains available in the database. Use individual Biuro
 accounts and grant the client only the roles/Turnusy they need.
 
-Untracking the file is implemented; rotation of real/external credentials has not
-been performed automatically and must not be marked complete without confirmation.
-No Git history rewriting is included.
+Untracking the file is implemented. Rotation of credentials previously disclosed
+in chat/Git history must be verified before production; no Git history rewriting
+is included. Operator confirmation of SMTP delivery applies to GCP TEST only.
 
-## Remaining before public client access
+## Remaining before production or real personal data
 
-- GCP host, static public IP and restricted administrative access.
-- Public HTTPS routing for Registration and Biuro, trusted IP certificates and
-  automatic renewal. No certificate-warning bypasses for the client.
+- HTTPS routing and certificate issuance/renewal. Current GCP TEST is reachable
+  over HTTP at the two domains; this is acceptable only for synthetic test data.
+- Select/verify the production host (currently expected to be a VPS) and restrict
+  administration appropriately; GCP provisioning is already complete for TEST.
 - Correct trusted proxy/scheme handling and deployed-origin verification.
 - Public entry-point abuse controls, including login/submission rate limits,
   configured with the actual proxy/client-IP topology.
-- Firewall exposure limited to intended frontend/certificate-validation ports.
-- Backups/restore and deployed permission/workflow acceptance with synthetic data.
+- Final firewall review limited to intended public web ports; TEST currently uses
+  port 80 and has no public API/database/MailHog access.
+- Production backup destination, retention, access control and an isolated restore
+  drill. GCP TEST reboot and SQL recovery checks are parked, not passed.
+- Complete deployed role/session, registration, notification and list/export
+  acceptance; current basic Biuro/form operations and SMTP send are operator-verified.
+- Verify rotation of credentials disclosed previously; disable/remove bootstrap
+  credentials after initial account provisioning.
 
-Keep MailHog for the initial test until real-provider acceptance is deliberately
-enabled. See the deployment checklist for the remaining operational gates.
+GCP TEST currently uses external SMTP, confirmed by the operator. Local Compose
+defaults to MailHog. See the deployment checklist for remaining gates.
 
-## Verification — 2026-10-18
+## Historical verification snapshot — 2026-10-18 (before GCP TEST deployment)
 
 - Final backend suites: 363 passed, zero failures/errors; 11 optional MariaDB cases
   skipped. Registration has 196 cases, Biuro 136 and email-service 42.

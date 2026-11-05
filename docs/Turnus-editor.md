@@ -11,7 +11,11 @@ in [Turnus capacity management](Turnus-capacity-management.md).
 - `/turnusy/nowy`: creation page, initially inactive with registration closed.
 - `/turnusy/:code`: dedicated definition editor; code is read-only, edit version retained for optimistic locking.
 
-Only the working Definicja section is shown. Participant/staff pages, list exports and payments remain future features.
+This is a historical description of the first editor UI. Accepted-person lists,
+custom columns and XLSX/CSV/PDF exports were delivered later; see the current
+[release plan](Registration-workflow-release-plan.md) and
+[export scope](Turnus-list-exports.md). The separate Wpłaty prototype and its
+unconfirmed MVP status are documented in [Manual-payments.md](Manual-payments.md).
 Separate capacities/switches are added by the subsequent capacity feature. The layout
 provides space for future Turnus sections without placing them in a modal.
 
