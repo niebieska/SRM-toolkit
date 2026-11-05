@@ -1227,13 +1227,15 @@ security PR; secrets hardening must still precede SIT.
 
 - Removed the unagreed 64 KiB check, associated test, HTTP mapping and frontend
   message. Earlier notes/test counts describe the previous iteration.
-- Form-field-capacity-review.md compares actual UI limits, backend bounds and
-  database storage. Most free-text bounds are backend-only choices needing
-  agreement and UI alignment, not database constraints.
-- Staff additional-health UI maximum (1000) lacks backend enforcement. Combined
-  rejection reason can exceed its actual VARCHAR(500) database column.
-- No new frontend caps or truncation added. Per-field backend bounds retained
-  pending product review. Frontend API tests passed; whitespace checks passed.
+- Form-field-capacity-review.md records the agreed frontend usability caps,
+  distinct from wider backend request ceilings and database storage limits.
+  The implementation is on `feature/registration-form-limits` (commits
+  `76fdeac` and `73adffb`) and is not yet merged into `development`.
+- Staff additional-health information has a 500-character frontend cap; the
+  backend has no field-specific cap. Combined rejection reason may still exceed
+  its actual `VARCHAR(500)` database column and needs separate validation.
+- Automated frontend tests and the production build passed on the feature branch
+  on 2026-11-05. Phone-format compatibility remains open; no input is truncated.
 
 ### 2026-10-08 — Pre-commit validation diff review
 
@@ -1512,11 +1514,9 @@ Moved project plans, progress notes and assessments into `docs/`. The root READM
   219 backend tests passed, ten optional MariaDB cases skipped; both frontend
   suites and production builds passed. Browser/deployed verification pending.
   No commits made; sth.java untouched.
-- Deferred certificate-description UI cleanup to
-  [Form field capacity review](Form-field-capacity-review.md): the 2,000-character
-  UI/backend mismatch predates this branch; hidden descriptions after deselection
-  also predate it, with catalogue changes adding another path to the same gap.
-  These were incorrectly presented as two wholly new regressions during review.
+- Certificate descriptions now have a 500-character frontend usability cap and
+  visible counter; the backend retains its 2,000-character ceiling. Omitting stale
+  descriptions after deselection or catalogue changes remains deferred UI cleanup.
 - Preserved the Vue form-state checks in `staffRoleStep.test.js`, run by the
   existing Node test command: Back/remount/Next retains certificates and details;
   Turnus switching preserves personal data and removes unavailable selections;
