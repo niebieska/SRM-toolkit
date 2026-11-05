@@ -24,6 +24,7 @@ Use synthetic personal data and a test email destination. For successful submiss
 | Pending | Submit adult participant, minor participant, adult staff and minor staff registrations | Each valid path succeeds, returns the correct code, and displays accurate details in Biuro. |
 | Pending | Set an adult emergency-contact relationship to “Inna” and provide its description | The description survives submission and appears in Biuro. |
 | Pending | Submit a minor participant with a separate guardian address; repeat with required address fields missing | Complete address is saved; incomplete address is rejected without saving a registration. |
+| Pending | Register someone who turns 14 later in the same year as a 14+ Turnus starts | Submission is accepted under the rocznikowy minimum-age rule, even though the person is still 13 on the Turnus start date. A person born in the following year is rejected. |
 | Pending | Exercise every staff role/subrole, switch selections, and navigate Back/Next | Appropriate certificate options appear; obsolete selections are cleared; retained values remain consistent. |
 | Pending | Select the “Inne” certificate without a description, then supply one | Advancing is blocked until the description is supplied. |
 | Pending | Throttle the network and rapidly double-click Submit on both forms | Only one submission request is sent; Submit and Back remain disabled until it completes. |
@@ -35,6 +36,9 @@ Use synthetic personal data and a test email destination. For successful submiss
 
 ## Decisions and coverage gaps
 
+- Turnus minimum age was agreed as rocznikowy on 2026-11-02. The backend currently
+  checks exact age on the start date; implementation and automated boundary tests
+  remain required.
 - Frontend usability limits are implemented on `feature/registration-form-limits`
   and shorter than some backend defensive ceilings; see [field capacity review](Form-field-capacity-review.md).
   Automated component-level checks pass on that branch, while the manual

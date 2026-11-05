@@ -1,6 +1,7 @@
 # First release — registration workflow and Turnus lists
 
-Agreed 2026-10-08. Target: mid-November; date is a target, not a validated estimate.
+Agreed 2026-10-08. The original mid-November target was not re-estimated after
+TEST deployment began; treat it as a historical target, not a current forecast.
 Primary value: operators can process registrations and produce usable Turnus
 lists. This document sets delivery order; detailed findings remain in
 First-release-functional-review.md and Turnus-management-plan.md.
@@ -8,12 +9,12 @@ First-release-functional-review.md and Turnus-management-plan.md.
 Operational deployment gates live in [deployment-checklist.md](deployment-checklist.md).
 This file owns functional acceptance; WIP.md records progress and evidence.
 
-The initial implementation baseline was reconciled 2026-10-16 against local
-`development` at `2cdac33` (export PR #40). Subsequent items are reconciled
-selectively as they are verified; the status-history entry below was updated
-2026-10-25 for PR #46. These notes distinguish implementation from deployed
-acceptance and do not claim a new full regression run. Earlier dated assessments
-are historical; implementation documents and WIP record later corrections.
+Reconciled 2026-10-28 against `development` at `d9d6ebf` (Docker TEST packaging,
+PR #52). Feature PRs #46 (status history), #49 (registration editing), #50
+(acceptance email updates), #51 (custom list fields) and #52 (TEST packaging)
+are merged. This plan distinguishes implementation from deployed acceptance;
+see the dated checkpoint in WIP for operator-reported GCP verification. Earlier
+dated assessments are historical and must not be read as the current status.
 
 ## Current state and acceptance gates
 
@@ -25,8 +26,8 @@ acceptance and verification tasks are tracked separately.
 |---|---|---|
 | Submit participant/staff registration | Forms, APIs, persistence, independent counters and duplicate constraint exist. Integrity suite verified previously. | Valid adult/minor submissions survive restart; invalid mandatory data is rejected by backend; no duplicate on repeated click; useful errors preserve input. |
 | Find and inspect | Biuro filters status/type/Turnus; local search and sorting; details with payload fields. | Operators can find each scenario, read required person/guardian/contact/role details, and clearly distinguish status and Turnus. |
-| Decide | Table and details actions support ACCEPTED/WAITLIST/REJECTED; modal offers preset rejection reasons plus free text; Biuro enforces rejection reason. | All three outcomes persist and refresh correctly; reasons visible; failures show no false success. Agree repeated/concurrent action behavior and capacity policy. |
-| Notify | Confirmation and status templates exist with guardian/self routing. | Verify recipients/content for adult/minor and participant/staff; correct dates/payment instructions; SMTP failure does not lose registration or falsely claim delivery; define practical recovery/resend. |
+| Decide | Table and details actions support ACCEPTED/WAITLIST/REJECTED; modal offers preset rejection reasons plus free text; Biuro enforces rejection reason. Status history is audit-only; existing workflow permits normal status changes, including returning to a previous status. | Finish deployed checks for all outcomes, reasons, refresh and history. Repeated status selection is not a resend mechanism; notifications remain a separate best-effort action. Capacity policy is agreed and implemented. |
+| Notify | Confirmation and status templates exist with guardian/self routing; GCP TEST external SMTP send is operator-confirmed. | Verify recipients/content for adult/minor and participant/staff; correct dates/payment instructions; confirm SMTP failure does not lose registration or falsely claim delivery. Manual resend is deferred; same-status selection does not resend. |
 | Assemble Turnus roster | Dedicated accepted-only participant/staff tables, search, type filter, sorting, presets and custom columns are implemented. Staff roles remain visible; qualifications are staff-only. | Accepted participants and staff selectable for the correct Turnus; NEW/WAITLIST/REJECTED excluded from accepted lists. Empty lists supported. |
 | Generate lists | XLSX/CSV/PDF exports use current filters, columns and ordering. XLSX sheets/PDF sections separate groups; CSV includes person type. Binary and browser checks passed; intended application/print acceptance remains pending. | Insurance export and printable on-site registration list use agreed columns, correct selection and current data. Staff inclusion is explicit. Print/export verified using synthetic records. |
 
@@ -50,7 +51,10 @@ acceptance and verification tasks are tracked separately.
   adult/minor × participant/staff verification in a few days. The user reports
   most cases tested; this is not yet a complete recorded acceptance matrix.
 - No aggregate payload-size limit is required in the current scope. The unagreed
-  cap was removed; further capacity work is deferred pending field review.
+  cap was removed. Frontend field caps are implemented on the feature branch;
+  remaining capacity follow-ups are the phone-format compatibility decision,
+  rejection-reason validation against its database column, and stale certificate
+  detail handling, as listed in the field review.
   Typed DTOs/Bean Validation remain implementation options, not completed work.
 
 Verification on 2026-10-09: 99 backend tests (including nine real-MariaDB tests),
@@ -93,21 +97,26 @@ Details: [catalogue](Turnus-catalogue-implementation.md),
   below the accepted count of the affected type. Acceptance remains enabled
   at/beyond capacity; opening/closure is manual under the single-operator assumption.
   Required staffing totals remain independent of available staff places.
-- [ ] Confirm birthday/minority reference rules with the client. Lists provisionally
-  calculate age at Turnus start; registration minor/adult routing is unchanged.
-- [ ] Decide permitted status changes and unchanged-status/resend behavior before
-  implementing transition restrictions; verify the agreed behavior explicitly.
-- [ ] Verify status persistence, rejection reasons and table/details refresh.
+- [x] Agree Turnus minimum age as rocznikowy: compare the Turnus start year with
+  the birth year from PESEL, regardless of whether the birthday has occurred by
+  the start date. Implementation is still pending. Lists separately display age
+  at Turnus start provisionally; registration minor/adult routing remains based
+  on age at submission and is unchanged by this decision.
+- Status history is audit-only. Keep the existing status workflow and permissions;
+  do not add transition restrictions. Returning to an earlier status uses the
+  same existing action flow. A same-status request is not a notification resend.
+- [ ] Verify status persistence, rejection reasons, table/details refresh and audit timeline in deployed Biuro.
 - [ ] Agree participant/staff fees and recipient rules; remove placeholder bank data.
-- [ ] Verify SMTP outcomes and a practical recovery/resend path. SMTP test
-  prerequisites are implemented in [Email TEST reliability](Email-test-reliability.md);
-  real mailbox acceptance remains pending. Manual resend controls are deferred in
+- [x] Verify that the GCP TEST email-service sends through the configured external
+  SMTP server (operator confirmed successful delivery). This confirms SMTP
+  transport, not every template/recipient/content combination or inbox placement.
+  MailHog remains the local default. Manual resend controls are deferred in
   [the future backlog](Future-product-backlog.md#communication), not a blocker for
   controlled synthetic TEST. Full editable templates, group announcements and
   scheduling remain deferred.
 - [x] Add automated confirmation-recipient and catalogue-metadata tests for
   adult/minor participants and staff; see [email metadata](Turnus-email-metadata.md).
-- [ ] Verify status-notification recipients and deployed mailbox outcomes separately.
+- [ ] Verify status-notification recipients and deployed mailbox outcomes for adult/minor participants and staff separately; a generic successful SMTP send does not close this matrix.
 - [x] Configure Biuro-to-Registration and Registration-to-Biuro catalogue timeouts
   (15-second connect / 30-second read).
 - [x] Configure Registration-to-email-service HTTP and SMTP timeouts; surface SMTP
@@ -131,15 +140,16 @@ Details: [catalogue](Turnus-catalogue-implementation.md),
   reauthentication. Never automatically replay a POST/PATCH after login.
   Cover expiry on startup and during list loading/edit saving, retained inputs,
   successful reauthentication, and permission-denied responses.
-- [ ] Deliver the agreed individual-account/access scope in
+- [x] Implement the agreed individual-account/access scope in
   [Biuro accounts and access plan](Biuro-accounts-and-access-plan.md): multiple
   fixed roles, SYS_ADMIN account management, unrestricted operational Turnus access
   for OPERATOR, assigned-Turnus lists/custom columns/exports for VIEWER, two-hour
   sessions, revocation and last-administrator protection. Agreed 2026-10-16;
   backend implementation is recorded in [Phase 1](Biuro-accounts-phase-1.md) and
   [Phase 2](Biuro-accounts-phase-2.md). Account UI/session integration is
-  implemented in the [frontend phase](Biuro-accounts-frontend.md); browser/release
-  acceptance remains pending.
+  implemented in the [frontend phase](Biuro-accounts-frontend.md). Deployed browser
+  checks for role boundaries, session expiry, password change and account lifecycle
+  remain pending.
 
 ### 4. Deliver usable Turnus lists
 
@@ -151,9 +161,10 @@ Details: [catalogue](Turnus-catalogue-implementation.md),
 - [x] Check export scope, real binaries, Polish text, identifiers, PDF pagination
   and browser downloads using synthetic data. Latest Biuro frontend tests/build:
   all 14 test files pass; existing PDF lazy-chunk size warning remains.
-- [ ] Extend Własny with optional health-detail columns and staff family/birth-year
-  details, grouped by applicability. Verify selection, VIEWER access and selected
-  values in XLSX/CSV/PDF; see [custom list fields](Turnus-list-presets.md).
+- [x] Extend Własny with optional health-detail columns and staff family/birth-year
+  details, grouped by applicability (PR #51). Manual verification of selection,
+  VIEWER access and selected values in XLSX/CSV/PDF remains pending; see
+  [custom list fields](Turnus-list-presets.md).
 - [ ] Confirm insurer compatibility and intended Excel/LibreOffice, CSV import and
   PDF print output with operators. Prefer XLSX for typed PESEL/phone identifiers.
 - [ ] Verify exclusions, staff selection, new/empty Turnusy, Polish characters,
@@ -189,11 +200,16 @@ Details: [catalogue](Turnus-catalogue-implementation.md),
 
 ## Scope guard and tracking
 
-As of 2026-10-20, manual **Wpłaty** tracking is probably required for MVP, pending
-prioritization; it is not yet a confirmed release gate. See [agreed scope and open
+Manual **Wpłaty** tracking remains a probable, not confirmed, MVP requirement. A
+frontend-only prototype is on the separate, unpushed
+[`feature/manual-payments-ui`](https://github.com/niebieska/SRM-toolkit/tree/feature/manual-payments-ui)
+branch; it uses demo data and does not provide persistent payments, discounts or
+Turnus fee configuration. Decide whether to promote the feature to a release gate
+before implementing its backend and data model. See [agreed scope and open
 decisions](Manual-payments.md): Turnus participant/role-based staff fees, operator
-payment recording, PLN discounts and Wpłaty next to Listy. This supersedes the
-earlier optional-only classification. Balance columns/exports remain deferred.
+payment recording, PLN discounts and a top-level Wpłaty tab alongside Zgłoszenia.
+Turnus shortcuts may open the same register with a filter applied. Balance columns
+in Lists and payment exports remain deferred.
 
 Turnus informational emails are **nice to have for MVP**, not a release gate:
 predefined templates, custom text and preview, accepted participant/staff selection

@@ -1,6 +1,6 @@
 # Future product backlog
 
-Updated: 2026-10-08. These items preserve the later roadmap formerly mixed into
+Updated: 2026-11-02. These items preserve the later roadmap formerly mixed into
 deployment-checklist.md. They are not requirements for the first release unless
 explicitly promoted into Registration-workflow-release-plan.md and recorded in WIP.
 
@@ -16,8 +16,12 @@ explicitly promoted into Registration-workflow-release-plan.md and recorded in W
 - Manual payment tracking was reassessed on 2026-10-20 as **probably required for
   MVP**, pending prioritization. Current scope and unresolved decisions live in
   [Wpłaty](Manual-payments.md) and the registration workflow release plan;
-  the earlier optional-only classification no longer applies.
-- Staff statistics against required roles/subroles.
+  the earlier optional-only classification no longer applies. A separate local,
+  unpushed branch [`feature/manual-payments-ui`](https://github.com/niebieska/SRM-toolkit/tree/feature/manual-payments-ui)
+  contains a demo-only frontend prototype; no persistent payment implementation
+  exists yet.
+- Additional subrole-level staffing statistics. Basic configured-role occupancy
+  statistics are implemented; subrole breakdowns were intentionally omitted for now.
 - Additional loading/empty/error polish and email-client appearance refinements.
 
 ## Registration and domain extensions
@@ -37,14 +41,16 @@ explicitly promoted into Registration-workflow-release-plan.md and recorded in W
   and current capacity behavior. The accepted registration appears in normal
   statistics and lists. Approximate implementation size: 14–22 focused hours,
   including tests; not a delivery commitment.
-- Biuro registration editing: implementation started on `feature/registration-editing`
-  on 2026-10-25; it is not promoted to an MVP release gate. The initial scope keeps
+- Biuro registration editing: the initial implementation was delivered on
+  `feature/registration-editing` and merged; it is not promoted to an MVP release
+  gate. The current scope keeps
   PESEL, registration code, Turnus, registration type, status, consents and staff
   role/qualifications read-only. It permits corrections to names, address, personal
   and guardian/ICE contact details, staff family-name fields, and existing health
   answers/details/additional information. OPERATOR identity, time and changed field
   names are audited; saves use version checks to reject stale edits. Edits do not
-  send email or imply a new consent. Review this initial field scope before merge.
+  send email or imply a new consent. Deployed operator acceptance remains pending;
+  editing staff role/qualifications is intentionally a later decision.
 - Turnus transfer remains a separate workflow creating a linked new registration
   and preserving the original registration/code/history, as detailed in WIP.
 - Soft delete and operational notes remain deferred. Registration status history
@@ -87,11 +93,13 @@ explicitly promoted into Registration-workflow-release-plan.md and recorded in W
 
 ## Access and identity
 
-- Individual Biuro accounts and the agreed fixed roles are now active release
-  work: see [accounts/access plan](Biuro-accounts-and-access-plan.md). Broader
-  identity integrations and configurable permission models remain future work.
+- Individual Biuro accounts and the agreed fixed roles are implemented and merged;
+  deployed role/session acceptance remains in the release plan. See
+  [accounts/access plan](Biuro-accounts-and-access-plan.md). Broader identity
+  integrations and configurable permission models remain future work.
 - PESEL-exception registrations using the agreed key/fingerprint proposal in WIP.
 
-The first release still requires basic access protection, accurate notification
-outcomes/recovery, agreed status behavior and usable insurance/on-site lists.
+The first release still requires deployed access verification, accurate notification
+outcome handling, and operator acceptance of insurance/on-site lists. Status-history
+behavior is settled: audit-only, with the existing status workflow.
 Deferring richer versions here does not defer those baseline requirements.

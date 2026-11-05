@@ -4,6 +4,12 @@ Date: 2026-10-06
 Repository: `/home/osboxes/Documents/SRM-toolkit`  
 Assessment scope: source code, repository structure, configuration, Docker files, scripts, tests, frontend clients, database migration, and the referenced `backend/registration-api/src/main/resources/data/turnuses.json`.
 
+This is a historical architecture snapshot from 2026-10-06, before the later
+registration-status-history, registration-editing, list-export and Docker TEST
+work. Its implementation gaps and roadmap are not current status. For live
+progress use the [registration workflow release plan](Registration-workflow-release-plan.md)
+and [deployment checklist](deployment-checklist.md).
+
 ## Table of Contents
 
 1. [Executive Summary](#1-executive-summary)

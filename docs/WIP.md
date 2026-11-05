@@ -1,5 +1,105 @@
 # Work in progress
 
+## 2026-11-03 — Biuro MFA and session duration: discussion pending
+
+- Discussed possible MFA for Biuro accounts. No implementation or policy change
+  is approved; the current two-hour session policy remains in place.
+- Proposed onboarding: require an account email and verify it; user changes the
+  temporary password, acknowledges the privacy information, and receives a
+  one-time recovery PUK. SYS_ADMIN may trigger PUK regeneration but should not
+  be able to read the generated secret. Exact PUK recovery and delivery rules
+  remain open.
+- Compare TOTP authenticator as the normal second factor with email codes, or
+  offering both. TOTP is the current technical recommendation; email depends on
+  mailbox/SMTP availability and is not considered an equivalent security option.
+- To reduce daily operator friction, discuss an 8-hour maximum session plus
+  30–60 minutes of inactivity timeout and renewed verification for sensitive
+  account/MFA actions. This would change the existing two-hour session agreement.
+- Decisions still needed: whether MFA is mandatory for every role; allowed
+  factor(s); recovery when both email and PUK are unavailable; and session/idle
+  duration. See [Biuro account and access plan](Biuro-accounts-and-access-plan.md).
+
+## 2026-11-02 — Turnus minimum-age rule
+
+- Agreed that the minimum-age restriction on participant and staff registration
+  forms is rocznikowy: compare the Turnus start year with the birth year derived
+  from PESEL, without waiting for the birthday. Thus someone born in 2012 qualifies
+  for a 14+ Turnus starting in 2026, even if still 13 on its start date.
+- Current `RegistrationValidationService` still calculates exact age at Turnus
+  start, so implementation and boundary tests remain outstanding. This decision
+  does not alter the saved minor/adult classification, which is based on the
+  registration date, or the provisional exact age displayed/sorted in Turnus lists.
+- Recorded in [validation contract](Registration-validation-contract.md),
+  [release plan](Registration-workflow-release-plan.md) and
+  [manual scenarios](Registration-validation-test-scenarios.md).
+
+## 2026-11-02 — Registration form field limits
+
+- Agreed that frontend usability caps may be shorter than backend request ceilings;
+  the two layers do not need matching limits. Keep finite backend ceilings for
+  approved API/data-entry paths and never silently truncate input.
+- Implemented the agreed frontend maxima on `feature/registration-form-limits`
+  (commits `76fdeac` and `73adffb`): name and address fields, guardian/ICE details,
+  health answers and certificate descriptions. The branch has nine passing
+  frontend test files and a successful production build as of 2026-11-05; it is
+  not yet merged into `development`.
+- See [Form-field-capacity-review.md](Form-field-capacity-review.md) for exact
+  values and the test scope. Phone format remains a separate compatibility
+  decision because the segmented UI and backend currently accept different
+  formats. Rejection-reason length and stale certificate descriptions remain
+  separate follow-up items.
+
+## 2026-11-02 — Manual payments prototype status
+
+- The UI prototype is on [`feature/manual-payments-ui`](https://github.com/niebieska/SRM-toolkit/tree/feature/manual-payments-ui)
+  at `e7ab68a`, three commits ahead of `development` at `d9d6ebf`. The branch is
+  local and has no remote tracking branch; the GitHub link will resolve after it
+  is pushed. No changes were merged into `development` as part of this checkpoint.
+- It provides a demo-data Wpłaty register, filters, registration lookup, payment
+  entry/edit UI, discount display/edit UI and Polish date entry/calendar. Changes
+  live only in frontend memory and reset on refresh; no payment API, database
+  persistence or Turnus fee configuration is implemented.
+- The earlier placement idea of Wpłaty next to Listy was superseded: the agreed
+  entry point is a top-level tab alongside Zgłoszenia, with Turnus filtering and
+  optional Turnus shortcuts that preselect the filter.
+- Decisions confirmed 2026-11-02: MVP priority remains probable, not confirmed;
+  payment corrections edit the entry with an audit record; overpayment has its own
+  **Nadpłata** status; staff-role correction after payment is not expected in scope;
+  a discount may equal the full fee. The Turnus base fee stays fixed; a later
+  reduction is represented as an individual discount, not a base-fee edit.
+- These payment rules are requirements for future implementation, not all present
+  in the prototype: its demo balance clamps at zero and treats overpayment as
+  **Opłacone**; its edit history exists only in memory and is lost on refresh.
+- Confirm during implementation, without blocking its start: fee precedence if both
+  role and subrole have prices; status for a zero balance caused by a full discount
+  but no payment; and the recommended `registration_db` ledger / `biuro_db`
+  Turnus-fee ownership boundary. See [Manual-payments.md](Manual-payments.md).
+- Frontend production build passed. The UI prototype does not settle whether Wpłaty
+  are an MVP release gate; that decision and domain rules remain in
+  [Manual-payments.md](Manual-payments.md).
+
+## 2026-10-28 — Current release and GCP TEST checkpoint
+
+- Deployment baseline at this checkpoint was `development` at `d9d6ebf` (PR #52,
+  Docker TEST packaging).
+  Registration status history (#46), registration editing (#49), acceptance-email
+  changes (#50), custom Własny list columns (#51) and TEST packaging (#52) are
+  merged. See [the release plan](Registration-workflow-release-plan.md) for
+  implementation status versus remaining functional acceptance.
+- Operator reports GCP TEST is reachable over HTTP at
+  `formularz-srm.watroba.com.pl` and `biuro-srm.watroba.com.pl`. Both host-routed
+  checks returned 200; basic Biuro operation, form submission and external SMTP
+  sending were confirmed. Only TCP 80 is intended to be public; GCP ingress for
+  TCP 8080 was removed. TEST data is synthetic. HTTPS is not configured.
+- Not verified: complete deployed account/role/session acceptance, all email
+  template/recipient scenarios, Turnus-list/export acceptance, controlled VM
+  reboot, MariaDB logical backup and isolated restore. These remain separate
+  checklist items; reboot/DB recovery was explicitly parked for GCP TEST because
+  production is expected to run on a VPS. Production backup/restore remains a gate.
+- Do not treat the HTTP TEST deployment as approved for real personal data.
+  Verify rotation of any credentials previously disclosed in chat/Git history
+  before production. No deployment/recovery commands were run for this checkpoint.
+
 ## 2026-10-25 — Własny list data availability
 
 - Started `feature/turnus-list-custom-data` from current `development` after PR #50.
@@ -1116,11 +1216,13 @@ packaging work remain pending.
 - Verify valid/invalid keys, required fields, fingerprint normalization,
   same-turnus warnings, different-turnus submissions, and exception-key rotation.
 
-## Discovered issues and their place in the plan
+## Historical issue inventory — superseded
 
-These issues were pre-existing, not introduced by the security implementation.
-The current implementation addresses some locally; remaining work stays in its
-planned phase.
+The table below records an earlier issue inventory and is retained for context;
+its progress statements are stale and must not be used to determine current
+release status. Use [Registration-workflow-release-plan.md](Registration-workflow-release-plan.md)
+and [deployment-checklist.md](deployment-checklist.md) for current status. These
+issues were pre-existing, not introduced by the security implementation.
 
 | Issue | Plan location | Progress / discovery |
 |---|---|---|
@@ -1223,10 +1325,11 @@ security PR; secrets hardening must still precede SIT.
   slow/double-click and back-navigation E2E remain pending.
 - Changes uncommitted; unrelated dependency lockfiles were not altered by this work.
 
-### 2026-10-08 — Remove aggregate payload cap; review field capacity
+### 2026-11-05 — Registration form field limits: status update
 
-- Removed the unagreed 64 KiB check, associated test, HTTP mapping and frontend
-  message. Earlier notes/test counts describe the previous iteration.
+- The earlier, unagreed 64 KiB aggregate payload check was removed with its test,
+  HTTP mapping and frontend message. Earlier notes/test counts describe that
+  superseded iteration.
 - Form-field-capacity-review.md records the agreed frontend usability caps,
   distinct from wider backend request ceilings and database storage limits.
   The implementation is on `feature/registration-form-limits` (commits
@@ -1237,7 +1340,7 @@ security PR; secrets hardening must still precede SIT.
 - Automated frontend tests and the production build passed on the feature branch
   on 2026-11-05. Phone-format compatibility remains open; no input is truncated.
 
-### 2026-10-08 — Pre-commit validation diff review
+### 2026-10-08 — Pre-commit validation diff review (historical)
 
 - Review caught that the previously claimed composite certificate-source fix had
   not actually landed. Added resolveCertificateSource with a dedicated regression
@@ -1248,9 +1351,10 @@ security PR; secrets hardening must still precede SIT.
   checks passed. Biuro build passed in the preceding implementation run; its only
   component change remains the ICE relationOther label. No browser/component/E2E
   verification or database-suite rerun is claimed for this review.
-- Remaining assumptions: backend-only field sizes are still pending agreement;
-  role rules are temporarily duplicated rather than shared season configuration;
-  certificates are declarations, not checked qualification/allowlist policies.
+- At that review, backend-only field sizes were still pending agreement. Other
+  findings were that role rules were duplicated rather than shared season
+  configuration, and certificates were declarations rather than verified
+  qualification/allowlist policies.
   New JSON field/type checks are not a complete typed payload schema.
 - Suggested commits: backend rules/tests; frontend submission/error/ICE fixes and
   API tests; staff role/certificate UI/helper/tests; documentation separately.
