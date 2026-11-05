@@ -41,7 +41,10 @@ acceptance and verification tasks are tracked separately.
 - [x] Correct in-flight submit state and preserve meaningful API error codes.
 - [x] Add dedicated PESEL checksum, birth-date/century and age-boundary tests,
   payload-rule tests and rejection-before-persistence/notification regressions.
-- [ ] Agree free-text field limits and align frontend/backend phone validation;
+- [x] Agree and implement frontend usability caps for registration fields. The
+  implementation and component-level tests are on `feature/registration-form-limits`
+  (not yet merged into `development`); see [Form field capacity review](Form-field-capacity-review.md).
+- [ ] Decide supported phone formats and align frontend/backend phone validation;
   see [Form field capacity review](Form-field-capacity-review.md).
 - [ ] Record scenario-specific manual results and repeat valid/invalid
   adult/minor × participant/staff verification in a few days. The user reports

@@ -1,54 +1,56 @@
 # Form field capacity review
 
-2026-10-08. The arbitrary 64 KiB aggregate payload limit was removed at the user's
-request. This review distinguishes current UI limits, new backend restrictions,
-and actual storage capacity. No new frontend caps are introduced by this review.
+Updated 2026-11-05. The arbitrary 64 KiB aggregate payload limit was removed at
+the user's request. This review distinguishes frontend usability caps, backend
+request ceilings and actual storage capacity.
 
-| Field | Current frontend maximum | Backend in validation branch | Finding |
-|---|---|---|---|
+The frontend limits below are implemented on `feature/registration-form-limits`
+(commits `76fdeac` and `73adffb`); they have not yet been merged into
+`development`. Frontend caps are usability rules, so they may be shorter than the
+backend's defensive ceilings. No value is silently truncated.
+
+| Field | Frontend maximum | Backend ceiling | Finding |
+|---|---:|---:|---|
 | PESEL | 11 digits | 11 digits plus checksum/calendar validation | Aligned. |
-| Telephone | Prefix input 4 digits plus 9 local digits | Leading +, nonzero country prefix, 10–15 digits in total | Lengths compatible for emitted values, but UI prefix/validator permits values the backend rejects. Confirm international-number scope. |
-| First name | None | 100 characters | New backend choice, not inherited from UI or DB. |
-| Last name | None | 150 characters | Same mismatch. |
-| Email | None | 254 characters | UI has no explicit maximum; format validation also differs. |
-| Combined parents' names | None | 500 characters | New backend choice. |
-| ICE other relationship | None | 200 characters | New backend choice. |
-| Street / city / house number | None | 200 / 150 / 30 characters | New backend choices. |
-| Postal code | Formats to five digits with hyphen | XX-XXX, six characters | Aligned Polish-address scope. |
-| Health answer details | None in shared HealthQuestion | 4,000 characters when answer is tak | Frontend can submit values rejected by backend. |
-| Staff additional health information | 1,000 characters | No field-specific cap | Opposite mismatch; backend does not enforce UI cap. |
-| Other certificate explanation | None | 2,000 characters when selected | New backend choice. |
-| Rejection reason | No explicit maximum in Biuro; presets and free text combined | DB VARCHAR(500); no server length validation | Genuine storage limit: validate combined length and show a useful error before DB save. |
-
-## Storage and decisions
+| Telephone | Existing segmented control: 4-digit prefix plus 9 local digits | Leading +, nonzero country prefix, 10–15 digits in total | Supported format remains an open compatibility decision. |
+| First name | 60 characters | 100 characters | Frontend usability cap; backend remains wider. |
+| Last name | 80 characters | 150 characters | Frontend usability cap; backend remains wider. |
+| Mother's/father's name | 60 characters each | 100 characters each | Frontend usability caps; backend remains wider. |
+| Birth surname | 80 characters | 150 characters | Frontend usability cap; backend remains wider. |
+| Email | 254 characters | 254 characters | Length aligned. |
+| Combined parents' names | 200 characters | 500 characters | Frontend usability cap; backend remains wider. |
+| ICE other relationship | 80 characters | 200 characters | Frontend usability cap; backend remains wider. |
+| Street / city / house number | 100 / 80 / 20 characters | 200 / 150 / 30 characters | Frontend usability caps; backend remains wider. |
+| Postal code | `XX-XXX`, six characters | `XX-XXX`, six characters | Aligned Polish-address scope. |
+| Health answer details | 500 characters | 4,000 characters when answer is `tak` | Frontend cap and visible counter. |
+| Staff additional health information | 500 characters | No field-specific cap | Frontend cap and visible counter. |
+| Other certificate explanation | 500 characters | 2,000 characters when selected | Frontend cap and visible counter. |
+| Rejection reason | No explicit maximum in Biuro; preset and free text combined | DB `VARCHAR(500)`; no server length validation | Separate issue: validate combined length and show a useful error before DB save. |
 
 Names, addresses, contacts and health answers are stored in the registration
-LONGTEXT JSON payload, not dedicated VARCHAR columns. The suggested field sizes
-above are application rules introduced in this branch, not existing storage limits.
-The capacity of LONGTEXT does not determine sensible user-facing limits.
+`LONGTEXT` JSON payload, not dedicated `VARCHAR` columns. Its capacity does not
+determine sensible user-facing field limits. The frontend validates limits before
+advancing from a form step and preserves the entered value when it is too long.
 
-Agree field sizes before treating the new bounds as the final contract. Then align
-frontend maxlength/validation and backend checks, with exact-boundary tests and
-counters for long descriptions. Do not silently truncate imported or submitted
-values. Preserve multi-part names, diacritics and multiline descriptions.
+The limits implementation has automated frontend tests for field boundaries,
+participant and staff personal data, addresses, health details, certificate
+details and the conditional ICE relationship field. On 2026-11-05, all nine
+frontend test files passed and the production build succeeded on the feature
+branch. This is component-logic/build verification, not browser acceptance.
 
-The fixed PESEL/postal-code formats and rejection-reason database limit have clear
-existing foundations. Free-text limits and international phone/address support
-need explicit agreement. This review does not change the current country/address
-scope or claim browser testing.
+## Open or deferred items
 
-## Deferred UI cleanup — 2026-10-12
+- Phone format compatibility remains open: the segmented UI accepts a 4-digit
+  prefix plus 9 local digits, while the backend accepts `+` followed by 10–15
+  digits. A 16-character maximum alone does not make those formats equivalent.
+- Biuro rejection reason may exceed the database's 500-character column after
+  preset and custom text are combined. Add validation and a useful field error.
+- Descriptions for certificates may remain in the payload after a certificate is
+  unchecked or becomes unavailable after a Turnus/catalogue change. Omit those
+  stale descriptions while preserving details for selected, available
+  certificates. This is separate deferred UI cleanup.
 
-- Align certificate-description input validation with the existing backend
-  2,000-character limit. This mismatch predates the season-role branch: the
-  previous payload validator already enforced this limit for `inne`, while the
-  previous form had no maximum. Test the boundary and show feedback at the field.
-- Omit descriptions for unselected or unavailable certificates from the submitted
-  payload. Retaining a description after unchecking its certificate already existed
-  in the previous form. The new season-catalogue normalization also removes
-  unavailable selections without pruning their descriptions, extending that
-  existing cleanup gap to catalogue/Turnus changes. Test both cases and preserve
-  descriptions for certificates that remain selected and available.
-
-These are deferred UI cleanup tasks, not blockers for the season-role feature.
-No UI behavior is changed by this note.
+Preserve multi-part names, diacritics and multiline descriptions. The frontend
+limits do not replace backend validation or imply that backend and frontend caps
+must match. This review does not change the current country/address scope or claim
+manual browser testing.

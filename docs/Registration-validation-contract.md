@@ -21,9 +21,11 @@ PESEL/Turnus eligibility and before counter allocation, persistence or notificat
   Other-certificate selections require an explanation. Role/subrole options are
   temporarily mirrored in backend code; replace with the agreed season source.
   Certificate allowlists/required qualification policies remain season work.
-- No aggregate payload-size limit is introduced. Per-field bounds added in this
-  branch need alignment with frontend fields and product review; see
-  Form-field-capacity-review.md. They are not database column limits.
+- No aggregate payload-size limit is introduced. Frontend usability caps are
+  implemented on `feature/registration-form-limits` and may be shorter than the
+  wider backend request ceilings; see Form-field-capacity-review.md for exact
+  values and branch verification. They are not database column limits and do not
+  silently truncate input. The feature branch is not yet merged into development.
 
 Frontend changes retain server code/message/status, keep the submit lock through
 HTTP completion, prevent back navigation during submission, and preserve entered

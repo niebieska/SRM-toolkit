@@ -29,14 +29,20 @@ Use synthetic personal data and a test email destination. For successful submiss
 | Pending | Throttle the network and rapidly double-click Submit on both forms | Only one submission request is sent; Submit and Back remain disabled until it completes. |
 | Pending | Trigger a validation error, duplicate registration, offline connection and a 502 response | A useful error appears, entered data is retained, and retry is possible after resolving the cause. Check JSON and non-JSON error responses. |
 | Pending | Decline each required consent; separately decline only image consent | Required consents block submission; declining optional image consent permits an otherwise valid submission. |
-| Pending | Enter names at and above backend limits, vary phone prefixes, and answer health questions “tak” with and without details | Validation is predictable and messages explain rejected input; invalid requests do not create records. |
+| Pending | Check frontend field limits at the exact maximum and one character over for participant/staff personal data, addresses, health details and certificate descriptions | At-limit values pass; longer values show a field error and are preserved rather than silently truncated. Component-level automated coverage exists on `feature/registration-form-limits`; this manual acceptance scenario remains pending. |
+| Pending | Vary phone prefixes, including an empty prefix, one beginning with zero and a normal `+48` number | Supported formats are agreed and frontend/backend accept the same intended values. |
 | Pending | Submit adult/minor participants and change their status through Biuro | Registration and status emails reach the intended adult/guardian recipient with correct content. Verify actual delivery rather than relying on an API success response. |
 
 ## Decisions and coverage gaps
 
-- Backend field-length limits are not enforced by the frontend. Review the intended limits and align form behavior before merge.
+- Frontend usability limits are implemented on `feature/registration-form-limits`
+  and shorter than some backend defensive ceilings; see [field capacity review](Form-field-capacity-review.md).
+  Automated component-level checks pass on that branch, while the manual
+  acceptance scenario above remains pending. Neither layer truncates input.
 - Frontend phone validation accepts some formats rejected by the backend. Include an empty prefix, a prefix beginning with zero, and a normal `+48` number in compatibility checks; decide the supported format.
-- Existing frontend tests cover payload construction, API error handling, certificate-source resolution and sorting. They do not exercise Vue components, pending-request controls or form navigation in a browser.
+- Frontend tests on the feature branch exercise the affected Vue setup/validation
+  logic. They do not verify browser rendering, responsive layout or end-to-end
+  form submission.
 - Existing service tests use mocks; complete form-to-database-to-email behavior still needs the manual checks above.
 
 Record the execution date, environment, result and any issue reference when changing a scenario from Pending.
