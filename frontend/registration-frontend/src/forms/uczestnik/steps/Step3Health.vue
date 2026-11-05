@@ -6,32 +6,32 @@
       <HealthQuestion
         :number="1"
         :question="q1Text"
+        v-model:answer="local.health.q1.answer"
+        v-model:detail="local.health.q1.detail"
         placeholder ="Jakie? Prosze krótko opisać"
         :multiline="true"
         :answerError="errors.q1Answer"
         :detailError="errors.q1Detail"
-        @update:answer="local.health.q1.answer = $event"
-        @update:detail="local.health.q1.detail = $event"
       />
       <HealthQuestion
         :number="2"
         :question="q2Text"
+        v-model:answer="local.health.q2.answer"
+        v-model:detail="local.health.q2.detail"
         placeholder ="Jakie? Prosze krótko opisać"
         :multiline="true"
         :answerError="errors.q2Answer"
         :detailError="errors.q2Detail"
-        @update:answer="local.health.q2.answer = $event"
-        @update:detail="local.health.q2.detail = $event"
       />
       <HealthQuestion
         :number="3"
         :question="q3Text"
+        v-model:answer="local.health.q3.answer"
+        v-model:detail="local.health.q3.detail"
         placeholder="Jakie? Proszę krótko opisać."
         :multiline="true"
         :answerError="errors.q3Answer"
         :detailError="errors.q3Detail"
-        @update:answer="local.health.q3.answer = $event"
-        @update:detail="local.health.q3.detail = $event"
       />
     </div>
     <div class="flex justify-between">
@@ -81,15 +81,15 @@ const participantGenitive = computed(() => {
 })
 
 const q1Text = computed(() =>
-    `Czy ${participant.value} posiada choroby przewlekłe, o których organizator powinien wiedzieć?`
+    `Czy ${participant.value} posiada choroby przewlekłe, o których organizator powinien wiedzieć?*`
 )
 
 const q2Text = computed(() =>
-    `Czy u ${participantGenitive.value} występują alergie lub nietolerancje pokarmowe, które powinny zostać uwzględnione przy przygotowywaniu posiłków?`
+    `Czy u ${participantGenitive.value} występują alergie lub nietolerancje pokarmowe, które powinny zostać uwzględnione przy przygotowywaniu posiłków?*`
 )
 
 const q3Text = computed(() =>
-    `Czy ${participant.value} ma specjalne potrzeby edukacyjne, w tym potrzeby wynikające z niepełnosprawności, niedostosowania społecznego lub zagrożenia niedostosowaniem społecznym?`
+    `Czy ${participant.value} ma specjalne potrzeby edukacyjne, w tym potrzeby wynikające z niepełnosprawności, niedostosowania społecznego lub zagrożenia niedostosowaniem społecznym?*`
 )
 
 const errors = reactive({})
