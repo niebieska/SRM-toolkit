@@ -47,17 +47,17 @@
     <div class="grid grid-cols-1 gap-4 sm:grid-cols-3">
       <div>
         <label for="staff-mother-name" class="block text-sm font-medium text-gray-700 mb-1">Imię matki *</label>
-        <input id="staff-mother-name" v-model="local.motherName" type="text" maxlength="100" :class="fieldClass('motherName')" />
+        <input id="staff-mother-name" v-model="local.motherName" type="text" :class="fieldClass('motherName')" />
         <p v-if="errors.motherName" class="text-red-500 text-xs mt-1">{{ errors.motherName }}</p>
       </div>
       <div>
         <label for="staff-father-name" class="block text-sm font-medium text-gray-700 mb-1">Imię ojca *</label>
-        <input id="staff-father-name" v-model="local.fatherName" type="text" maxlength="100" :class="fieldClass('fatherName')" />
+        <input id="staff-father-name" v-model="local.fatherName" type="text" :class="fieldClass('fatherName')" />
         <p v-if="errors.fatherName" class="text-red-500 text-xs mt-1">{{ errors.fatherName }}</p>
       </div>
       <div v-if="local.birthSurnameDifferent">
           <label for="staff-birth-surname" class="block text-sm font-medium text-gray-700 mb-1">Nazwisko rodowe *</label>
-          <input id="staff-birth-surname" v-model="local.birthSurname" type="text" maxlength="150" :class="fieldClass('birthSurname')" />
+          <input id="staff-birth-surname" v-model="local.birthSurname" type="text" :class="fieldClass('birthSurname')" />
           <p v-if="errors.birthSurname" class="text-red-500 text-xs mt-1">{{ errors.birthSurname }}</p>
       </div>
     </div>
@@ -252,6 +252,7 @@ import {ref, computed, onMounted, watch, reactive} from 'vue'
 import {usePesel} from '../../../composables/usePesel.js'
 import {fetchTurnusy} from '../../../api/turnusApi.js'
 import {validatePesel, validateEmail, validatePhone, validatePostalCode} from '../../../utils/validators.js'
+import {applyLengthErrors, FORM_FIELD_LIMITS} from '../../../utils/formFieldLimits.js'
 import PhoneInput from '../../../components/PhoneInput.vue'
 
 const props = defineProps({
@@ -337,9 +338,9 @@ function validate() {
   if (!local.value.turnusCode) errors.turnusCode = 'Wybierz turnus.'
   if (!local.value.firstName?.trim()) errors.firstName = 'Podaj imię.'
   if (!local.value.lastName?.trim()) errors.lastName = 'Podaj nazwisko.'
-  if (!local.value.motherName?.trim() || local.value.motherName.length > 100) errors.motherName = 'Podaj imię matki (maks. 100 znaków).'
-  if (!local.value.fatherName?.trim() || local.value.fatherName.length > 100) errors.fatherName = 'Podaj imię ojca (maks. 100 znaków).'
-  if (!birthSurname.value?.trim() || birthSurname.value.length > 150) errors.birthSurname = 'Podaj nazwisko rodowe (maks. 150 znaków).'
+  if (!local.value.motherName?.trim()) errors.motherName = 'Podaj imię matki.'
+  if (!local.value.fatherName?.trim()) errors.fatherName = 'Podaj imię ojca.'
+  if (!birthSurname.value?.trim()) errors.birthSurname = 'Podaj nazwisko rodowe.'
 
   if (pesel.value.length !== 11) {
     errors.pesel = 'PESEL musi mieć 11 cyfr.'
@@ -392,6 +393,57 @@ function validate() {
     errors.postalCode = 'Podaj prawidłowy kod pocztowy (format: XX-XXX).'
   }
   if (!local.value.city?.trim()) errors.city = 'Podaj miejscowość.'
+
+  const values = {
+    firstName: local.value.firstName,
+    lastName: local.value.lastName,
+    motherName: local.value.motherName,
+    fatherName: local.value.fatherName,
+    birthSurname: local.value.birthSurnameDifferent ? local.value.birthSurname : '',
+    email: local.value.email,
+    street: local.value.street,
+    houseNumber: local.value.houseNumber,
+    city: local.value.city,
+  }
+  const constraints = {
+    firstName: {max: FORM_FIELD_LIMITS.firstName, label: 'Imię'},
+    lastName: {max: FORM_FIELD_LIMITS.lastName, label: 'Nazwisko'},
+    motherName: {max: FORM_FIELD_LIMITS.parentName, label: 'Imię matki'},
+    fatherName: {max: FORM_FIELD_LIMITS.parentName, label: 'Imię ojca'},
+    birthSurname: {max: FORM_FIELD_LIMITS.birthSurname, label: 'Nazwisko rodowe'},
+    email: {max: FORM_FIELD_LIMITS.email, label: 'E-mail'},
+    street: {max: FORM_FIELD_LIMITS.street, label: 'Ulica'},
+    houseNumber: {max: FORM_FIELD_LIMITS.houseNumber, label: 'Nr domu/mieszkania'},
+    city: {max: FORM_FIELD_LIMITS.city, label: 'Miejscowość'},
+  }
+  if (!isAdult.value && pesel.value.length === 11) {
+    Object.assign(values, {
+      guardianFirstName: local.value.guardianFirstName,
+      guardianLastName: local.value.guardianLastName,
+      guardianEmail: local.value.guardianEmail,
+      parentNames: local.value.parentNames,
+    })
+    Object.assign(constraints, {
+      guardianFirstName: {max: FORM_FIELD_LIMITS.firstName, label: 'Imię opiekuna'},
+      guardianLastName: {max: FORM_FIELD_LIMITS.lastName, label: 'Nazwisko opiekuna'},
+      guardianEmail: {max: FORM_FIELD_LIMITS.email, label: 'E-mail opiekuna'},
+      parentNames: {max: FORM_FIELD_LIMITS.parentNames, label: 'Imiona i nazwiska rodziców'},
+    })
+  } else if (isAdult.value && pesel.value.length === 11) {
+    Object.assign(values, {
+      iceFirstName: local.value.iceFirstName,
+      iceLastName: local.value.iceLastName,
+    })
+    Object.assign(constraints, {
+      iceFirstName: {max: FORM_FIELD_LIMITS.firstName, label: 'Imię osoby ICE'},
+      iceLastName: {max: FORM_FIELD_LIMITS.lastName, label: 'Nazwisko osoby ICE'},
+    })
+    if (local.value.iceRelation === 'inna') {
+      values.iceRelationOther = local.value.iceRelationOther
+      constraints.iceRelationOther = {max: FORM_FIELD_LIMITS.iceRelationOther, label: 'Relacja ICE'}
+    }
+  }
+  applyLengthErrors(errors, values, constraints)
 
   return Object.keys(errors).length === 0
 }

@@ -68,6 +68,10 @@
               placeholder="Proszę wpisać jakie"
               class="w-full border border-gray-300 rounded px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-gray-400"
           />
+          <p class="mt-1 text-right text-xs" :class="(local.certificateDetails[cert.id] || '').length > FORM_FIELD_LIMITS.certificateDetails ? 'text-red-600' : 'text-gray-500'">
+            {{ (local.certificateDetails[cert.id] || '').length }} / {{ FORM_FIELD_LIMITS.certificateDetails }} znaków
+          </p>
+          <p v-if="certificateDetailErrors[cert.id]" class="text-red-500 text-xs mt-1">{{ certificateDetailErrors[cert.id] }}</p>
         </div>
       </div>
     </div>
@@ -88,9 +92,10 @@
 </template>
 
 <script setup>
-import { ref, computed, watch, onBeforeUnmount } from 'vue'
+import { ref, computed, watch, onBeforeUnmount, reactive } from 'vue'
 import { availableRoles, availableFunctions, functionRequired, selectionError, certificatesFor } from '../../../config/staffRoles.js'
 import { fetchStaffCatalogue } from '../../../api/staffCatalogueApi.js'
+import {applyLengthErrors, FORM_FIELD_LIMITS} from '../../../utils/formFieldLimits.js'
 
 const props = defineProps({
   formData: { type: Object, required: true },
@@ -104,6 +109,7 @@ const catalogue = ref(null)
 const loading = ref(false)
 const loadError = ref('')
 const roleError = ref('')
+const certificateDetailErrors = reactive({})
 let requestSequence = 0
 const roleOptions = computed(() => availableRoles(catalogue.value, props.isAdult))
 const currentRole = computed(() => roleOptions.value.find(role => role.value === local.value.role))
@@ -115,6 +121,7 @@ const currentCertificates = computed(() => currentRole.value
 function clearCertificates() {
   selectedCertificates.value = []
   local.value.certificateDetails = {}
+  Object.keys(certificateDetailErrors).forEach(key => delete certificateDetailErrors[key])
 }
 function normalizeSelection() {
   if (!catalogue.value) return
@@ -169,8 +176,20 @@ function goPrev() {
 }
 function goNext() {
   if (loading.value || !catalogue.value) return
+  Object.keys(certificateDetailErrors).forEach(key => delete certificateDetailErrors[key])
   roleError.value = selectionError(catalogue.value, local.value.role, local.value.subrole, props.isAdult)
   if (roleError.value) return
+  const certificatesWithDetails = currentCertificates.value.filter(option =>
+    option.hasDetails && selectedCertificates.value.includes(option.id))
+  applyLengthErrors(certificateDetailErrors,
+    Object.fromEntries(certificatesWithDetails.map(option => [
+      option.id, local.value.certificateDetails[option.id] || '',
+    ])),
+    Object.fromEntries(certificatesWithDetails.map(option => [option.id, {
+      max: FORM_FIELD_LIMITS.certificateDetails,
+      label: option.label,
+    }])))
+  if (Object.keys(certificateDetailErrors).length) return
   const missingDetails = currentCertificates.value.some(option => option.hasDetails
     && selectedCertificates.value.includes(option.id) && !local.value.certificateDetails[option.id]?.trim())
   if (missingDetails) {
