@@ -39,6 +39,30 @@ export function createDemoPaymentRegistrations(turnusCode) {
     discountHistory: [],
   },
   {
+    id: `${turnusCode}-demo-p-004`,
+    registrationCode: `REG-P-${turnusCode}-21`,
+    firstName: 'Zofia',
+    lastName: 'Kaczmarek',
+    registrationType: 'PARTICIPANT',
+    fee: 1200,
+    discount: 0,
+    payments: [
+      { id: `${turnusCode}-demo-pay-006`, date: '2026-10-15', amount: 1300, method: 'Przelew', label: 'Wpłata całej kwoty', note: '' },
+    ],
+    discountHistory: [],
+  },
+  {
+    id: `${turnusCode}-demo-p-005`,
+    registrationCode: `REG-P-${turnusCode}-22`,
+    firstName: 'Piotr',
+    lastName: 'Kamiński',
+    registrationType: 'PARTICIPANT',
+    fee: 1200,
+    discount: 1200,
+    payments: [],
+    discountHistory: [{ previousAmount: 0, amount: 1200, changedAt: '2026-10-16 09:30', actor: 'operator.demo', description: 'Pełne zwolnienie z opłaty' }],
+  },
+  {
     id: `${turnusCode}-demo-s-001`,
     registrationCode: `REG-S-${turnusCode}-7`,
     firstName: 'Jakub',
@@ -68,14 +92,24 @@ export function createDemoPaymentRegistrations(turnusCode) {
 }
 
 export function paymentTotal(registration) {
-  return registration.payments.reduce((total, payment) => total + Number(payment.amount || 0), 0)
+  const totalCents = registration.payments.reduce((total, payment) => total + Math.round(Number(payment.amount || 0) * 100), 0)
+  return totalCents / 100
 }
 
 export function paymentBalance(registration) {
-  return Math.max(0, Number(registration.fee || 0) - Number(registration.discount || 0) - paymentTotal(registration))
+  const feeCents = Math.round(Number(registration.fee || 0) * 100)
+  const discountCents = Math.round(Number(registration.discount || 0) * 100)
+  const paidCents = Math.round(paymentTotal(registration) * 100)
+  return (feeCents - discountCents - paidCents) / 100
 }
 
 export function paymentStatus(registration) {
+  const balance = paymentBalance(registration)
+  if (balance < 0) return 'OVERPAID'
+  if (balance === 0) {
+    if (paymentTotal(registration) > 0) return 'PAID'
+    if (Number(registration.discount || 0) >= Number(registration.fee || 0) && Number(registration.discount || 0) > 0) return 'DISCOUNT_SETTLED'
+  }
   if (paymentTotal(registration) === 0) return 'NO_PAYMENT'
-  return paymentBalance(registration) > 0 ? 'OWED' : 'PAID'
+  return 'OWED'
 }

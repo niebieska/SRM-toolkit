@@ -68,12 +68,20 @@ function formatDate(value) {
   return `${day}.${month}.${year}`
 }
 function statusLabel(registration) {
-  return ({ NO_PAYMENT: 'Brak wpłaty', OWED: 'Do dopłaty', PAID: 'Opłacone' })[paymentStatus(registration)]
+  return ({
+    NO_PAYMENT: 'Brak wpłaty',
+    OWED: 'Do dopłaty',
+    PAID: 'Opłacone',
+    OVERPAID: 'Nadpłata',
+    DISCOUNT_SETTLED: 'Rozliczono rabatem',
+  })[paymentStatus(registration)]
 }
 function paymentStatusSummary(registration) {
   const status = paymentStatus(registration)
   if (status === 'NO_PAYMENT') return `Brak wpłaty: ${formatMoney(paymentBalance(registration))}`
   if (status === 'OWED') return `Do dopłaty: ${formatMoney(paymentBalance(registration))}`
+  if (status === 'OVERPAID') return `Nadpłata: ${formatMoney(Math.abs(paymentBalance(registration)))}`
+  if (status === 'DISCOUNT_SETTLED') return 'Rozliczono rabatem'
   return 'Opłacono'
 }
 function statusClass(registration) {
@@ -81,6 +89,8 @@ function statusClass(registration) {
     NO_PAYMENT: 'border-red-200 bg-red-50 text-red-800',
     OWED: 'border-amber-200 bg-amber-50 text-amber-900',
     PAID: 'border-emerald-200 bg-emerald-50 text-emerald-800',
+    OVERPAID: 'border-violet-200 bg-violet-50 text-violet-800',
+    DISCOUNT_SETTLED: 'border-slate-200 bg-slate-100 text-slate-700',
   })[paymentStatus(registration)]
 }
 function openRegistration(registration) {
@@ -249,6 +259,8 @@ onBeforeUnmount(() => { requestSequence++ })
             <option value="NO_PAYMENT">Brak wpłaty</option>
             <option value="OWED">Do dopłaty</option>
             <option value="PAID">Opłacone</option>
+            <option value="OVERPAID">Nadpłata</option>
+            <option value="DISCOUNT_SETTLED">Rozliczono rabatem</option>
           </select>
           <select v-model="registrationTypeFilter" aria-label="Typ zgłoszenia" class="min-w-0 rounded border border-slate-300 px-3 py-2">
             <option value="">Wszystkie typy</option>
