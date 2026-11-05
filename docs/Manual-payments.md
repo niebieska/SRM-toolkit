@@ -1,11 +1,11 @@
 # Wpłaty — probable MVP requirement
 
-Updated 2026-11-02. The initial product scope is agreed, but inclusion in MVP is
+Updated 2026-11-05. The initial product scope is agreed, but inclusion in MVP is
 still probable and has not been confirmed as a release gate. A frontend-only UI
-prototype is being developed on [`feature/manual-payments-ui`](https://github.com/niebieska/SRM-toolkit/tree/feature/manual-payments-ui)
-at commit `e7ab68a`; this branch is local and has not been pushed or merged into
-`development`. The prototype uses in-memory demo data and does not persist payment,
-discount, or Turnus fee changes. It is not an implementation of the payment feature.
+prototype is on the local [`feature/manual-payments-ui`](https://github.com/niebieska/SRM-toolkit/tree/feature/manual-payments-ui)
+branch, which has no remote tracking branch. The prototype uses in-memory
+demo data and does not persist payment, discount, or Turnus fee changes. It is not
+an implementation of the payment feature.
 Registration status history remains a confirmed MVP requirement.
 
 ## Agreed scope
@@ -16,6 +16,8 @@ Registration status history remains a confirmed MVP requirement.
 - Add a fixed participant fee and fees for selected seasonal staff roles/subroles
   to the Turnus definition. Use the existing Summer/Winter role catalogue.
   Staff roles without an assigned fee pay 0 PLN. Staff fees depend on role, not age.
+  A role and its subrole will not have conflicting fee amounts; applicable amounts
+  are not added together.
 - The base fee for a participant or staff role/subrole is fixed in the Turnus
   definition and is not later edited. No per-registration fee snapshot is needed
   under this rule. If the amount due should be reduced later, grant an individual
@@ -33,10 +35,12 @@ Registration status history remains a confirmed MVP requirement.
   fee minus discount minus valid payments; use decimal monetary calculations. The
   register shows discount, total paid, balance and status, without a separate fee
   column or summary tiles. Details show the status amount and individual payments.
-- Payment status is **Brak wpłaty**, **Do dopłaty**, **Opłacone** or **Nadpłata**.
-  Show the due amount for the first two and the excess amount for Nadpłata. Do not
-  add a separate fee column or summary tiles to the main register/detail header.
-  Lists may show payment status later, but do not allow payment edits there.
+- Payment status is **Brak wpłaty**, **Do dopłaty**, **Opłacone**, **Nadpłata** or
+  **Rozliczono rabatem**. Use **Rozliczono rabatem** when a full discount leaves
+  zero due and no payment has been recorded. Show the due amount for the first two
+  and the excess amount for Nadpłata. Do not add a separate fee column or summary
+  tiles to the main register/detail header. Lists may show payment status later,
+  but do not allow payment edits there.
 - In registration details show only the current discount amount, its description,
   the granting operator and date. Do not show a timeline of previous discount
   versions in this view; retain an audit trail of changes for financial traceability.
@@ -63,16 +67,11 @@ Registration status history remains a confirmed MVP requirement.
 
 ## Decisions to confirm during implementation
 
-- Confirm fee precedence when both a role and its subrole have fees; one applicable
-  fee per registration is intended and fees are not added together.
-- Confirm how to label a zero balance caused by a full discount when no payment was
-  recorded: **Opłacone** or a separate fully discounted state. **Brak wpłaty: 0 zł**
-  would be misleading.
 - Confirm the recommended data boundary: payment/discount ledger in `registration_db`
   and Turnus fee configuration in `biuro_db`, with Biuro API orchestrating access.
 
-These three points do not block starting implementation; resolve them with the
-relevant domain and persistence details as they are built.
+This architecture choice does not block starting implementation; confirm it with
+the relevant persistence details as they are built.
 
 ## Other exclusions and deferred decisions
 - No correction of a staff role after payment is expected in the current workflow.

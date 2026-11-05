@@ -49,12 +49,11 @@
   formats. Rejection-reason length and stale certificate descriptions remain
   separate follow-up items.
 
-## 2026-11-02 — Manual payments prototype status
+## 2026-11-05 — Manual payments prototype status and decisions
 
 - The UI prototype is on [`feature/manual-payments-ui`](https://github.com/niebieska/SRM-toolkit/tree/feature/manual-payments-ui)
-  at `e7ab68a`, three commits ahead of `development` at `d9d6ebf`. The branch is
-  local and has no remote tracking branch; the GitHub link will resolve after it
-  is pushed. No changes were merged into `development` as part of this checkpoint.
+  on a local branch with no remote tracking branch; no payment feature changes
+  have been merged into `development`.
 - It provides a demo-data Wpłaty register, filters, registration lookup, payment
   entry/edit UI, discount display/edit UI and Polish date entry/calendar. Changes
   live only in frontend memory and reset on refresh; no payment API, database
@@ -67,13 +66,14 @@
   **Nadpłata** status; staff-role correction after payment is not expected in scope;
   a discount may equal the full fee. The Turnus base fee stays fixed; a later
   reduction is represented as an individual discount, not a base-fee edit.
-- These payment rules are requirements for future implementation, not all present
-  in the prototype: its demo balance clamps at zero and treats overpayment as
-  **Opłacone**; its edit history exists only in memory and is lost on refresh.
-- Confirm during implementation, without blocking its start: fee precedence if both
-  role and subrole have prices; status for a zero balance caused by a full discount
-  but no payment; and the recommended `registration_db` ledger / `biuro_db`
-  Turnus-fee ownership boundary. See [Manual-payments.md](Manual-payments.md).
+- Decisions confirmed 2026-11-05: if a full discount leaves no amount due and no
+  payment was recorded, show **Rozliczono rabatem**. A role and its subrole will
+  not have different fee amounts; their fees are never added together.
+- The status rules above are now represented in demo calculations and sample
+  entries. Payment edits and their history still exist only in memory and are lost
+  on refresh.
+- Confirm the recommended `registration_db` ledger / `biuro_db` Turnus-fee ownership
+  boundary during implementation. See [Manual-payments.md](Manual-payments.md).
 - Frontend production build passed. The UI prototype does not settle whether Wpłaty
   are an MVP release gate; that decision and domain rules remain in
   [Manual-payments.md](Manual-payments.md).
