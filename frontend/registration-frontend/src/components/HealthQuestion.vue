@@ -47,11 +47,13 @@
 </template>
 
 <script setup>
-import { ref, watch } from 'vue'
+import { computed, watch } from 'vue'
 
 const props = defineProps({
   number: { type: Number, required: true },
   question: { type: String, required: true },
+  answer: { type: String, default: '' },
+  detail: { type: String, default: '' },
   placeholder: { type: String, default: 'Proszę opisać...' },
   multiline: { type: Boolean, default: true },
   answerError: { type: String, default: '' },
@@ -60,18 +62,18 @@ const props = defineProps({
 
 const emit = defineEmits(['update:answer', 'update:detail'])
 
-const answer = ref('')
-const detail = ref('')
-
-watch(answer, (val) => {
-  emit('update:answer', val)
-  if (val !== 'tak') {
-    detail.value = ''
-    emit('update:detail', '')
-  }
+const answer = computed({
+  get: () => props.answer,
+  set: value => emit('update:answer', value),
+})
+const detail = computed({
+  get: () => props.detail,
+  set: value => emit('update:detail', value),
 })
 
-watch(detail, (val) => {
-  emit('update:detail', val)
+watch(answer, (val) => {
+  if (val !== 'tak') {
+    detail.value = ''
+  }
 })
 </script>
