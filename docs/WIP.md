@@ -64,7 +64,9 @@
 - The earlier placement idea of Wpłaty next to Listy was superseded: the agreed
   entry point is a top-level tab alongside Zgłoszenia, with Turnus filtering and
   optional Turnus shortcuts that preselect the filter.
-- Decisions confirmed 2026-11-02: MVP priority remains probable, not confirmed;
+- Decision confirmed 2026-11-06: Wpłaty are required for MVP and are a release
+  gate. This supersedes the 2026-11-02 status below.
+- Decisions confirmed 2026-11-02: at that time MVP priority remained probable;
   payment corrections edit the entry with an audit record; overpayment has its own
   **Nadpłata** status; staff-role correction after payment is not expected in scope;
   a discount may equal the full fee. The Turnus base fee stays fixed; a later
@@ -72,14 +74,17 @@
 - Decisions confirmed 2026-11-05: if a full discount leaves no amount due and no
   payment was recorded, show **Rozliczono rabatem**. A role and its subrole will
   not have different fee amounts; their fees are never added together.
-- The status rules above are now represented in demo calculations and sample
-  entries. Payment edits and their history still exist only in memory and are lost
-  on refresh.
-- Confirm the recommended `registration_db` ledger / `biuro_db` Turnus-fee ownership
-  boundary during implementation. See [Manual-payments.md](Manual-payments.md).
-- Frontend production build passed. The UI prototype does not settle whether Wpłaty
-  are an MVP release gate; that decision and domain rules remain in
-  [Manual-payments.md](Manual-payments.md).
+- Decision confirmed 2026-11-06: store the payment/discount ledger in
+  `registration_db`, managed by Registration API, and keep Turnus fees in
+  `biuro_db`. Biuro API orchestrates the existing synchronous service connection
+  and uses batched reads. A separate payments service or read model is deferred.
+- Current branch implementation now persists payments, corrections and discounts
+  in `registration_db`, includes operator attribution and connects the Biuro
+  screen to batched registration/ledger reads. Registration ID is included in the
+  management summary response for stable linking.
+- Backend compilation and frontend production build passed. Automated test suites,
+  migration execution against MariaDB, and operator acceptance remain pending;
+  see [Manual-payments.md](Manual-payments.md).
 
 ## 2026-10-28 — Current release and GCP TEST checkpoint
 
@@ -265,9 +270,11 @@
   pending prioritization, not a confirmed release gate or implemented feature.
   Includes Turnus participant/selected staff-role fees, PLN discounts, predefined
   payment names/methods, operator management and a Wpłaty tab next to Listy.
-- Fee precedence for role/subrole overlap remains open. Balance placement in lists
-  and percentage discounts remain deferred. Earlier payment-only nice-to-have
-  notes are superseded by this probable-MVP assessment, not a delivery commitment.
+- At the time, fee precedence for role/subrole overlap remained open; it was
+  resolved on 2026-11-05. Balance placement in lists and percentage discounts
+  remain deferred. Earlier payment-only nice-to-have notes were superseded by
+  the then-probable MVP assessment; Wpłaty were promoted to a confirmed release
+  gate on 2026-11-06.
 
 ## 2026-10-20 — Status history promoted to MVP requirement
 

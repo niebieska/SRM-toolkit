@@ -1,13 +1,13 @@
-# Wpłaty — probable MVP requirement
+# Wpłaty — confirmed MVP requirement
 
-Updated 2026-11-06. The initial product scope is agreed, but inclusion in MVP is
-still probable and has not been confirmed as a release gate. A payment UI
-prototype is on the local [`feature/manual-payments-ui`](https://github.com/niebieska/SRM-toolkit/tree/feature/manual-payments-ui)
-branch, which has no remote tracking branch. Turnus fee configuration is now
-persisted by the Biuro API on this branch. The Wpłaty register still uses
-in-memory demo registrations and does not persist payment or discount changes;
-it is not an implementation of the payment ledger.
-Registration status history remains a confirmed MVP requirement.
+Updated 2026-11-06. Wpłaty are confirmed as required for MVP and are a release
+gate. Implementation is in progress on the local
+[`feature/manual-payments-ui`](https://github.com/niebieska/SRM-toolkit/tree/feature/manual-payments-ui)
+branch, which has no remote tracking branch. Turnus fees are persisted by Biuro
+API. The working tree now adds the Registration API ledger and connects the Biuro
+payment screen to it. Backend compilation and frontend production build passed;
+database-backed tests, full test suites and operator acceptance remain pending.
+Registration status history also remains a confirmed MVP requirement.
 
 ## Agreed scope
 
@@ -46,7 +46,10 @@ Registration status history remains a confirmed MVP requirement.
   the granting operator and date. Do not show a timeline of previous discount
   versions in this view; retain an audit trail of changes for financial traceability.
 - Retain financial records after a registration status changes. Accepted-only
-  eligibility governs adding payments, not deletion of their history.
+  eligibility governs adding payments and discounts. Existing payments remain
+  visible and correctable, with an audit record, after a status change.
+- Make payment creation idempotent so retrying an uncertain request with the
+  same key cannot create a duplicate financial entry.
 - Correct a payment by editing the entry and saving an audit record with previous
   and new values, operator, timestamp and correction reason. Do not silently lose
   prior values.
@@ -54,28 +57,29 @@ Registration status history remains a confirmed MVP requirement.
 ## Expected implementation areas
 
 - **Biuro DB/API:** Turnus fee configuration and role/subrole validation are
-  implemented on the current branch. Existing Turnus records can be configured
-  once; later fee changes are rejected. The season is also locked after fees are
-  configured because staff fee options depend on the seasonal catalogue. Fee
-  aggregation with financial records and operational payment permissions remain.
+  implemented on this branch. The payment register now joins fee definitions to
+  the ledger in batched reads and enforces positive-fee eligibility for writes.
+  Existing Turnus records can be configured once; later fee changes are rejected.
   The Turnus base fee belongs with the Biuro-owned Turnus definition.
 - **registration-api/DB:** payment/discount records linked to registrations,
-  migrations, protected endpoints and account attribution. Recommended ownership
-  is `registration_db`, linked by registration ID; Biuro API would orchestrate the
-  fee lookup and ledger calls. Confirm this boundary during implementation; no
-  Person register is required.
-- **Frontend:** Turnus fee controls and Wpłaty tab with entry/history/balance views.
+  migrations, protected endpoints and account attribution are implemented in
+  the working tree. The ledger uses `registration_db` and the stable registration
+  ID; Biuro API remains the operator-facing orchestrator. No Person register is
+  required.
+- **Frontend:** Turnus fee controls and the Wpłaty tab are connected to persisted
+  entries, corrections, discounts and balances in the working tree.
 - **Configuration:** predefined payment names and methods.
 - **Tests:** role/subrole matching, monetary arithmetic, discounts/corrections,
-  accepted-only writes, retained history, permissions and duplicate submissions.
+  accepted-only payment/discount creation, corrections after status changes,
+  retained history, permissions and idempotent retries.
 
-## Decisions to confirm during implementation
+## Confirmed implementation boundary
 
-- Confirm the recommended data boundary: payment/discount ledger in `registration_db`
-  and Turnus fee configuration in `biuro_db`, with Biuro API orchestrating access.
-
-This architecture choice does not block starting implementation; confirm it with
-the relevant persistence details as they are built.
+Keep the first implementation synchronous and use the existing Biuro API to
+Registration API connection. A separate payments service or synchronized payment
+read model is not needed at the current scale. Batch reads to avoid one network
+request per registration. This can be extended later if usage or performance
+requirements change.
 
 ## Other exclusions and deferred decisions
 - No correction of a staff role after payment is expected in the current workflow.
@@ -84,6 +88,6 @@ the relevant persistence details as they are built.
 - Remaining balances in Listy or a dedicated payment export are deferred.
 - Percentage discounts, online payments, payment-provider integration, automatic
   reconciliation and reminders are outside the initial scope.
-- No payment-ledger backend/API/DB implementation, delivery estimate or completed
-  payment-feature acceptance is claimed by this note. Turnus fee configuration is
-  implemented on the current branch; the Wpłaty demo records still reset on refresh.
+- Full automated test coverage, database migration verification and operator
+  acceptance are still required before calling the feature complete. Do not use
+  the feature in a deployed environment until those checks pass.

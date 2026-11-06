@@ -13,13 +13,9 @@ explicitly promoted into Registration-workflow-release-plan.md and recorded in W
   successful propagation). Update configuration, Compose/env guidance and tests.
   Already-open forms do not automatically reload. Implement in a separate PR;
   this is not part of the current client UI adjustments or an MVP release gate.
-- Manual payment tracking was reassessed on 2026-10-20 as **probably required for
-  MVP**, pending prioritization. Current scope and unresolved decisions live in
-  [Wpłaty](Manual-payments.md) and the registration workflow release plan;
-  the earlier optional-only classification no longer applies. A separate local,
-  unpushed branch [`feature/manual-payments-ui`](https://github.com/niebieska/SRM-toolkit/tree/feature/manual-payments-ui)
-  contains a demo-only frontend prototype; no persistent payment implementation
-  exists yet.
+- Manual payment tracking was confirmed as an MVP release gate on 2026-11-06, so
+  it is no longer tracked as optional backlog. See [Wpłaty](Manual-payments.md)
+  for the current scope and delivery status.
 - Additional subrole-level staffing statistics. Basic configured-role occupancy
   statistics are implemented; subrole breakdowns were intentionally omitted for now.
 - Additional loading/empty/error polish and email-client appearance refinements.

@@ -200,13 +200,14 @@ Details: [catalogue](Turnus-catalogue-implementation.md),
 
 ## Scope guard and tracking
 
-Manual **Wpłaty** tracking remains a probable, not confirmed, MVP requirement. A
+Manual **Wpłaty** tracking is a confirmed MVP requirement and release gate. A
 frontend-only prototype is on the separate, unpushed
 [`feature/manual-payments-ui`](https://github.com/niebieska/SRM-toolkit/tree/feature/manual-payments-ui)
-branch; it uses demo data and does not provide persistent payments, discounts or
-Turnus fee configuration. Decide whether to promote the feature to a release gate
-before implementing its backend and data model. See [agreed scope and open
-decisions](Manual-payments.md): Turnus participant/role-based staff fees, operator
+branch. Turnus fee configuration is implemented; the current working tree adds
+the persistent payment ledger, protected API operations, audit records and the
+Biuro UI connection. Backend compilation and frontend build pass, while automated
+tests, migration validation and operator acceptance remain. See [agreed scope and implementation boundary](Manual-payments.md):
+Turnus participant/role-based staff fees, operator
 payment recording, PLN discounts and a top-level Wpłaty tab alongside Zgłoszenia.
 Turnus shortcuts may open the same register with a filter applied. Balance columns
 in Lists and payment exports remain deferred.

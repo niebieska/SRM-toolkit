@@ -96,10 +96,10 @@ outside this deliverable.
 
 ## Manual payments — separate scope
 
-The original 2026-10-08 suggestion to add payments only if time permits was
-superseded by the probable-MVP assessment on 2026-10-20. The current scope,
-open decisions and demo-only UI prototype are recorded in
-[Manual-payments.md](Manual-payments.md). MVP inclusion is still unconfirmed.
+Manual Wpłaty were confirmed as an MVP release gate on 2026-11-06. Current scope
+and implementation status are recorded in [Manual-payments.md](Manual-payments.md).
+Turnus fee configuration is implemented; the payment ledger and Biuro integration
+are in progress on `feature/manual-payments-ui`.
 
 ## Decisions needed before coding
 
