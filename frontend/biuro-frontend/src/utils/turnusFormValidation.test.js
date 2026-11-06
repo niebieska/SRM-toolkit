@@ -3,7 +3,7 @@ import assert from 'node:assert/strict'
 import { validateTurnusForm } from './turnusFormValidation.js'
 const form = { turnusCode: 'NARTY2027T1', turnusName: 'Narty z Jezusem', turnusLocation: 'Gliczarów Górny',
   seasonType: 'WINTER', seasonYear: 2027, minAge: 14, participantCapacity: 50, staffCapacity: 10,
-  startDate: '2027-01-17', endDate: '2027-01-24', turnusDescription: null, staffRequirements: [] }
+  startDate: '2027-01-17', endDate: '2027-01-24', turnusDescription: null, staffRequirements: [], participantFee: 0 }
 test('existing limits and dates validate without adding staffing capacity restrictions', () => {
   assert.deepEqual(validateTurnusForm(form, []), {})
   assert.deepEqual(validateTurnusForm({ ...form, endDate: form.startDate, minAge: 0,
@@ -35,4 +35,7 @@ test('participant and staff fees follow monetary bounds and seasonal role select
   for (const value of [-1, 100000000, 10.001, 'invalid'])
     assert.ok(validateTurnusForm({ ...form, participantFee: value }, [], options).participantFee)
   assert.ok(validateTurnusForm({ ...form, staffFees: [{ role: 'unknown', amount: 200 }] }, [], options).staffFees)
+  for (const value of ['', null, undefined])
+    assert.ok(validateTurnusForm({ ...form, participantFee: value }, [], options).participantFee)
+  assert.equal(validateTurnusForm({ ...form, participantFee: 0 }, [], options).participantFee, undefined)
 })

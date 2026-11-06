@@ -30,7 +30,7 @@ const status = computed(() => !form.active ? 'Nieaktywny' : 'Aktywny')
 function defaults() {
   return { turnusCode: '', turnusName: '', turnusDescription: '', turnusLocation: '', seasonType: 'SUMMER',
     seasonYear: new Date().getFullYear(), startDate: '', endDate: '', minAge: 14, participantCapacity: 50, staffCapacity: 10,
-    active: false, participantRegistrationOpen: false, staffRegistrationOpen: false, version: null, staffRequirements: [], participantFee: 0, staffFees: [], feesConfigured: false }
+    active: false, participantRegistrationOpen: false, staffRegistrationOpen: false, version: null, staffRequirements: [], participantFee: '', staffFees: [], feesConfigured: false }
 }
 function apply(value) {
   Object.assign(form, defaults(), value, {
@@ -340,8 +340,8 @@ async function save() {
               <p class="mt-1 text-xs leading-relaxed text-slate-600">Opłaty ustala się przy tworzeniu turnusu lub przy pierwszym uzupełnieniu stawek. Opłata kadry dotyczy wybranej roli lub funkcji — kwoty nie sumują się. Późniejszą obniżkę rozlicz rabatem dla zgłoszenia.</p>
               <div class="mt-3">
                 <label for="participantFee" class="text-sm font-medium text-slate-700">Opłata uczestnika (zł)</label>
-                <input id="participantFee" name="participantFee" v-model.number="form.participantFee" type="number" min="0" max="99999999.99" step="0.01" :disabled="feesReadOnly" class="turnus-control mt-1" :aria-invalid="!!fieldErrors.participantFee" :aria-describedby="descriptionId('participantFee', true)" />
-                <p v-if="!fieldErrors.participantFee" id="participantFee-help" class="mt-1 text-xs text-slate-600">{{ feesReadOnly ? 'Opłata została ustalona i nie można jej zmienić.' : 'Wpisz 0, jeśli uczestnik nie wnosi opłaty.' }}</p>
+                <input id="participantFee" name="participantFee" v-model.number="form.participantFee" type="number" min="0" max="99999999.99" step="0.01" :disabled="feesReadOnly" class="turnus-control mt-1" required :aria-invalid="!!fieldErrors.participantFee" :aria-describedby="descriptionId('participantFee', true)" />
+                <p v-if="!fieldErrors.participantFee" id="participantFee-help" class="mt-1 text-xs text-slate-600">{{ feesReadOnly ? 'Opłata została ustalona i nie można jej zmienić.' : 'Wpisz kwotę lub 0 zł, jeśli uczestnik nie wnosi opłaty. Po utworzeniu turnusu stawki będą zablokowane.' }}</p>
                 <p v-if="fieldErrors.participantFee" id="participantFee-error" class="mt-1.5 text-sm text-red-700">{{ fieldErrors.participantFee }}</p>
               </div>
               <p v-if="feeOptionsLoading" role="status" class="mt-4 text-sm text-slate-600">Wczytywanie ról i funkcji…</p>

@@ -32,7 +32,8 @@ const summerCategories = JSON.parse(await readFile(new URL('../../../../backend/
 const definition = { turnusCode: 'T1', turnusName: 'Winter', turnusDescription: null,
   turnusLocation: 'Gliczarów Górny', seasonYear: 2027, minAge: 14, seasonType: 'WINTER', startDate: '2027-01-17', endDate: '2027-01-24', version: 3,
   participantCapacity: 50, staffCapacity: 10, active: true, participantRegistrationOpen: false,
-  staffRegistrationOpen: true, staffRequirements: [{ categoryCode: 'animator', requiredCount: 6 }] }
+  staffRegistrationOpen: true, staffRequirements: [{ categoryCode: 'animator', requiredCount: 6 }],
+  participantFee: 0, staffFees: [], feesConfigured: false }
 async function mount(t, fetch, isNew = false) {
   const previous = { fetch: globalThis.fetch, window: globalThis.window, shell: globalThis.__turnusEditorTest }
   globalThis.fetch = (url, ...args) => String(url).includes('/staff-fee-options?')
@@ -154,7 +155,7 @@ test('creation preserves defaults, all fields and navigation, preventing duplica
     return new Response(JSON.stringify({ ...value, version: 0 }))
   }, true)
   Object.assign(vm.form, definition, { staffRequirements: [], turnusDescription: '', seasonType: 'SUMMER',
-    active: false, participantRegistrationOpen: false, staffRegistrationOpen: false, version: null })
+    active: false, participantRegistrationOpen: false, staffRegistrationOpen: false, version: null, participantFee: 0 })
   await settle()
   const first = vm.save()
   await settle()

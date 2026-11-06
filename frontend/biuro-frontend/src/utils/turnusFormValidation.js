@@ -33,10 +33,11 @@ export function validateTurnusForm(form, categories, feeOptions = []) {
   if (!errors.startDate && !errors.endDate && form.endDate < form.startDate)
     errors.endDate = 'Data końca nie może poprzedzać daty początku.'
   if (String(form.turnusDescription ?? '').length > 4000) errors.turnusDescription = 'Opis może mieć maksymalnie 4000 znaków.'
-  const participantFee = Number(form.participantFee ?? 0)
-  if (!Number.isFinite(participantFee) || participantFee < 0 || participantFee > 99999999.99
+  const participantFeeMissing = form.participantFee === null || form.participantFee === undefined || form.participantFee === ''
+  const participantFee = Number(form.participantFee)
+  if (participantFeeMissing || !Number.isFinite(participantFee) || participantFee < 0 || participantFee > 99999999.99
       || Number(participantFee.toFixed(2)) !== participantFee)
-    errors.participantFee = 'Podaj nieujemną opłatę z maksymalnie dwoma miejscami po przecinku.'
+    errors.participantFee = 'Podaj opłatę uczestnika, nieujemną i z maksymalnie dwoma miejscami po przecinku.'
   const staffing = requirementsError(form.staffRequirements, categories)
   if (staffing) errors.staffRequirements = staffing
   const fees = staffFeesError(form.staffFees, feeOptions)
