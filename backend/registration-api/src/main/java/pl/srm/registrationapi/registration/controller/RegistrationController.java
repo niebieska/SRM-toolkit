@@ -6,18 +6,24 @@ import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PatchMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
+import org.springframework.web.bind.annotation.RequestHeader;
 import org.springframework.web.bind.annotation.RestController;
 import pl.srm.registrationapi.registration.dto.response.RegistrationDetailResponse;
 import pl.srm.registrationapi.registration.dto.response.RegistrationResponse;
 import pl.srm.registrationapi.registration.dto.response.RegistrationSummaryResponse;
 import pl.srm.registrationapi.registration.dto.request.RegistrationEditRequest;
 import pl.srm.registrationapi.registration.dto.request.StatusUpdateRequest;
+import pl.srm.registrationapi.registration.dto.request.PaymentRecordRequest;
+import pl.srm.registrationapi.registration.dto.request.DiscountRecordRequest;
+import pl.srm.registrationapi.registration.dto.response.PaymentLedgerEntryResponse;
 import pl.srm.registrationapi.registration.model.Registration;
 import pl.srm.registrationapi.registration.service.submission.ParticipantRegistrationService;
 import pl.srm.registrationapi.registration.service.management.RegistrationManagementService;
 import pl.srm.registrationapi.registration.service.management.RegistrationEditService;
+import pl.srm.registrationapi.registration.service.management.RegistrationPaymentService;
 import pl.srm.registrationapi.registration.service.submission.StaffRegistrationService;
 
 import java.util.List;
@@ -30,15 +36,18 @@ public class RegistrationController {
     private final StaffRegistrationService staffService;
     private final RegistrationManagementService managementService;
     private final RegistrationEditService editService;
+    private final RegistrationPaymentService paymentService;
 
     public RegistrationController(ParticipantRegistrationService participantService,
                                   StaffRegistrationService staffService,
                                   RegistrationManagementService managementService,
-                                  RegistrationEditService editService) {
+                                  RegistrationEditService editService,
+                                  RegistrationPaymentService paymentService) {
         this.participantService = participantService;
         this.staffService = staffService;
         this.managementService = managementService;
         this.editService = editService;
+        this.paymentService = paymentService;
     }
 
     @PostMapping("/participant")
@@ -61,6 +70,28 @@ public class RegistrationController {
     @GetMapping
     public List<RegistrationSummaryResponse> getAllRegistrations() {
         return managementService.getAll();
+    }
+
+    @GetMapping("/payment-ledger")
+    public List<PaymentLedgerEntryResponse> getPaymentLedger() { return paymentService.getLedger(); }
+
+    @PostMapping("/{code}/payments")
+    public PaymentLedgerEntryResponse addPayment(@PathVariable String code,
+                                                  @RequestHeader("Idempotency-Key") String idempotencyKey,
+                                                  @Valid @RequestBody PaymentRecordRequest request) {
+        return paymentService.addPayment(code, idempotencyKey, request);
+    }
+
+    @PutMapping("/{code}/payments/{paymentId}")
+    public PaymentLedgerEntryResponse editPayment(@PathVariable String code, @PathVariable long paymentId,
+                                                   @Valid @RequestBody PaymentRecordRequest request) {
+        return paymentService.editPayment(code, paymentId, request);
+    }
+
+    @PutMapping("/{code}/discount")
+    public PaymentLedgerEntryResponse setDiscount(@PathVariable String code,
+                                                   @Valid @RequestBody DiscountRecordRequest request) {
+        return paymentService.setDiscount(code, request);
     }
 
     @PatchMapping("/{code}/status")

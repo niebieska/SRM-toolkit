@@ -3,6 +3,7 @@ package pl.srm.registrationapi.registration.dto.response;
 import java.time.LocalDateTime;
 
 public record RegistrationSummaryResponse(
+        Long registrationId,
         String registrationCode,
         String registrationType,
         String turnusCode,

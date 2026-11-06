@@ -10,12 +10,14 @@ import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.context.bean.override.mockito.MockitoSpyBean;
 import pl.srm.registrationapi.registration.dto.request.StatusUpdateRequest;
 import pl.srm.registrationapi.registration.dto.request.RegistrationEditRequest;
+import pl.srm.registrationapi.registration.dto.request.PaymentRecordRequest;
 import pl.srm.registrationapi.registration.exception.RegistrationException;
 import pl.srm.registrationapi.registration.parser.RegistrationContext;
 import pl.srm.registrationapi.registration.service.submission.RegistrationPersistenceService;
 import pl.srm.registrationapi.registration.model.Registration;
 import pl.srm.registrationapi.registration.service.management.RegistrationManagementService;
 import pl.srm.registrationapi.registration.service.management.RegistrationEditService;
+import pl.srm.registrationapi.registration.service.management.RegistrationPaymentService;
 import pl.srm.registrationapi.registration.service.management.StatusNotificationService;
 
 import java.util.ArrayList;
@@ -50,6 +52,7 @@ class RegistrationIntegrityTest {
     @Autowired JdbcTemplate jdbc;
     @Autowired RegistrationManagementService managementService;
     @Autowired RegistrationEditService editService;
+    @Autowired RegistrationPaymentService paymentService;
     @MockitoBean StatusNotificationService notificationService;
     @MockitoSpyBean pl.srm.registrationapi.registration.repository.RegistrationStatusHistoryRepository historyRepository;
 
@@ -57,6 +60,10 @@ class RegistrationIntegrityTest {
     void clearFixtures() {
         assertEquals("integrity_test", jdbc.queryForObject("SELECT DATABASE()", String.class),
                 "Use only the disposable integrity_test database");
+        jdbc.update("DELETE FROM registration_payment_audit");
+        jdbc.update("DELETE FROM registration_discount_audit");
+        jdbc.update("DELETE FROM registration_payment");
+        jdbc.update("DELETE FROM registration_discount");
         jdbc.update("DELETE FROM registration_edit_history");
         jdbc.update("DELETE FROM registration_status_history");
         jdbc.update("DELETE FROM registration");
@@ -79,6 +86,41 @@ class RegistrationIntegrityTest {
         assertEquals(1L, repository.countByTurnusCodeAndRegistrationTypeAndStatus("A", "STAFF", "ACCEPTED"));
         jdbc.update("UPDATE registration SET status = 'REJECTED' WHERE pesel_hash = 'three'");
         assertEquals(0L, repository.countByTurnusCodeAndRegistrationTypeAndStatus("A", "STAFF", "ACCEPTED"));
+    }
+
+    @Test
+    void repeatedPaymentRequestWithSameKeyCreatesOneRecordAndCorrectionWorksAfterStatusChange() {
+        String code = service.saveParticipant(context("PAYMENT-IDEMPOTENCY", "payment-person"), "{}");
+        jdbc.update("UPDATE registration SET status = 'ACCEPTED' WHERE registration_code = ?", code);
+        var original = new PaymentRecordRequest(java.time.LocalDate.of(2026, 11, 1),
+                new java.math.BigDecimal("250.00"), "Przelew", "Zaliczka", null,
+                "test-account", "operator.test", null);
+
+        var first = paymentService.addPayment(code, "retry-key-1", original);
+        var retry = paymentService.addPayment(code, "retry-key-1", original);
+
+        assertEquals(first.payments().getFirst().id(), retry.payments().getFirst().id());
+        assertEquals(1, jdbc.queryForObject("SELECT COUNT(*) FROM registration_payment", Integer.class));
+        var changedRetry = new PaymentRecordRequest(original.date(), new java.math.BigDecimal("300.00"),
+                original.method(), original.label(), original.note(), original.actorAccountId(),
+                original.actorUsername(), null);
+        var conflict = assertThrows(org.springframework.web.server.ResponseStatusException.class,
+                () -> paymentService.addPayment(code, "retry-key-1", changedRetry));
+        assertEquals(org.springframework.http.HttpStatus.CONFLICT, conflict.getStatusCode());
+
+        jdbc.update("UPDATE registration SET status = 'REJECTED' WHERE registration_code = ?", code);
+        var correction = new PaymentRecordRequest(java.time.LocalDate.of(2026, 11, 2),
+                new java.math.BigDecimal("200.00"), "Przelew", "Zaliczka", "Skorygowana kwota",
+                "test-account", "operator.test", "Kwota zgodna z potwierdzeniem.");
+        var updated = paymentService.editPayment(code, first.payments().getFirst().id(), correction);
+
+        assertEquals(new java.math.BigDecimal("200.00"), updated.payments().getFirst().amount());
+        assertEquals(1, updated.payments().getFirst().history().size());
+        assertEquals("operator.test", updated.payments().getFirst().history().getFirst().actorUsername());
+        assertEquals(1, jdbc.queryForObject("SELECT COUNT(*) FROM registration_payment_audit", Integer.class));
+        assertEquals(org.springframework.http.HttpStatus.CONFLICT,
+                assertThrows(org.springframework.web.server.ResponseStatusException.class,
+                        () -> paymentService.addPayment(code, "retry-key-2", original)).getStatusCode());
     }
     @Autowired pl.srm.registrationapi.registration.repository.RegistrationRepository repository;
 
