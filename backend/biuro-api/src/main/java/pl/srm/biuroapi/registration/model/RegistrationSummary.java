@@ -1,6 +1,7 @@
 package pl.srm.biuroapi.registration.model;
 
 public record RegistrationSummary(
+        Long registrationId,
         String registrationCode,
         String registrationType,
         String turnusCode,

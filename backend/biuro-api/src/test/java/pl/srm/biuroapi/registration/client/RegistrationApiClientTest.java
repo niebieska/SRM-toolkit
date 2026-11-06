@@ -12,6 +12,7 @@ import org.springframework.web.client.RestClient;
 import org.springframework.web.server.ResponseStatusException;
 import pl.srm.biuroapi.registration.api.RegistrationEditRequest;
 import pl.srm.biuroapi.registration.api.StatusUpdateRequest;
+import pl.srm.biuroapi.registration.api.PaymentChangeRequest;
 
 import java.net.ConnectException;
 import java.time.LocalDate;
@@ -133,6 +134,28 @@ class RegistrationApiClientTest {
         assertEquals("ABC", updated.registrationCode());
         assertEquals(5L, updated.version());
         assertEquals(List.of("person.firstName"), updated.editHistory().getFirst().changedFields());
+        server.verify();
+    }
+
+    @Test
+    void paymentCreationForwardsIdempotencyKeyAndAuthenticatedActor() {
+        server.expect(requestTo("http://registration-api:8080/api/registrations/ABC/payments"))
+                .andExpect(method(org.springframework.http.HttpMethod.POST))
+                .andExpect(header(HttpHeaders.AUTHORIZATION, credentials))
+                .andExpect(header("Idempotency-Key", "retry-key-1"))
+                .andExpect(content().json("""
+                        {"date":"2026-11-01","amount":250.00,"method":"Przelew","label":"Zaliczka",
+                         "note":null,"correctionReason":null,"actorAccountId":"actor-id","actorUsername":"operator"}
+                        """))
+                .andRespond(withSuccess("""
+                        {"registrationId":1,"registrationCode":"ABC","payments":[],"discount":null}
+                        """, MediaType.APPLICATION_JSON));
+
+        var result = client.addPayment("ABC", new PaymentChangeRequest(LocalDate.of(2026, 11, 1),
+                new java.math.BigDecimal("250.00"), "Przelew", "Zaliczka", null, null),
+                "retry-key-1", "actor-id", "operator");
+
+        assertEquals("ABC", result.registrationCode());
         server.verify();
     }
 

@@ -11,6 +11,7 @@ import java.util.List;
 import java.util.Map;
 import pl.srm.biuroapi.registration.api.RegistrationEditRequest;
 import pl.srm.biuroapi.registration.service.RegistrationStatisticsService;
+import pl.srm.biuroapi.registration.service.PaymentRegisterService;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
@@ -23,8 +24,10 @@ class BiuroRegistrationControllerTest {
 
     private final RegistrationApiClient registrationApiClient = mock(RegistrationApiClient.class);
     private final RegistrationStatisticsService statisticsService = mock(RegistrationStatisticsService.class);
+    private final PaymentRegisterService paymentRegisterService = mock(PaymentRegisterService.class);
 
-    private final BiuroRegistrationController controller = new BiuroRegistrationController(registrationApiClient,statisticsService);
+    private final BiuroRegistrationController controller = new BiuroRegistrationController(
+            registrationApiClient, statisticsService, paymentRegisterService);
 
     @Test
     void shouldRejectUnsupportedStatus() {

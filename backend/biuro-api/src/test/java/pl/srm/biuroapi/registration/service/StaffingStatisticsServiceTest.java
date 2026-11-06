@@ -34,7 +34,7 @@ class StaffingStatisticsServiceTest {
     }
     private RegistrationSummary row(String role, String subrole) { return row("T1", "STAFF", "ACCEPTED", role, subrole); }
     private RegistrationSummary row(String code, String type, String status, String role, String subrole) {
-        return new RegistrationSummary("REG", type, code, false, status, null, null, "Name", "Surname", 20, null, role, subrole);
+        return new RegistrationSummary(1L, "REG", type, code, false, status, null, null, "Name", "Surname", 20, null, role, subrole);
     }
     private StaffRoleStats role(StaffingStatisticsService.Result result, String code) {
         return result.roles().stream().filter(r -> r.categoryCode().equals(code)).findFirst().orElseThrow();

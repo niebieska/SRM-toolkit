@@ -15,6 +15,11 @@ import pl.srm.biuroapi.registration.api.StatusUpdateRequest;
 import pl.srm.biuroapi.registration.model.RegistrationDetail;
 import pl.srm.biuroapi.registration.model.RegistrationSummary;
 import pl.srm.biuroapi.registration.model.TurnusListPerson;
+import pl.srm.biuroapi.registration.model.PaymentLedgerEntry;
+import pl.srm.biuroapi.registration.api.PaymentChangeRequest;
+import pl.srm.biuroapi.registration.api.DiscountChangeRequest;
+import java.math.BigDecimal;
+import java.time.LocalDate;
 
 import java.util.List;
 
@@ -30,6 +35,10 @@ public class RegistrationApiClient {
                                        String actorAccountId, String actorUsername) {}
     private record RegistrationChangePayload(Long expectedVersion, java.util.Map<String, Object> changes,
                                              String actorAccountId, String actorUsername) {}
+    private record PaymentPayload(LocalDate date, BigDecimal amount, String method, String label, String note,
+                                  String correctionReason, String actorAccountId, String actorUsername) {}
+    private record DiscountPayload(BigDecimal amount, String description, BigDecimal feeAmount,
+                                   String actorAccountId, String actorUsername) {}
 
     public RegistrationApiClient(RestClient.Builder restClientBuilder,
                                  @Value("${registration.api.url:http://localhost:8080}") String registrationApiUrl,
@@ -74,6 +83,78 @@ public class RegistrationApiClient {
             log.error("Nie udało się pobrać zgłoszeń z registration-api", exception);
             throw new ResponseStatusException(HttpStatus.BAD_GATEWAY, "Błąd komunikacji z registration-api");
         }
+    }
+
+    public List<PaymentLedgerEntry> fetchPaymentLedger() {
+        try {
+            List<PaymentLedgerEntry> body = restClient.get().uri(registrationApiUrl + "/api/registrations/payment-ledger")
+                    .retrieve().body(new ParameterizedTypeReference<>() {});
+            if (body == null) throw new IllegalStateException("Missing payment ledger response");
+            return body;
+        } catch (Exception exception) {
+            log.error("Nie udało się pobrać rejestru wpłat z registration-api", exception);
+            throw new ResponseStatusException(HttpStatus.BAD_GATEWAY, "Nie można wczytać rejestru wpłat.");
+        }
+    }
+
+    public PaymentLedgerEntry addPayment(String code, PaymentChangeRequest request, String idempotencyKey,
+                                         String accountId, String username) {
+        return paymentWrite(code, request, idempotencyKey, null, accountId, username);
+    }
+
+    public PaymentLedgerEntry editPayment(String code, long paymentId, PaymentChangeRequest request,
+                                          String accountId, String username) {
+        return paymentWrite(code, request, null, paymentId, accountId, username);
+    }
+
+    private PaymentLedgerEntry paymentWrite(String code, PaymentChangeRequest request, String idempotencyKey, Long paymentId,
+                                             String accountId, String username) {
+        try {
+            PaymentPayload payload = new PaymentPayload(request.date(), request.amount(), request.method(),
+                    request.label(), request.note(), request.reason(), accountId, username);
+            var spec = restClient.post();
+            var uri = paymentId == null
+                    ? registrationApiUrl + "/api/registrations/{code}/payments"
+                    : registrationApiUrl + "/api/registrations/{code}/payments/{paymentId}";
+            var requestSpec = paymentId == null ? spec.uri(uri, code).header("Idempotency-Key", idempotencyKey)
+                    : restClient.put().uri(uri, code, paymentId);
+            PaymentLedgerEntry body = requestSpec.body(payload).retrieve().body(PaymentLedgerEntry.class);
+            if (body == null) throw new IllegalStateException("Missing payment response");
+            return body;
+        } catch (RestClientResponseException exception) {
+            throw upstreamPaymentError(exception);
+        } catch (ResponseStatusException exception) {
+            throw exception;
+        } catch (Exception exception) {
+            log.error("Nie udało się zapisać wpłaty dla zgłoszenia {}", code, exception);
+            throw new ResponseStatusException(HttpStatus.BAD_GATEWAY, "Nie można zapisać wpłaty.");
+        }
+    }
+
+    public PaymentLedgerEntry setDiscount(String code, DiscountChangeRequest request, BigDecimal fee,
+                                          String accountId, String username) {
+        try {
+            DiscountPayload payload = new DiscountPayload(request.amount(), request.description(), fee, accountId, username);
+            PaymentLedgerEntry body = restClient.put()
+                    .uri(registrationApiUrl + "/api/registrations/{code}/discount", code)
+                    .body(payload).retrieve().body(PaymentLedgerEntry.class);
+            if (body == null) throw new IllegalStateException("Missing discount response");
+            return body;
+        } catch (RestClientResponseException exception) {
+            throw upstreamPaymentError(exception);
+        } catch (ResponseStatusException exception) {
+            throw exception;
+        } catch (Exception exception) {
+            log.error("Nie udało się zapisać rabatu dla zgłoszenia {}", code, exception);
+            throw new ResponseStatusException(HttpStatus.BAD_GATEWAY, "Nie można zapisać rabatu.");
+        }
+    }
+
+    private ResponseStatusException upstreamPaymentError(RestClientResponseException exception) {
+        if (exception.getStatusCode().is4xxClientError())
+            return new ResponseStatusException(exception.getStatusCode(), "Nie można zapisać danych finansowych. Odśwież dane i spróbuj ponownie.");
+        log.error("Registration API rejected payment operation with HTTP {}", exception.getStatusCode().value());
+        return new ResponseStatusException(HttpStatus.BAD_GATEWAY, "Nie można zapisać danych finansowych.");
     }
 
     public List<TurnusListPerson> fetchTurnusList(String turnusCode) {
