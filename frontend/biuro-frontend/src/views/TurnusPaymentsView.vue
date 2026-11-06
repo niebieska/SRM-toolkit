@@ -5,7 +5,8 @@ import BiuroHeader from '../components/BiuroHeader.vue'
 import PolishDatePicker from '../components/PolishDatePicker.vue'
 import { useAuthStore } from '../stores/auth'
 import { fetchTurnuses } from '../api/turnusApi'
-import { createDemoPaymentRegistrations, isPaymentEligible, paymentBalance, paymentStatus, paymentTotal } from '../utils/demoPayments'
+import { fetchPaymentRegister, addRegistrationPayment, editRegistrationPayment, setRegistrationDiscount } from '../api/registrationApi'
+import { hasPaymentHistory, isPaymentEligible, paymentBalance, paymentStatus, paymentTotal } from '../utils/demoPayments'
 
 const route = useRoute()
 const router = useRouter()
@@ -29,15 +30,21 @@ const formMode = ref('')
 const editingPaymentId = ref('')
 const formError = ref('')
 const demoMessage = ref('')
+const saving = ref(false)
+const addPaymentIdempotencyKey = ref('')
 let requestSequence = 0
 
 const registrations = ref([])
 const selectedRegistration = computed(() => registrations.value.find(item => item.id === selectedId.value) || null)
 const latestDiscountHistoryEntry = computed(() => {
-  const history = selectedRegistration.value?.discountHistory || []
-  return history.length ? history[history.length - 1] : null
+  const registration = selectedRegistration.value
+  return registration?.discount > 0 ? {
+    actor: registration.discountActor,
+    changedAt: registration.discountChangedAt,
+    description: registration.discountDescription,
+  } : null
 })
-const eligibleRegistrations = computed(() => registrations.value.filter(isPaymentEligible))
+const eligibleRegistrations = computed(() => registrations.value.filter(item => isPaymentEligible(item) || hasPaymentHistory(item)))
 const scopedRegistrations = computed(() => eligibleRegistrations.value.filter(item => !turnusFilter.value || item.turnusCode === turnusFilter.value))
 const visibleRegistrations = computed(() => scopedRegistrations.value.filter(item => {
   const statusMatches = !statusFilter.value || paymentStatus(item) === statusFilter.value
@@ -59,7 +66,10 @@ function clearFilters() {
   search.value = ''
 }
 
-function today() { return new Date().toISOString().slice(0, 10) }
+function today() {
+  const now = new Date()
+  return new Date(now.getTime() - now.getTimezoneOffset() * 60_000).toISOString().slice(0, 10)
+}
 function formatMoney(value) {
   return new Intl.NumberFormat('pl-PL', { style: 'currency', currency: 'PLN', maximumFractionDigits: 2 }).format(value)
 }
@@ -67,6 +77,11 @@ function formatDate(value) {
   if (!value) return '—'
   const [year, month, day] = value.split('-')
   return `${day}.${month}.${year}`
+}
+function formatTimestamp(value) {
+  if (!value) return ''
+  const match = String(value).match(/^(\d{4})-(\d{2})-(\d{2})T(\d{2}:\d{2}:\d{2})/)
+  return match ? `${match[3]}.${match[2]}.${match[1]}, ${match[4]}` : value
 }
 function statusLabel(registration) {
   return ({
@@ -115,10 +130,10 @@ function findRegistrationForPayment() {
   }
   const normalizedQuery = query.toLocaleLowerCase('pl-PL')
   const normalizedCode = query.toLocaleUpperCase('pl-PL')
-  const matches = eligibleRegistrations.value.filter(item =>
+  const matches = eligibleRegistrations.value.filter(item => isPaymentEligible(item) && (
     item.registrationCode.toLocaleUpperCase('pl-PL').includes(normalizedCode)
       || item.lastName.toLocaleLowerCase('pl-PL').includes(normalizedQuery)
-  ).sort((left, right) => left.lastName.localeCompare(right.lastName, 'pl') || left.firstName.localeCompare(right.firstName, 'pl'))
+  )).sort((left, right) => left.lastName.localeCompare(right.lastName, 'pl') || left.firstName.localeCompare(right.firstName, 'pl'))
   registrationLookupResults.value = matches
   if (!matches.length) {
     registrationLookupError.value = 'Nie znaleziono zaakceptowanego zgłoszenia z dodatnią opłatą. Sprawdź numer i spróbuj ponownie.'
@@ -140,6 +155,7 @@ function closeDialog() {
 function openPaymentForm(payment = null) {
   formMode.value = payment ? 'edit-payment' : 'add-payment'
   editingPaymentId.value = payment?.id || ''
+  addPaymentIdempotencyKey.value = payment ? '' : createIdempotencyKey()
   const savedLabel = payment?.label || ''
   const isPredefinedLabel = predefinedPaymentLabels.includes(savedLabel)
   Object.assign(paymentForm, payment
@@ -147,12 +163,20 @@ function openPaymentForm(payment = null) {
     : { date: today(), amount: '', method: 'Przelew', label: '', customLabel: '', note: '', reason: '' })
   formError.value = ''
 }
+function createIdempotencyKey() {
+  if (globalThis.crypto?.randomUUID) return globalThis.crypto.randomUUID()
+  if (globalThis.crypto?.getRandomValues) {
+    return Array.from(globalThis.crypto.getRandomValues(new Uint8Array(16)), byte => byte.toString(16).padStart(2, '0')).join('')
+  }
+  return `${Date.now()}-${Math.random().toString(36).slice(2)}-${Math.random().toString(36).slice(2)}`.slice(0, 64)
+}
 function openDiscountForm() {
   formMode.value = 'discount'
   Object.assign(discountForm, { amount: selectedRegistration.value.discount, description: '' })
   formError.value = ''
 }
-function savePayment() {
+async function savePayment() {
+  if (saving.value) return
   if (!selectedRegistration.value) return
   const amount = Number(paymentForm.amount)
   const paymentLabel = paymentForm.label === 'CUSTOM' ? paymentForm.customLabel.trim() : paymentForm.label
@@ -168,23 +192,26 @@ function savePayment() {
     formError.value = 'Podaj powód korekty wpłaty.'
     return
   }
-  if (editingPayment.value) {
-    const previous = paymentSnapshot(editingPayment.value)
-    Object.assign(editingPayment.value, { date: paymentForm.date, amount, method: paymentForm.method, label: paymentLabel, note: paymentForm.note.trim() })
-    editingPayment.value.history ||= []
-    editingPayment.value.history.push({ previous, current: paymentSnapshot(editingPayment.value), changedAt: new Date().toLocaleString('pl-PL'), actor: 'operator.demo', reason: paymentForm.reason.trim() })
-    demoMessage.value = 'Zmieniono przykładową wpłatę. Zmiana nie została zapisana.'
-  } else {
-    selectedRegistration.value.payments.push({ id: `demo-pay-${Date.now()}`, date: paymentForm.date, amount, method: paymentForm.method, label: paymentLabel, note: paymentForm.note.trim(), history: [] })
-    demoMessage.value = 'Dodano przykładową wpłatę. Zmiana nie została zapisana.'
+  saving.value = true
+  try {
+    const payload = { date: paymentForm.date, amount, method: paymentForm.method, label: paymentLabel,
+      note: paymentForm.note.trim() || null, reason: formMode.value === 'edit-payment' ? paymentForm.reason.trim() : null }
+    const result = editingPayment.value
+      ? await editRegistrationPayment(auth.token, selectedRegistration.value.registrationCode, editingPayment.value.id, payload)
+      : await addRegistrationPayment(auth.token, selectedRegistration.value.registrationCode, payload, addPaymentIdempotencyKey.value)
+    applyLedgerEntry(result)
+    demoMessage.value = editingPayment.value ? 'Zapisano korektę wpłaty.' : 'Dodano wpłatę.'
+    formMode.value = ''
+    formError.value = ''
+    addPaymentIdempotencyKey.value = ''
+  } catch (exception) {
+    formError.value = exception.message || 'Nie udało się zapisać wpłaty.'
+  } finally {
+    saving.value = false
   }
-  formMode.value = ''
-  formError.value = ''
 }
-function paymentSnapshot(payment) {
-  return { date: payment.date, amount: payment.amount, method: payment.method, label: payment.label, note: payment.note || '' }
-}
-function saveDiscount() {
+async function saveDiscount() {
+  if (saving.value) return
   const amount = Number(discountForm.amount)
   if (!Number.isFinite(amount) || amount < 0 || amount > selectedRegistration.value.fee) {
     formError.value = `Rabat musi mieścić się w zakresie od 0 do ${formatMoney(selectedRegistration.value.fee)}.`
@@ -194,16 +221,25 @@ function saveDiscount() {
     formError.value = 'Podaj opis rabatu.'
     return
   }
-  if (amount !== selectedRegistration.value.discount) {
-    selectedRegistration.value.discountHistory.push({
-      previousAmount: selectedRegistration.value.discount,
-      amount,
-      changedAt: new Date().toLocaleString('pl-PL'),
-      actor: 'operator.demo',
-      description: discountForm.description.trim(),
-    })
-    selectedRegistration.value.discount = amount
-    demoMessage.value = 'Zmieniono przykładowy rabat. Zmiana nie została zapisana.'
+  const discountChanged = amount !== selectedRegistration.value.discount
+      || (amount > 0 && discountForm.description.trim() !== selectedRegistration.value.discountDescription)
+  if (discountChanged) {
+    if (!discountForm.description.trim()) {
+      formError.value = 'Podaj opis rabatu.'
+      return
+    }
+    saving.value = true
+    try {
+      const result = await setRegistrationDiscount(auth.token, selectedRegistration.value.registrationCode,
+        { amount, description: discountForm.description.trim() })
+      applyLedgerEntry(result)
+      demoMessage.value = 'Zapisano rabat.'
+    } catch (exception) {
+      formError.value = exception.message || 'Nie udało się zapisać rabatu.'
+      return
+    } finally {
+      saving.value = false
+    }
   }
   formMode.value = ''
   formError.value = ''
@@ -219,22 +255,48 @@ async function loadPayments() {
     const result = await fetchTurnuses(auth.token)
     if (sequence === requestSequence) {
       turnuses.value = result
-      registrations.value = result.flatMap(turnus => createDemoPaymentRegistrations(turnus.turnusCode, {
-        participantFee: turnus.participantFee,
-        staffFees: turnus.staffFees,
-      }).map(item => ({
-        ...item,
-        turnusName: turnus.turnusName,
-        turnusCode: turnus.turnusCode,
-        payments: item.payments.map(payment => ({ ...payment, history: (payment.history || []).map(entry => ({ ...entry })) })),
-        discountHistory: item.discountHistory.map(entry => ({ ...entry })),
-      })))
+      const rows = await fetchPaymentRegister(auth.token)
+      if (sequence === requestSequence) registrations.value = mapPaymentRows(rows)
     }
   } catch (exception) {
     if (sequence === requestSequence) error.value = exception.message || 'Nie udało się wczytać wpłat.'
   } finally {
     if (sequence === requestSequence) loading.value = false
   }
+}
+function mapPaymentRows(rows) {
+  return rows.map(item => ({
+    ...item,
+    id: String(item.registrationId),
+    discount: Number(item.discount || 0),
+    discountHistory: item.discount > 0 ? [{ actor: item.discountActor, changedAt: formatTimestamp(item.discountChangedAt), description: item.discountDescription }] : [],
+    payments: mapPayments(item.payments),
+  }))
+}
+function registrationStatusLabel(status) {
+  return ({ ACCEPTED: 'Zaakceptowane', WAITLIST: 'Lista rezerwowa', REJECTED: 'Odrzucone', NEW: 'Nowe' })[status] || status
+}
+function mapPayments(payments = []) {
+  return payments.map(payment => ({
+      ...payment,
+      date: payment.date,
+      history: (payment.history || []).map(entry => ({
+        ...entry,
+        actor: entry.actorUsername,
+        changedAt: formatTimestamp(entry.changedAt),
+        previous: { date: entry.previousDate, amount: entry.previousAmount, method: entry.previousMethod, label: entry.previousLabel, note: entry.previousNote },
+        current: { date: entry.newDate, amount: entry.newAmount, method: entry.newMethod, label: entry.newLabel, note: entry.newNote },
+      })),
+  }))
+}
+function applyLedgerEntry(entry) {
+  const registration = registrations.value.find(item => item.registrationId === entry.registrationId)
+  if (!registration) return
+  registration.payments = mapPayments(entry.payments)
+  registration.discount = Number(entry.discount?.amount || 0)
+  registration.discountDescription = entry.discount?.description || null
+  registration.discountChangedAt = entry.discount?.changedAt || null
+  registration.discountActor = entry.discount?.actorUsername || null
 }
 watch(() => auth.token, loadPayments, { immediate: true })
 onBeforeUnmount(() => { requestSequence++ })
@@ -251,11 +313,6 @@ onBeforeUnmount(() => { requestSequence++ })
         {{ error }} <button type="button" class="ml-2 rounded underline focus-visible:ring-2 focus-visible:ring-red-600" @click="loadPayments">Spróbuj ponownie</button>
       </div>
       <template v-else>
-        <aside class="flex items-start gap-3 rounded-lg border border-amber-200 bg-amber-50 px-4 py-3 text-sm text-amber-950" role="note">
-          <span aria-hidden="true" class="mt-px font-bold">ⓘ</span>
-          <p><strong>Widok demonstracyjny.</strong> Dane osób i wpłat są przykładowe. Wprowadzone tu zmiany istnieją tylko do odświeżenia strony.</p>
-        </aside>
-
         <div class="flex justify-end">
           <button type="button" class="whitespace-nowrap rounded bg-slate-600 px-3 py-1 text-sm text-white hover:bg-slate-700" @click="openRegistrationLookup">Dodaj wpłatę</button>
         </div>
@@ -305,7 +362,7 @@ onBeforeUnmount(() => { requestSequence++ })
             </thead>
             <tbody>
               <tr v-for="registration in visibleRegistrations" :key="registration.id" class="border-b border-slate-100">
-                <td class="py-2 pr-3">{{ registration.registrationCode }}</td>
+                <td class="py-2 pr-3">{{ registration.registrationCode }}<span v-if="registration.status !== 'ACCEPTED'" class="mt-1 block text-xs text-slate-500">Zgłoszenie: {{ registrationStatusLabel(registration.status) }}</span></td>
                 <td class="py-2 pr-3">{{ registration.registrationType === 'PARTICIPANT' ? 'Uczestnik' : 'Kadra' }}</td>
                 <td class="py-2 pr-3">{{ registration.turnusCode }}</td>
                 <td class="py-2 pr-3">{{ registration.firstName || '–' }} {{ registration.lastName || '' }}</td>
@@ -317,7 +374,7 @@ onBeforeUnmount(() => { requestSequence++ })
               </tr>
             </tbody>
           </table>
-          <p class="border-t border-slate-100 px-4 py-3 text-xs text-slate-500">{{ visibleRegistrations.length }} z {{ scopedRegistrations.length }} zaakceptowanych zgłoszeń z opłatą</p>
+          <p class="border-t border-slate-100 px-4 py-3 text-xs text-slate-500">{{ visibleRegistrations.length }} z {{ scopedRegistrations.length }} zgłoszeń z opłatą lub zapisaną historią wpłat</p>
         </section>
       </template>
 
@@ -362,6 +419,7 @@ onBeforeUnmount(() => { requestSequence++ })
                 <span class="inline-flex whitespace-nowrap rounded-full border px-2.5 py-1 text-xs font-medium" :class="statusClass(selectedRegistration)">{{ paymentStatusSummary(selectedRegistration) }}</span>
               </div>
               <p class="mt-1 font-mono text-xs text-slate-500">{{ selectedRegistration.registrationCode }}</p>
+              <p v-if="selectedRegistration.status !== 'ACCEPTED'" class="mt-1 text-xs font-medium text-amber-800">Zgłoszenie: {{ registrationStatusLabel(selectedRegistration.status) }}. Zachowano historię finansową.</p>
             </div>
             <button type="button" aria-label="Zamknij" class="rounded-lg px-2 py-1 text-xl leading-none text-slate-500 hover:bg-slate-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-500" @click="closeDialog">×</button>
           </header>
@@ -369,7 +427,7 @@ onBeforeUnmount(() => { requestSequence++ })
             <section aria-labelledby="payment-history-heading">
               <div class="mb-2 flex flex-wrap items-center justify-between gap-2">
                 <h4 id="payment-history-heading" class="text-sm font-semibold text-slate-900">Zarejestrowane wpłaty</h4>
-                <button type="button" class="rounded-lg bg-slate-800 px-3 py-2 text-xs font-semibold text-white hover:bg-slate-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-500 focus-visible:ring-offset-2" @click="openPaymentForm()">Dodaj wpłatę</button>
+                <button v-if="isPaymentEligible(selectedRegistration)" type="button" class="rounded-lg bg-slate-800 px-3 py-2 text-xs font-semibold text-white hover:bg-slate-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-500 focus-visible:ring-offset-2" @click="openPaymentForm()">Dodaj wpłatę</button>
               </div>
               <p v-if="!selectedRegistration.payments.length" class="rounded-lg border border-dashed border-slate-300 px-4 py-5 text-center text-sm text-slate-500">Brak zarejestrowanych wpłat.</p>
               <div v-else class="overflow-x-auto rounded-lg border border-slate-200">
@@ -412,7 +470,7 @@ onBeforeUnmount(() => { requestSequence++ })
               </article>
             </section>
             <div class="flex flex-wrap items-center justify-between gap-3 border-t border-slate-100 pt-4">
-              <button type="button" class="rounded-lg border border-slate-300 px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-500" @click="openDiscountForm">Edytuj rabat</button>
+              <button v-if="isPaymentEligible(selectedRegistration)" type="button" class="rounded-lg border border-slate-300 px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-500" @click="openDiscountForm">Edytuj rabat</button>
               <button type="button" class="rounded-lg px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-500" @click="closeDialog">Zamknij</button>
             </div>
 
@@ -458,7 +516,7 @@ onBeforeUnmount(() => { requestSequence++ })
               </div>
               <p v-if="formError" role="alert" class="text-sm text-red-700">{{ formError }}</p>
               <div class="flex justify-end">
-                <button type="submit" class="rounded-lg bg-slate-800 px-4 py-2 text-sm font-semibold text-white hover:bg-slate-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-500 focus-visible:ring-offset-2">{{ formMode === 'discount' ? 'Zapisz rabat' : formMode === 'edit-payment' ? 'Zapisz korektę' : 'Dodaj wpłatę' }}</button>
+                <button type="submit" :disabled="saving" class="rounded-lg bg-slate-800 px-4 py-2 text-sm font-semibold text-white hover:bg-slate-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-500 focus-visible:ring-offset-2 disabled:cursor-wait disabled:opacity-60">{{ saving ? 'Zapisywanie…' : formMode === 'discount' ? 'Zapisz rabat' : formMode === 'edit-payment' ? 'Zapisz korektę' : 'Dodaj wpłatę' }}</button>
               </div>
             </form>
             <p v-if="demoMessage" role="status" class="rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm text-emerald-900">{{ demoMessage }}</p>

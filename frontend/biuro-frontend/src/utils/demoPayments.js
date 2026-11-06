@@ -144,7 +144,11 @@ export function createDemoPaymentRegistrations(turnusCode, pricing = {}) {
 }
 
 export function isPaymentEligible(registration) {
-  return registration.registrationStatus === 'ACCEPTED' && Number(registration.fee) > 0
+  return (registration.status || registration.registrationStatus) === 'ACCEPTED' && Number(registration.fee) > 0
+}
+
+export function hasPaymentHistory(registration) {
+  return Number(registration.fee) > 0 && (registration.payments?.length > 0 || Number(registration.discount) > 0)
 }
 
 export function paymentTotal(registration) {
