@@ -49,7 +49,10 @@ class TurnusCatalogueTest {
         token = "Bearer " + OperatorTestTokens.create(jdbc, jwt, "test-operator");
     }
     TurnusRequest request(String code, Long version, int participantCapacity) {
-        return new TurnusRequest(code, "Turnus testowy", "Opis", "Miejsce", TurnusDefinition.SeasonType.SUMMER,
+        return request(code, version, participantCapacity, TurnusDefinition.SeasonType.SUMMER);
+    }
+    TurnusRequest request(String code, Long version, int participantCapacity, TurnusDefinition.SeasonType season) {
+        return new TurnusRequest(code, "Turnus testowy", "Opis", "Miejsce", season,
                 2026, LocalDate.of(2026, 8, 1), LocalDate.of(2026, 8, 11), 14, participantCapacity, 10, true, true, true, version, List.of());
     }
     String payload(String code, int participantCapacity) {
@@ -71,6 +74,34 @@ class TurnusCatalogueTest {
         var updated = catalogue.update("TEST1", request("TEST1", 0L, 70));
         assertEquals(1, updated.version());
         assertEquals(70, catalogue.get("TEST1").participantCapacity());
+    }
+    @Test void configuredFeesPreventChangingTurnusSeason() {
+        catalogue.create(request("TEST-FEE-SEASON", null, 60));
+        var error = assertThrows(org.springframework.web.server.ResponseStatusException.class,
+                () -> catalogue.update("TEST-FEE-SEASON", request("TEST-FEE-SEASON", 0L, 60,
+                        TurnusDefinition.SeasonType.WINTER)));
+        assertEquals(400, error.getStatusCode().value());
+        assertEquals(TurnusDefinition.SeasonType.SUMMER, catalogue.get("TEST-FEE-SEASON").seasonType());
+    }
+    @Test void feesRoundTripAndCannotBeChangedAfterCreation() {
+        var feeRequest = feeRequest("TEST-FEE-LOCK", null, new java.math.BigDecimal("1200.50"),
+                new java.math.BigDecimal("300.00"));
+        var created = catalogue.create(feeRequest);
+        assertEquals(0, created.participantFee().compareTo(new java.math.BigDecimal("1200.50")));
+        assertEquals(0, created.staffFees().getFirst().amount().compareTo(new java.math.BigDecimal("300.00")));
+
+        var error = assertThrows(org.springframework.web.server.ResponseStatusException.class,
+                () -> catalogue.update("TEST-FEE-LOCK", feeRequest("TEST-FEE-LOCK", 0L,
+                        new java.math.BigDecimal("1200.50"), new java.math.BigDecimal("350.00"))));
+        assertEquals(400, error.getStatusCode().value());
+        assertEquals(0, catalogue.get("TEST-FEE-LOCK").staffFees().getFirst().amount()
+                .compareTo(new java.math.BigDecimal("300.00")));
+    }
+    private TurnusRequest feeRequest(String code, Long version, java.math.BigDecimal participantFee,
+            java.math.BigDecimal staffFee) {
+        return new TurnusRequest(code, "Turnus testowy", "Opis", "Miejsce", TurnusDefinition.SeasonType.SUMMER,
+                2026, LocalDate.of(2026, 8, 1), LocalDate.of(2026, 8, 11), 14, 60, 10, true, true, true,
+                version, List.of(), participantFee, List.of(new StaffFee("kucharka", null, staffFee)));
     }
     @Test void refusesCodeChangesMissingVersionAndStaleEdits() {
         catalogue.create(request("TEST1", null, 60));

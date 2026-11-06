@@ -19,11 +19,13 @@ public class TurnusManagementController {
     private final TurnusCatalogue catalogue;
     private final StaffingCategories categories;
     private final SeasonStaffCatalogue staffCatalogues;
+    private final StaffFees fees;
     public TurnusManagementController(TurnusCatalogue catalogue, StaffingCategories categories,
-                                      SeasonStaffCatalogue staffCatalogues) {
+                                      SeasonStaffCatalogue staffCatalogues, StaffFees fees) {
         this.catalogue = catalogue;
         this.categories = categories;
         this.staffCatalogues = staffCatalogues;
+        this.fees = fees;
     }
     @GetMapping("/staff-options")
     public StaffCatalogue staffOptions(@RequestParam TurnusDefinition.SeasonType seasonType) {
@@ -32,6 +34,10 @@ public class TurnusManagementController {
     @GetMapping("/staffing-categories")
     public List<StaffingCategories.Category> staffingCategories(@RequestParam TurnusDefinition.SeasonType seasonType) {
         return categories.get(seasonType);
+    }
+    @GetMapping("/staff-fee-options")
+    public List<StaffFeeOption> staffFeeOptions(@RequestParam TurnusDefinition.SeasonType seasonType) {
+        return fees.options(seasonType);
     }
     @ExceptionHandler({HttpMessageNotReadableException.class, MethodArgumentTypeMismatchException.class,
             MissingServletRequestParameterException.class})
