@@ -5,12 +5,12 @@ export function onUnauthorized(handler) { unauthorized = handler }
 export function onForbidden(handler) { forbidden = handler }
 
 // Requests are never retried automatically, especially writes.
-export async function request(path, { token, method = 'GET', payload, session = true } = {}) {
+export async function request(path, { token, method = 'GET', payload, headers = {}, session = true } = {}) {
   let response
   try {
     response = await fetch(`${baseUrl}${path}`, {
       method,
-      headers: { 'Content-Type': 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}) },
+      headers: { 'Content-Type': 'application/json', ...(token ? { Authorization: `Bearer ${token}` } : {}), ...headers },
       ...(payload === undefined ? {} : { body: JSON.stringify(payload) }),
     })
   } catch {

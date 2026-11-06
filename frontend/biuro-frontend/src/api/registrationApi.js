@@ -10,6 +10,12 @@ export function fetchRegistrations(token, filters = {}) {
 export const updateRegistrationStatus = (token, code, payload) => request(`${base}/${encodeURIComponent(code)}/status`, { token, method: 'PATCH', payload })
 export const fetchRegistrationDetail = (token, code) => request(`${base}/${encodeURIComponent(code)}`, { token })
 export const updateRegistrationData = (token, code, payload) => request(`${base}/${encodeURIComponent(code)}/data`, { token, method: 'PATCH', payload })
+export const fetchPaymentRegister = token => request(`${base}/payments`, { token })
+export const addRegistrationPayment = (token, code, payload, idempotencyKey) => request(`${base}/${encodeURIComponent(code)}/payments`, {
+  token, method: 'POST', payload, headers: { 'Idempotency-Key': idempotencyKey },
+})
+export const editRegistrationPayment = (token, code, paymentId, payload) => request(`${base}/${encodeURIComponent(code)}/payments/${encodeURIComponent(paymentId)}`, { token, method: 'PUT', payload })
+export const setRegistrationDiscount = (token, code, payload) => request(`${base}/${encodeURIComponent(code)}/discount`, { token, method: 'PUT', payload })
 export async function fetchTurnusStats(token, turnusCode) {
   const body = await request(`${base}/stats/${encodeURIComponent(turnusCode)}`, { token })
   if (!body?.participants || !body?.staff || !validStaffingStatistics(body))
