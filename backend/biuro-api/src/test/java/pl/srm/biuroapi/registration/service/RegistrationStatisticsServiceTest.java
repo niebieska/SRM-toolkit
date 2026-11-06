@@ -16,7 +16,7 @@ class RegistrationStatisticsServiceTest {
     final RegistrationStatisticsService service = new RegistrationStatisticsService(catalogue, new StaffingStatisticsService(
             mock(StaffingCategories.class), mock(SeasonStaffCatalogue.class)));
     RegistrationSummary row(String code, String type, String status, String gender) {
-        return new RegistrationSummary("REG", type, code, false, status, null, null, "Name", "Surname", 20, gender, null, null);
+        return new RegistrationSummary(1L, "REG", type, code, false, status, null, null, "Name", "Surname", 20, gender, null, null);
     }
     void definition() {
         when(catalogue.get("T1")).thenReturn(new TurnusDefinition("T1", "Turnus", null, "Place",

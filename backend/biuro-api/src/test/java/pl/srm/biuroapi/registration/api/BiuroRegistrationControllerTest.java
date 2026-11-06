@@ -13,6 +13,7 @@ import java.util.List;
 import java.util.Map;
 import pl.srm.biuroapi.registration.api.RegistrationEditRequest;
 import pl.srm.biuroapi.registration.service.RegistrationStatisticsService;
+import pl.srm.biuroapi.registration.service.PaymentRegisterService;
 import pl.srm.biuroapi.turnus.TurnusCatalogue;
 import pl.srm.biuroapi.turnus.TurnusDefinition;
 
@@ -36,9 +37,10 @@ class BiuroRegistrationControllerTest {
     private final RegistrationApiClient registrationApiClient = mock(RegistrationApiClient.class);
     private final RegistrationStatisticsService statisticsService = mock(RegistrationStatisticsService.class);
     private final TurnusCatalogue turnusCatalogue = mock(TurnusCatalogue.class);
+    private final PaymentRegisterService paymentRegisterService = mock(PaymentRegisterService.class);
 
     private final BiuroRegistrationController controller = new BiuroRegistrationController(
-            registrationApiClient, statisticsService, turnusCatalogue);
+            registrationApiClient, statisticsService, turnusCatalogue, paymentRegisterService);
 
     @Test
     void registrationListIncludesOnlyRegistrationsFromActiveTurnuses() {
