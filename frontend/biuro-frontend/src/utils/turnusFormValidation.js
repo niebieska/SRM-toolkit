@@ -1,4 +1,5 @@
 import { requirementsError } from './staffRequirements.js'
+import { staffFeesError } from './staffFees.js'
 
 function validDate(value) {
   if (!/^\d{4}-\d{2}-\d{2}$/.test(value || '')) return false
@@ -7,7 +8,7 @@ function validDate(value) {
 }
 
 /** Mirrors existing Turnus request bounds; does not add capacity/staffing restrictions. */
-export function validateTurnusForm(form, categories) {
+export function validateTurnusForm(form, categories, feeOptions = []) {
   const errors = {}
   for (const [key, label, max] of [
     ['turnusName', 'nazwę turnusu', 200], ['turnusLocation', 'miejsce turnusu', 500],
@@ -32,7 +33,13 @@ export function validateTurnusForm(form, categories) {
   if (!errors.startDate && !errors.endDate && form.endDate < form.startDate)
     errors.endDate = 'Data końca nie może poprzedzać daty początku.'
   if (String(form.turnusDescription ?? '').length > 4000) errors.turnusDescription = 'Opis może mieć maksymalnie 4000 znaków.'
+  const participantFee = Number(form.participantFee ?? 0)
+  if (!Number.isFinite(participantFee) || participantFee < 0 || participantFee > 99999999.99
+      || Number(participantFee.toFixed(2)) !== participantFee)
+    errors.participantFee = 'Podaj nieujemną opłatę z maksymalnie dwoma miejscami po przecinku.'
   const staffing = requirementsError(form.staffRequirements, categories)
   if (staffing) errors.staffRequirements = staffing
+  const fees = staffFeesError(form.staffFees, feeOptions)
+  if (fees) errors.staffFees = fees
   return errors
 }

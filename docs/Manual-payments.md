@@ -1,11 +1,12 @@
 # Wpłaty — probable MVP requirement
 
-Updated 2026-11-05. The initial product scope is agreed, but inclusion in MVP is
-still probable and has not been confirmed as a release gate. A frontend-only UI
+Updated 2026-11-06. The initial product scope is agreed, but inclusion in MVP is
+still probable and has not been confirmed as a release gate. A payment UI
 prototype is on the local [`feature/manual-payments-ui`](https://github.com/niebieska/SRM-toolkit/tree/feature/manual-payments-ui)
-branch, which has no remote tracking branch. The prototype uses in-memory
-demo data and does not persist payment, discount, or Turnus fee changes. It is not
-an implementation of the payment feature.
+branch, which has no remote tracking branch. Turnus fee configuration is now
+persisted by the Biuro API on this branch. The Wpłaty register still uses
+in-memory demo registrations and does not persist payment or discount changes;
+it is not an implementation of the payment ledger.
 Registration status history remains a confirmed MVP requirement.
 
 ## Agreed scope
@@ -52,9 +53,12 @@ Registration status history remains a confirmed MVP requirement.
 
 ## Expected implementation areas
 
-- **Biuro DB/API:** Turnus fee configuration, role/subrole matching, operational
-  permissions and aggregation of fees with registration financial records. The
-  Turnus base fee belongs with the Biuro-owned Turnus definition.
+- **Biuro DB/API:** Turnus fee configuration and role/subrole validation are
+  implemented on the current branch. Existing Turnus records can be configured
+  once; later fee changes are rejected. The season is also locked after fees are
+  configured because staff fee options depend on the seasonal catalogue. Fee
+  aggregation with financial records and operational payment permissions remain.
+  The Turnus base fee belongs with the Biuro-owned Turnus definition.
 - **registration-api/DB:** payment/discount records linked to registrations,
   migrations, protected endpoints and account attribution. Recommended ownership
   is `registration_db`, linked by registration ID; Biuro API would orchestrate the
@@ -80,6 +84,6 @@ the relevant persistence details as they are built.
 - Remaining balances in Listy or a dedicated payment export are deferred.
 - Percentage discounts, online payments, payment-provider integration, automatic
   reconciliation and reminders are outside the initial scope.
-- No backend/API/DB implementation, delivery estimate or completed payment-feature
-  acceptance is claimed by this note. The separate UI prototype has had a successful
-  frontend build; its demo changes reset on refresh.
+- No payment-ledger backend/API/DB implementation, delivery estimate or completed
+  payment-feature acceptance is claimed by this note. Turnus fee configuration is
+  implemented on the current branch; the Wpłaty demo records still reset on refresh.

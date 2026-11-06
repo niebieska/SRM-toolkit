@@ -35,6 +35,7 @@ class InternalTurnusSecurityTest {
         OperatorTestTokens.create(jdbc, jwt, "test-operator");
         jdbc.update("DELETE FROM turnus WHERE turnus_code LIKE 'TEST%'");
         jdbc.update("UPDATE turnus SET active = true, participant_registration_open = true");
+        jdbc.update("UPDATE turnus SET participant_fee = 1200.00, staff_fees = '[{\"role\":\"kucharka\",\"subrole\":null,\"amount\":300.00}]', fees_configured = true WHERE turnus_code = 'ZAGLE26T1'");
     }
 
     String basic(String password) {
@@ -71,6 +72,9 @@ class InternalTurnusSecurityTest {
         assertEquals("SUMMER", JsonPath.read(response.body(), "$[0].staffCatalogue.seasonType"));
         assertEquals(8, (int) JsonPath.read(response.body(), "$[0].staffCatalogue.roles.length()"));
         assertFalse(response.body().contains("staffRequirements"));
+        assertFalse(response.body().contains("participantFee"));
+        assertFalse(response.body().contains("staffFees"));
+        assertFalse(response.body().contains("feesConfigured"));
         assertTrue(response.headers().firstValue("Set-Cookie").isEmpty());
     }
 

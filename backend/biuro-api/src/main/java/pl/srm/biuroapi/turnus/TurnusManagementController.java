@@ -16,13 +16,19 @@ import pl.srm.biuroapi.season.StaffingCategories;
 public class TurnusManagementController {
     private final TurnusCatalogue catalogue;
     private final StaffingCategories categories;
-    public TurnusManagementController(TurnusCatalogue catalogue, StaffingCategories categories) {
+    private final StaffFees fees;
+    public TurnusManagementController(TurnusCatalogue catalogue, StaffingCategories categories, StaffFees fees) {
         this.catalogue = catalogue;
         this.categories = categories;
+        this.fees = fees;
     }
     @GetMapping("/staffing-categories")
     public List<StaffingCategories.Category> staffingCategories(@RequestParam TurnusDefinition.SeasonType seasonType) {
         return categories.get(seasonType);
+    }
+    @GetMapping("/staff-fee-options")
+    public List<StaffFeeOption> staffFeeOptions(@RequestParam TurnusDefinition.SeasonType seasonType) {
+        return fees.options(seasonType);
     }
     @ExceptionHandler({HttpMessageNotReadableException.class, MethodArgumentTypeMismatchException.class,
             MissingServletRequestParameterException.class})

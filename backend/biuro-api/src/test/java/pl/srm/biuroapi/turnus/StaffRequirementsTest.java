@@ -103,6 +103,20 @@ class StaffRequirementsTest {
         mvc.perform(get("/api/turnuses/staffing-categories").param("seasonType", "INVALID")
                 .header("Authorization", token)).andExpect(status().isBadRequest());
     }
+    @Test void feeOptionsEndpointRequiresOperatorAndSupportsBothSeasons() throws Exception {
+        mvc.perform(get("/api/turnuses/staff-fee-options").param("seasonType", "WINTER"))
+                .andExpect(status().isUnauthorized());
+        mvc.perform(get("/api/turnuses/staff-fee-options").param("seasonType", "WINTER")
+                .header("Authorization", token)).andExpect(status().isOk())
+                .andExpect(jsonPath("$.length()").value(11))
+                .andExpect(jsonPath("$[?(@.role == 'instruktor' && @.subrole == 'narty')]").exists());
+        mvc.perform(get("/api/turnuses/staff-fee-options").param("seasonType", "SUMMER")
+                .header("Authorization", token)).andExpect(status().isOk())
+                .andExpect(jsonPath("$.length()").value(13))
+                .andExpect(jsonPath("$[?(@.role == 'animator' && @.subrole == 'animator_wychowawca')]").exists());
+        mvc.perform(get("/api/turnuses/staff-fee-options").param("seasonType", "INVALID")
+                .header("Authorization", token)).andExpect(status().isBadRequest());
+    }
     @Test void successfulHttpSaveAndReadReturnRequirementsAndKeepManualFlags() throws Exception {
         catalogue.create(request(null, List.of(new StaffRequirement("animator", 6))));
         mvc.perform(get("/api/turnuses/STAFFTEST1").header("Authorization", token))
@@ -125,5 +139,24 @@ class StaffRequirementsTest {
                     .content(body.formatted(value))).andExpect(status().isBadRequest());
         }
         assertEquals(0, jdbc.queryForObject("SELECT COUNT(*) FROM turnus WHERE turnus_code = 'STAFFTEST1'", Integer.class));
+    }
+    @Test void requestRejectsInvalidFeesBeforePersistingTurnus() throws Exception {
+        String body = """
+            {"turnusCode":"STAFFTEST-FEE","turnusName":"Winter","turnusLocation":"Place",
+             "seasonType":"WINTER","seasonYear":2027,"startDate":"2027-01-17","endDate":"2027-01-24",
+             "minAge":14,"participantCapacity":50,"staffCapacity":10,"active":false,
+             "participantRegistrationOpen":false,"staffRegistrationOpen":false,
+             "participantFee":%s,"staffFees":%s}
+            """;
+        for (String[] invalid : List.of(
+                new String[]{"-1", "[]"},
+                new String[]{"10.001", "[]"},
+                new String[]{"1200", "[{\"role\":\"unknown\",\"subrole\":null,\"amount\":100}]"},
+                new String[]{"1200", "[{\"role\":\"kucharka\",\"subrole\":null,\"amount\":100},{\"role\":\"kucharka\",\"subrole\":null,\"amount\":200}]"},
+                new String[]{"1200", "[{\"role\":\"animator\",\"subrole\":null,\"amount\":100},{\"role\":\"animator\",\"subrole\":\"kandydat_na_animatora\",\"amount\":50}]"})) {
+            mvc.perform(post("/api/turnuses").header("Authorization", token).contentType("application/json")
+                    .content(body.formatted(invalid[0], invalid[1]))).andExpect(status().isBadRequest());
+        }
+        assertEquals(0, jdbc.queryForObject("SELECT COUNT(*) FROM turnus WHERE turnus_code = 'STAFFTEST-FEE'", Integer.class));
     }
 }

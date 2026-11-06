@@ -49,15 +49,18 @@
   formats. Rejection-reason length and stale certificate descriptions remain
   separate follow-up items.
 
-## 2026-11-05 — Manual payments prototype status and decisions
+## 2026-11-06 — Manual payments prototype status and decisions
 
 - The UI prototype is on [`feature/manual-payments-ui`](https://github.com/niebieska/SRM-toolkit/tree/feature/manual-payments-ui)
   on a local branch with no remote tracking branch; no payment feature changes
   have been merged into `development`.
+- Turnus participant and staff role fees are now persisted in the Biuro Turnus
+  definition on this branch, with validation against the seasonal role catalogue.
+  This remains unmerged and does not yet feed a persisted payment ledger.
 - It provides a demo-data Wpłaty register, filters, registration lookup, payment
   entry/edit UI, discount display/edit UI and Polish date entry/calendar. Changes
-  live only in frontend memory and reset on refresh; no payment API, database
-  persistence or Turnus fee configuration is implemented.
+  to payments and discounts live only in frontend memory and reset on refresh; no
+  payment API or ledger database persistence is implemented.
 - The earlier placement idea of Wpłaty next to Listy was superseded: the agreed
   entry point is a top-level tab alongside Zgłoszenia, with Turnus filtering and
   optional Turnus shortcuts that preselect the filter.

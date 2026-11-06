@@ -219,7 +219,10 @@ async function loadPayments() {
     const result = await fetchTurnuses(auth.token)
     if (sequence === requestSequence) {
       turnuses.value = result
-      registrations.value = result.flatMap(turnus => createDemoPaymentRegistrations(turnus.turnusCode).map(item => ({
+      registrations.value = result.flatMap(turnus => createDemoPaymentRegistrations(turnus.turnusCode, {
+        participantFee: turnus.participantFee,
+        staffFees: turnus.staffFees,
+      }).map(item => ({
         ...item,
         turnusName: turnus.turnusName,
         turnusCode: turnus.turnusCode,

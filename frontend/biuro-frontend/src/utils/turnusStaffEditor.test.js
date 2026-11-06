@@ -35,7 +35,8 @@ const definition = { turnusCode: 'T1', turnusName: 'Winter', turnusDescription: 
   staffRegistrationOpen: true, staffRequirements: [{ categoryCode: 'animator', requiredCount: 6 }] }
 async function mount(t, fetch, isNew = false) {
   const previous = { fetch: globalThis.fetch, window: globalThis.window, shell: globalThis.__turnusEditorTest }
-  globalThis.fetch = fetch
+  globalThis.fetch = (url, ...args) => String(url).includes('/staff-fee-options?')
+    ? Promise.resolve(new Response('[]')) : fetch(url, ...args)
   globalThis.window = { addEventListener() {}, removeEventListener() {}, confirm: () => true }
   globalThis.__turnusEditorTest = { route: reactive({ name: isNew ? 'turnus-create' : 'turnus-detail',
     params: { code: 'T1' }, fullPath: isNew ? '/turnusy/new' : '/turnusy/T1' }), router: { replace() {}, push() {} } }
@@ -76,6 +77,22 @@ test('Winter targets save with version and flags; zero removes the target', asyn
   assert.equal(submitted.version, 3); assert.equal(submitted.staffCapacity, 10)
   assert.equal(submitted.staffRegistrationOpen, true)
   assert.equal(vm.form.version, 4); assert.equal(vm.dirty, false)
+})
+test('editing a legacy turnus without changing fees does not freeze the default zero fees', async t => {
+  let submitted
+  const vm = await mount(t, async (url, options) => {
+    if (url.includes('staffing-categories')) return new Response(JSON.stringify([{ code: 'animator' }]))
+    if (options.method === 'PATCH') {
+      submitted = JSON.parse(options.body)
+      return new Response(JSON.stringify({ ...definition, ...submitted, feesConfigured: false, version: 4 }))
+    }
+    return new Response(JSON.stringify(definition))
+  })
+  vm.form.turnusLocation = 'Zmienione miejsce'
+  await vm.save()
+  assert.equal(submitted.turnusLocation, 'Zmienione miejsce')
+  assert.equal(Object.hasOwn(submitted, 'participantFee'), false)
+  assert.equal(Object.hasOwn(submitted, 'staffFees'), false)
 })
 test('category failure preserves targets and blocks saving until retry succeeds', async t => {
   let failing = true, writes = 0

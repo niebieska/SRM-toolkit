@@ -1,5 +1,14 @@
 // Demonstration-only payment register data. Never sent to or saved by the API.
-export function createDemoPaymentRegistrations(turnusCode) {
+export function createDemoPaymentRegistrations(turnusCode, pricing = {}) {
+  const participantFee = Number(pricing.participantFee ?? 0)
+  const partialDiscount = Math.min(200, participantFee)
+  const fullDiscount = participantFee
+  const staffFees = pricing.staffFees || []
+  const staffFee = (role, subrole = null) => {
+    const exactFee = staffFees.find(item => item.role === role && (item.subrole ?? null) === subrole)
+    const roleFee = subrole ? staffFees.find(item => item.role === role && (item.subrole ?? null) === null) : null
+    return Number((exactFee || roleFee)?.amount ?? 0)
+  }
   return [
   {
     id: `${turnusCode}-demo-p-001`,
@@ -8,7 +17,7 @@ export function createDemoPaymentRegistrations(turnusCode) {
     lastName: 'Kowalska',
     registrationType: 'PARTICIPANT',
     registrationStatus: 'ACCEPTED',
-    fee: 1200,
+    fee: participantFee,
     discount: 0,
     payments: [],
     discountHistory: [],
@@ -20,12 +29,12 @@ export function createDemoPaymentRegistrations(turnusCode) {
     lastName: 'Nowak',
     registrationType: 'PARTICIPANT',
     registrationStatus: 'ACCEPTED',
-    fee: 1200,
-    discount: 200,
+    fee: participantFee,
+    discount: partialDiscount,
     payments: [
       { id: `${turnusCode}-demo-pay-002`, date: '2026-10-12', amount: 500, method: 'Przelew', label: 'Zaliczka', note: '' },
     ],
-    discountHistory: [{ previousAmount: 0, amount: 200, changedAt: '2026-10-10 12:20', actor: 'operator.demo', description: 'Przykładowy rabat' }],
+    discountHistory: [{ previousAmount: 0, amount: partialDiscount, changedAt: '2026-10-10 12:20', actor: 'operator.demo', description: 'Przykładowy rabat' }],
   },
   {
     id: `${turnusCode}-demo-p-003`,
@@ -34,7 +43,7 @@ export function createDemoPaymentRegistrations(turnusCode) {
     lastName: 'Wiśniewska',
     registrationType: 'PARTICIPANT',
     registrationStatus: 'ACCEPTED',
-    fee: 1200,
+    fee: participantFee,
     discount: 0,
     payments: [
       {
@@ -55,7 +64,7 @@ export function createDemoPaymentRegistrations(turnusCode) {
     lastName: 'Kaczmarek',
     registrationType: 'PARTICIPANT',
     registrationStatus: 'ACCEPTED',
-    fee: 1200,
+    fee: participantFee,
     discount: 0,
     payments: [
       { id: `${turnusCode}-demo-pay-006`, date: '2026-10-15', amount: 1300, method: 'Przelew', label: 'Wpłata całej kwoty', note: '' },
@@ -69,10 +78,10 @@ export function createDemoPaymentRegistrations(turnusCode) {
     lastName: 'Kamiński',
     registrationType: 'PARTICIPANT',
     registrationStatus: 'ACCEPTED',
-    fee: 1200,
-    discount: 1200,
+    fee: participantFee,
+    discount: fullDiscount,
     payments: [],
-    discountHistory: [{ previousAmount: 0, amount: 1200, changedAt: '2026-10-16 09:30', actor: 'operator.demo', description: 'Pełne zwolnienie z opłaty' }],
+    discountHistory: [{ previousAmount: 0, amount: fullDiscount, changedAt: '2026-10-16 09:30', actor: 'operator.demo', description: 'Pełne zwolnienie z opłaty' }],
   },
   {
     id: `${turnusCode}-demo-s-001`,
@@ -82,7 +91,9 @@ export function createDemoPaymentRegistrations(turnusCode) {
     registrationType: 'STAFF',
     registrationStatus: 'ACCEPTED',
     role: 'Animator — kandydat na animatora',
-    fee: 500,
+    roleCode: 'animator',
+    subroleCode: 'kandydat_na_animatora',
+    fee: staffFee('animator', 'kandydat_na_animatora'),
     discount: 0,
     payments: [],
     discountHistory: [],
@@ -95,7 +106,8 @@ export function createDemoPaymentRegistrations(turnusCode) {
     registrationType: 'STAFF',
     registrationStatus: 'ACCEPTED',
     role: 'Kucharka',
-    fee: 300,
+    roleCode: 'kucharka',
+    fee: staffFee('kucharka'),
     discount: 0,
     payments: [
       { id: `${turnusCode}-demo-pay-005`, date: '2026-10-14', amount: 300, method: 'Gotówka', label: '', note: '' },
@@ -109,7 +121,7 @@ export function createDemoPaymentRegistrations(turnusCode) {
     lastName: 'Lewandowski',
     registrationType: 'PARTICIPANT',
     registrationStatus: 'NEW',
-    fee: 1200,
+    fee: participantFee,
     discount: 0,
     payments: [],
     discountHistory: [],
@@ -122,6 +134,7 @@ export function createDemoPaymentRegistrations(turnusCode) {
     registrationType: 'STAFF',
     registrationStatus: 'ACCEPTED',
     role: 'Kucharka',
+    roleCode: 'kucharka',
     fee: 0,
     discount: 0,
     payments: [],

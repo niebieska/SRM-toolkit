@@ -28,3 +28,11 @@ test('exact backend numeric and text bounds are respected', () => {
   assert.ok(validateTurnusForm({ ...form, minAge: 121 }, []).minAge)
   assert.ok(validateTurnusForm({ ...form, seasonYear: 1999 }, []).seasonYear)
 })
+test('participant and staff fees follow monetary bounds and seasonal role selections', () => {
+  const options = [{ role: 'kucharka', roleLabel: 'Kucharka', subrole: null, subroleLabel: null }]
+  assert.deepEqual(validateTurnusForm({ ...form, participantFee: 1200.5,
+    staffFees: [{ role: 'kucharka', subrole: null, amount: 300 }] }, [], options), {})
+  for (const value of [-1, 100000000, 10.001, 'invalid'])
+    assert.ok(validateTurnusForm({ ...form, participantFee: value }, [], options).participantFee)
+  assert.ok(validateTurnusForm({ ...form, staffFees: [{ role: 'unknown', amount: 200 }] }, [], options).staffFees)
+})
