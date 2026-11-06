@@ -22,7 +22,9 @@ class EmailTemplateConfigurationTest {
             assertThat(properties.infoUrl()).isNotBlank();
             assertThat(properties.contactEmail()).isNotBlank();
             assertThat(properties.contactPhone()).isNotBlank();
-            assertThat(properties.logoUrl()).isNotBlank();
+            assertThat(properties.participantCardAdultUrl()).isNotBlank();
+            assertThat(properties.participantCardAdultEnabled()).isFalse();
+            assertThat(properties.participantCardMinorUrl()).isNotBlank();
         });
     }
 

@@ -97,7 +97,7 @@
         <tr>
 
             <!-- Contact -->
-            <td width="60%" style="vertical-align: top; padding-right: 16px;">
+            <td width="100%" style="vertical-align: top;">
 
                 <p style="margin: 0 0 6px 0; font-weight: bold; color: #1d1d1d;">
                     Biuro Rekolekcji
@@ -105,7 +105,7 @@
 
                 <p style="margin: 0 0 12px 0;">
                     📧
-                    <a href="mailto:zgloszenia.rek@scj.pl"
+                    <a th:href="|mailto:${contactEmail}|" th:text="${contactEmail}"
                        style="color: #2a5bd7; text-decoration: none;">
                         zgloszenia.rek@scj.pl
                     </a><br/>
@@ -121,16 +121,6 @@
                 <p style="margin: 0;">
                     📞 +48 510 797 569
                 </p>
-
-            </td>
-
-            <!-- Logo -->
-            <td width="30%"
-                style="vertical-align: middle; text-align: right;">
-
-                <img src="https://rekolekcje.scj.pl/beta/wp-content/uploads/logo3.png"
-                     alt="Logo"
-                     style="height: 100px; width: auto;" />
 
             </td>
 

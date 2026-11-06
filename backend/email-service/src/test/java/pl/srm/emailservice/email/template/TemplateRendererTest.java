@@ -17,23 +17,21 @@ class TemplateRendererTest {
 
     private final TemplateRenderer renderer = new TemplateRenderer(templateEngine(), new DefaultResourceLoader(),
             new EmailTemplateProperties("https://example.test/rules", "https://example.test/info",
-                    "contact@example.test", "+48 123 456 789", "https://example.test/logo.png",
-                    ADULT_URL, MINOR_URL, "11 1111 1111 1111 1111 1111 1111", "500 zł"));
+                    "contact@example.test", "+48 123 456 789", ADULT_URL, false, MINOR_URL,
+                    "11 1111 1111 1111 1111 1111 1111", "500 zł"));
 
     @Test
-    void acceptedAdultRendersConfiguredCardLinkAndIgnoresCallerLinkOverride() {
+    void acceptedAdultDoesNotReceiveParticipantCard() {
         String html = renderer.render("status-update", Map.of(
                 "status", "ACCEPTED", "registrationType", "PARTICIPANT",
                 "includeParticipantCard", "true", "isMinor", "false",
+                "participantCardAdultEnabled", "true",
                 "participantCardAdultUrl", "https://attacker.example.test/fake.pdf"));
 
-        assertTrue(html.contains("href=\"" + ADULT_URL + "\""));
+        assertFalse(html.contains("Pobierz kartę uczestnictwa (PDF)"));
         assertFalse(html.contains("attacker.example.test"));
         assertTrue(html.contains("<p>Dzień dobry,</p>"));
         assertFalse(html.contains("Dzień dobry, <strong"));
-        assertTrue(html.contains("Pobierz kartę uczestnictwa (PDF)"));
-        assertTrue(html.indexOf("Dane do przelewu") < html.indexOf("Pobierz kartę uczestnictwa (PDF)"));
-        assertTrue(html.contains("background: #2e7d32"));
         assertTrue(html.contains("11 1111 1111 1111 1111 1111 1111"));
         assertTrue(html.contains("500 zł"));
     }
@@ -77,8 +75,7 @@ class TemplateRendererTest {
     void acceptedParticipantWithoutPaymentConfigurationDoesNotShowPlaceholderDetails() {
         TemplateRenderer rendererWithoutPayment = new TemplateRenderer(templateEngine(), new DefaultResourceLoader(),
                 new EmailTemplateProperties("https://example.test/rules", "https://example.test/info",
-                        "contact@example.test", "+48 123 456 789", "https://example.test/logo.png",
-                        ADULT_URL, MINOR_URL, "", ""));
+                        "contact@example.test", "+48 123 456 789", ADULT_URL, false, MINOR_URL, "", ""));
 
         String html = rendererWithoutPayment.render("status-update", Map.of(
                 "status", "ACCEPTED", "registrationType", "PARTICIPANT",

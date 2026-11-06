@@ -44,8 +44,8 @@ public class TemplateRenderer {
         templateVariables.put("infoUrl", properties.infoUrl());
         templateVariables.put("contactEmail", properties.contactEmail());
         templateVariables.put("contactPhone", properties.contactPhone());
-        templateVariables.put("logoUrl", properties.logoUrl());
         templateVariables.put("participantCardAdultUrl", properties.participantCardAdultUrl());
+        templateVariables.put("participantCardAdultEnabled", properties.participantCardAdultEnabled());
         templateVariables.put("participantCardMinorUrl", properties.participantCardMinorUrl());
         templateVariables.put("participantBankAccount", properties.participantBankAccount());
         templateVariables.put("participantDepositAmount", properties.participantDepositAmount());
