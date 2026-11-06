@@ -5,6 +5,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 
 import java.sql.DriverManager;
+import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -107,7 +108,7 @@ class RegistrationMigrationTest {
             assertThrows(org.flywaydb.core.api.FlywayException.class, () -> flyway(url, null).migrate());
             var adopted = Flyway.configure().dataSource(url, System.getenv("TEST_DB_USER"),
                     System.getenv("TEST_DB_PASSWORD")).baselineOnMigrate(true).baselineVersion("1").load();
-            assertEquals(6, adopted.migrate().migrationsExecuted);
+            assertEquals(7, adopted.migrate().migrationsExecuted);
             try (var connection = connect(url); var sql = connection.createStatement()) {
                 var result = sql.executeQuery("SELECT last_number FROM registration_counter");
                 assertTrue(result.next()); assertEquals(8, result.getLong(1));
@@ -117,6 +118,12 @@ class RegistrationMigrationTest {
                 result = sql.executeQuery("SELECT COUNT(*) FROM information_schema.tables "
                         + "WHERE table_schema = DATABASE() AND table_name = 'registration_status_history'");
                 assertTrue(result.next()); assertEquals(1, result.getInt(1));
+                for (String table : List.of("registration_payment", "registration_payment_audit",
+                        "registration_discount", "registration_discount_audit")) {
+                    result = sql.executeQuery("SELECT COUNT(*) FROM information_schema.tables "
+                            + "WHERE table_schema = DATABASE() AND table_name = '" + table + "'");
+                    assertTrue(result.next()); assertEquals(1, result.getInt(1), table);
+                }
                 result = sql.executeQuery("SELECT COUNT(*) FROM information_schema.tables "
                         + "WHERE table_schema = DATABASE() AND table_name = 'registration_edit_history'");
                 assertTrue(result.next()); assertEquals(1, result.getInt(1));

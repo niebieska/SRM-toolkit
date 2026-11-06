@@ -143,6 +143,7 @@ public class RegistrationManagementService {
             // leave fields null if payload cannot be parsed
         }
         return new RegistrationSummaryResponse(
+                registration.getId(),
                 registration.getRegistrationCode(),
                 registration.getRegistrationType(),
                 registration.getTurnusCode(),
