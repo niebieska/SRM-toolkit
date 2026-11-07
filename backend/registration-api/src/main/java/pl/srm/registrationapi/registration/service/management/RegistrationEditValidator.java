@@ -20,24 +20,26 @@ final class RegistrationEditValidator {
         this.policy = policy;
     }
 
-    void validateValue(String path, JsonNode value) {
+    void validateValue(Registration registration, String path, JsonNode value) {
         if ("address.sameAddress".equals(path)) {
             if (value == null || !value.isBoolean()) throw invalid("Wybierz, czy adres opiekuna jest taki sam.");
             return;
         }
         if (value == null || value.isNull()) {
-            if (policy.isRequired(path)) throw invalid("To pole jest wymagane: " + path + ".");
+            if (policy.isRequired(path, registration)) throw invalid("To pole jest wymagane: " + path + ".");
             return;
         }
         if (!value.isTextual()) throw invalid("Nieprawidłowa wartość pola: " + path + ".");
         String text = value.asText();
         if (text.length() > policy.maxLength(path)) throw invalid("Wartość pola jest za długa: " + path + ".");
-        if (policy.isRequired(path) && text.isBlank()) throw invalid("To pole jest wymagane: " + path + ".");
+        boolean required = policy.isRequired(path, registration);
+        if (required && text.isBlank()) throw invalid("To pole jest wymagane: " + path + ".");
         if (path.endsWith(".answer") && !Set.of("tak", "nie").contains(text)) throw invalid("Odpowiedź musi mieć wartość Tak albo Nie.");
         if (path.endsWith(".relation") && !Set.of("matka", "ojciec", "opiekun_prawny", "inna").contains(text))
             throw invalid("Nieprawidłowa relacja.");
         if ("guardian.relation".equals(path) && "inna".equals(text)) throw invalid("Nieprawidłowa relacja opiekuna.");
-        if (path.endsWith(".email") && !text.matches("[^\\s@]+@[^\\s@]+\\.[^\\s@]+")) throw invalid("Podaj prawidłowy adres e-mail.");
+        if (path.endsWith(".email") && (required || !text.isBlank())
+                && !text.matches("[^\\s@]+@[^\\s@]+\\.[^\\s@]+")) throw invalid("Podaj prawidłowy adres e-mail.");
         if (path.endsWith(".phone") && !text.matches("\\+[1-9][0-9]{9,14}")) throw invalid("Podaj prawidłowy numer telefonu z prefiksem kraju.");
         if (path.endsWith(".postalCode") && !text.matches("[0-9]{2}-[0-9]{3}")) throw invalid("Podaj kod pocztowy w formacie XX-XXX.");
     }
@@ -48,11 +50,18 @@ final class RegistrationEditValidator {
             throw invalid("Adres opiekuna jest oznaczony jako taki sam jak adres uczestnika.");
         }
 
+        boolean participantMinor = registration.isMinor() && !policy.isStaff(registration);
         for (String path : RegistrationEditPolicy.BASE_FIELDS) {
+            if (participantMinor && "person.contact.email".equals(path)) continue;
             JsonNode node = at(payload, path);
             if (node == null || !node.isTextual() || node.asText().isBlank()) throw invalid("Uzupełnij wymagane pole: " + path + ".");
         }
-        if (!at(payload, "person.contact.email").asText().matches("[^\\s@]+@[^\\s@]+\\.[^\\s@]+")) throw invalid("Podaj prawidłowy adres e-mail.");
+        JsonNode personEmail = at(payload, "person.contact.email");
+        if (personEmail != null && !personEmail.isNull() && !personEmail.isTextual())
+            throw invalid("Podaj prawidłowy adres e-mail.");
+        String personEmailValue = personEmail != null && personEmail.isTextual() ? personEmail.asText().trim() : "";
+        if ((!participantMinor || !personEmailValue.isBlank())
+                && !personEmailValue.matches("[^\\s@]+@[^\\s@]+\\.[^\\s@]+")) throw invalid("Podaj prawidłowy adres e-mail.");
         if (!at(payload, "person.contact.phone").asText().matches("\\+[1-9][0-9]{9,14}")) throw invalid("Podaj prawidłowy numer telefonu z prefiksem kraju.");
         if (!at(payload, "address.postalCode").asText().matches("[0-9]{2}-[0-9]{3}")) throw invalid("Podaj kod pocztowy w formacie XX-XXX.");
 

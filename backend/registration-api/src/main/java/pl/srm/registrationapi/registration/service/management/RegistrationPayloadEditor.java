@@ -40,7 +40,7 @@ final class RegistrationPayloadEditor {
             String path = change.getKey();
             if (!editableFields.contains(path)) throw invalid("Nie można edytować pola: " + path + ".");
             JsonNode value = objectMapper.valueToTree(change.getValue());
-            validator.validateValue(path, value);
+            validator.validateValue(registration, path, value);
             JsonNode current = at(payload, path);
             if (!sameNode(current, value)) {
                 set(payload, path, value);

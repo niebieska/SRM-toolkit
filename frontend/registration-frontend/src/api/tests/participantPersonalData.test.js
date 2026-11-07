@@ -56,3 +56,28 @@ test('participant ICE relation text is limited when the custom relation is selec
 
   assert.equal(vm.errors.iceRelationOther, 'Relacja ICE może mieć maksymalnie 80 znaków.')
 })
+
+test('minor participant can omit personal email while the adult email remains required', async t => {
+  const originalFetch = globalThis.fetch
+  globalThis.fetch = async () => new Response('[]')
+  t.after(() => { globalThis.fetch = originalFetch })
+  const minor = mount(t, {pesel: '10210112312', email: ''})
+  const adult = mount(t, {pesel: '90010112345', email: ''})
+
+  minor.validate()
+  adult.validate()
+
+  assert.equal(minor.errors.email, undefined)
+  assert.equal(adult.errors.email, 'Podaj adres e-mail.')
+})
+
+test('minor participant email remains validated when provided', async t => {
+  const originalFetch = globalThis.fetch
+  globalThis.fetch = async () => new Response('[]')
+  t.after(() => { globalThis.fetch = originalFetch })
+  const vm = mount(t, {pesel: '10210112312', email: 'nieprawidlowy-adres'})
+
+  vm.validate()
+
+  assert.equal(vm.errors.email, 'Podaj prawidłowy adres e-mail.')
+})

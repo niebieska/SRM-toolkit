@@ -48,6 +48,26 @@ class SubmissionPayloadValidatorTest {
         }
     }
 
+    @Test void personalEmailIsOptionalOnlyForMinorParticipants() throws Exception {
+        var minorParticipant = payload(true);
+        ((ObjectNode) minorParticipant.path("person").path("contact")).put("email", "");
+        assertDoesNotThrow(() -> validator.validate(minorParticipant.toString(), minor, RegistrationType.PARTICIPANT, summer));
+
+        var minorStaff = payload(true);
+        ((ObjectNode) minorStaff.path("person").path("contact")).put("email", "");
+        rejects(minorStaff, minor, RegistrationType.STAFF);
+
+        var adultParticipant = payload(false);
+        ((ObjectNode) adultParticipant.path("person").path("contact")).put("email", "");
+        rejects(adultParticipant, adult, RegistrationType.PARTICIPANT);
+    }
+
+    @Test void minorParticipantStillRequiresGuardianEmail() throws Exception {
+        var root = payload(true);
+        ((ObjectNode) root.path("guardian").path("contact")).put("email", "");
+        rejects(root, minor, RegistrationType.PARTICIPANT);
+    }
+
     @ParameterizedTest @ValueSource(strings = {"firstName", "lastName", "contact", "isAdult", "gender"})
     void rejectsMissingPersonFields(String field) throws Exception {
         var root = payload(false); ((ObjectNode) root.path("person")).remove(field);

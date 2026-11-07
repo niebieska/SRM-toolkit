@@ -68,9 +68,12 @@
     <!-- Contact -->
     <div class="grid grid-cols-1 gap-4 sm:grid-cols-2">
       <div>
-        <label class="block text-sm font-medium text-gray-700 mb-1">E-mail *</label>
+        <label class="block text-sm font-medium text-gray-700 mb-1">{{ participantEmailRequired ? 'E-mail *' : 'E-mail (opcjonalnie)' }}</label>
         <input v-model="local.email" type="email" :class="fieldClass('email')"/>
         <p v-if="errors.email" class="text-red-500 text-xs mt-1">{{ errors.email }}</p>
+        <p v-else-if="!participantEmailRequired" class="text-xs text-gray-500 mt-1">
+          Powiadomienia dotyczące zgłoszenia otrzyma rodzic lub opiekun.
+        </p>
       </div>
       <div>
         <label class="block text-sm font-medium text-gray-700 mb-1">Telefon *</label>
@@ -205,6 +208,7 @@ const emit = defineEmits(['update:formData', 'next'])
 const local = ref({...props.formData})
 const {pesel, isAdult, gender} = usePesel()
 pesel.value = local.value.pesel || ''
+const participantEmailRequired = computed(() => pesel.value.length !== 11 || isAdult.value)
 
 watch(() => local.value.pesel, (val) => {
   pesel.value = val || ''
@@ -281,9 +285,9 @@ function validate() {
     errors.pesel = 'PESEL ma nieprawidłową sumę kontrolną.'
   }
 
-  if (!local.value.email?.trim()) {
+  if (participantEmailRequired.value && !local.value.email?.trim()) {
     errors.email = 'Podaj adres e-mail.'
-  } else if (!validateEmail(local.value.email)) {
+  } else if (local.value.email?.trim() && !validateEmail(local.value.email)) {
     errors.email = 'Podaj prawidłowy adres e-mail.'
   }
 

@@ -27,7 +27,8 @@ public class SubmissionPayloadValidator {
         catch (Exception ex) { throw invalid("Nieprawidłowy format zgłoszenia."); }
         JsonNode person = root.path("person");
         name(person);
-        contact(person.path("contact"), "person.contact");
+        contact(person.path("contact"), "person.contact",
+                type != RegistrationType.PARTICIPANT || !context.isMinor());
         // These derived fields are used by Biuro; never accept a contradictory client value.
         boolean adult = !context.isMinor();
         if (!person.path("isAdult").isBoolean() || person.path("isAdult").asBoolean() != adult)
@@ -37,7 +38,7 @@ public class SubmissionPayloadValidator {
         if (context.isMinor()) {
             JsonNode guardian = root.path("guardian");
             name(guardian);
-            contact(guardian.path("contact"), "guardian.contact");
+            contact(guardian.path("contact"), "guardian.contact", true);
             allowed(text(guardian, "relation", 30), Set.of("matka", "ojciec", "opiekun_prawny"), "Relacja opiekuna");
             text(guardian, "names", 500);
         } else {
@@ -80,10 +81,21 @@ public class SubmissionPayloadValidator {
     private void name(JsonNode node) {
         text(node, "firstName", 100); text(node, "lastName", 150);
     }
-    private void contact(JsonNode node, String label) {
-        String email = text(node, "email", 254);
-        if (!email.matches("[^\\s@]+@[^\\s@]+\\.[^\\s@]+")) throw invalid("Podaj prawidłowy adres e-mail (" + label + ").");
+    private void contact(JsonNode node, String label, boolean emailRequired) {
+        String email = emailRequired
+                ? text(node, "email", 254)
+                : optionalText(node, "email", 254);
+        if (!email.isBlank() && !email.matches("[^\\s@]+@[^\\s@]+\\.[^\\s@]+"))
+            throw invalid("Podaj prawidłowy adres e-mail (" + label + ").");
         phone(node, "phone");
+    }
+
+    private String optionalText(JsonNode node, String field, int max) {
+        JsonNode value = node.path(field);
+        if (value.isMissingNode() || value.isNull()) return "";
+        if (!value.isTextual() || value.asText().length() > max)
+            throw invalid("Nieprawidłowa wartość pola: " + field + " (maks. " + max + " znaków).");
+        return value.asText().trim();
     }
     private void phone(JsonNode node, String field) {
         if (!text(node, field, 16).matches("\\+[1-9][0-9]{9,14}")) throw invalid("Podaj prawidłowy numer telefonu z prefiksem kraju.");
