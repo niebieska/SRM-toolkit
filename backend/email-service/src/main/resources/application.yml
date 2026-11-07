@@ -24,7 +24,7 @@ email:
   templates:
     regulations-url: ${EMAIL_REGULATIONS_URL:https://rekolekcje.scj.pl/informacje-organizacyjne/}
     info-url: ${EMAIL_INFO_URL:https://rekolekcje.scj.pl/informacje-organizacyjne/}
-    contact-email: ${EMAIL_CONTACT_EMAIL:zgloszenia.rek@scj.pl}
+    contact-email: ${EMAIL_CONTACT_EMAIL:rekolekcje@scj.pl}
     contact-phone: ${EMAIL_CONTACT_PHONE:+48 602 439 696}
     participant-card-adult-url: ${PARTICIPANT_CARD_ADULT_URL:https://rekolekcje.scj.pl/beta/wp-content/uploads/karta2020.pdf}
     participant-card-adult-enabled: ${PARTICIPANT_CARD_ADULT_ENABLED:false}

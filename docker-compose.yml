@@ -76,7 +76,7 @@ services:
       MAIL_STARTTLS: 'false'
       MAIL_ENABLED: 'true'
       MAIL_FROM: noreply@srm.test
-      EMAIL_CONTACT_EMAIL: ${EMAIL_CONTACT_EMAIL:-zgloszenia.rek@scj.pl}
+      EMAIL_CONTACT_EMAIL: ${EMAIL_CONTACT_EMAIL:-rekolekcje@scj.pl}
       PARTICIPANT_CARD_ADULT_URL: ${PARTICIPANT_CARD_ADULT_URL:-https://rekolekcje.scj.pl/beta/wp-content/uploads/karta2020.pdf}
       PARTICIPANT_CARD_ADULT_ENABLED: ${PARTICIPANT_CARD_ADULT_ENABLED:-false}
       PARTICIPANT_CARD_MINOR_URL: ${PARTICIPANT_CARD_MINOR_URL:-https://rekolekcje.scj.pl/beta/wp-content/uploads/karta2020.pdf}
