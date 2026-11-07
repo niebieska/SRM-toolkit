@@ -67,8 +67,11 @@ final class RegistrationEditPolicy {
         return fields;
     }
 
-    boolean isRequired(String path) {
-        return REQUIRED_FIELDS.contains(path);
+    boolean isRequired(String path, Registration registration) {
+        return REQUIRED_FIELDS.contains(path)
+                && !("person.contact.email".equals(path)
+                && registration.isMinor()
+                && !isStaff(registration));
     }
 
     int maxLength(String path) {

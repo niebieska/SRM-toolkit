@@ -90,6 +90,18 @@ class RegistrationPayloadEditorTest {
         assertEquals(originalPayload, registration.getPayload());
     }
 
+    @Test
+    void permitsClearingPersonalEmailForMinorParticipant() throws Exception {
+        Registration registration = new Registration("REG-MINOR", "PARTICIPANT", "T1", "hash", true,
+                "NEW", null, minorPayload(), null, null);
+
+        var result = editor.apply(registration, Map.of("person.contact.email", ""));
+        JsonNode updated = mapper.readTree(result.payloadJson());
+
+        assertEquals("", updated.at("/person/contact/email").asText());
+        assertEquals(java.util.List.of("person.contact.email"), result.changedFields());
+    }
+
     private Registration adultRegistration(String payload) {
         return new Registration("REG-ADULT", "PARTICIPANT", "T1", "hash", false, "NEW", null,
                 payload, null, null);
