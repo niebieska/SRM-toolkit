@@ -1,5 +1,5 @@
 <script setup>
-import {onMounted, ref, watch, computed} from 'vue'
+import {onMounted, onUnmounted, ref, watch, computed} from 'vue'
 import {useAuthStore} from '../stores/auth'
 import {fetchRegistrations} from '../api/registrationApi'
 import StatusBadge from './StatusBadge.vue'
@@ -7,6 +7,8 @@ import AcceptRejectModal from './AcceptRejectModal.vue'
 import RegistrationDetailModal from './RegistrationDetailModal.vue'
 import { formatDateTime } from '../utils/dateUtils'
 import { sortRegistrations } from '../utils/registrationSorting'
+import { setupRegistrationListAutoRefresh } from '../utils/registrationListAutoRefresh'
+import { createQueuedRefresh } from '../utils/queuedRefresh'
 const props = defineProps({
   filters: {
     type: Object,
@@ -20,11 +22,13 @@ const authStore = useAuthStore()
 const registrations = ref([])
 const loading = ref(false)
 const errorMessage = ref('')
+const hasLoadedRegistrations = ref(false)
 const selectedRegistration = ref(null)
 const modalAction = ref('ACCEPT')
 const detailCode = ref(null)
 const sortKey = ref('createdAt')
 const sortDirection = ref('asc')
+let stopAutoRefresh
 const columns = [
   { key: 'registrationCode', label: 'Kod zgłoszenia' },
   { key: 'registrationType', label: 'Typ' },
@@ -60,21 +64,29 @@ const visibleRegistrations = computed(() => {
   return sortRegistrations(filtered, sortKey.value, sortDirection.value)
 })
 
-async function loadRegistrations() {
-  loading.value = true
+const loadRegistrations = createQueuedRefresh(async (isCurrent) => {
+  const initialLoad = !hasLoadedRegistrations.value
+  if (initialLoad) loading.value = true
   errorMessage.value = ''
+
   try {
-    registrations.value = await fetchRegistrations(authStore.token, {
+    const result = await fetchRegistrations(authStore.token, {
       status: props.filters.status,
       registrationType: props.filters.registrationType,
       turnusCode: props.filters.turnusCode,
     })
+    if (isCurrent()) {
+      registrations.value = result
+      hasLoadedRegistrations.value = true
+    }
   } catch (error) {
-    errorMessage.value = error.message || 'Nie udało się pobrać listy zgłoszeń'
+    if (isCurrent()) {
+      errorMessage.value = error.message || 'Nie udało się pobrać listy zgłoszeń'
+    }
   } finally {
-    loading.value = false
+    if (initialLoad) loading.value = false
   }
-}
+})
 
 function openModal(registration, action) {
   selectedRegistration.value = registration
@@ -103,7 +115,13 @@ async function handleStatusUpdated() {
   emit('status-updated')
 }
 
-onMounted(loadRegistrations)
+onMounted(() => {
+  stopAutoRefresh = setupRegistrationListAutoRefresh(loadRegistrations)
+})
+
+onUnmounted(() => {
+  stopAutoRefresh?.()
+})
 
 watch(
     () => [props.filters.status, props.filters.registrationType, props.filters.turnusCode],
@@ -113,11 +131,13 @@ watch(
 
 <template>
   <section class="bg-white rounded-xl shadow p-4 overflow-x-auto">
-    <p v-if="loading" class="text-slate-600">Ładowanie...</p>
-    <p v-else-if="errorMessage" class="text-red-600">{{ errorMessage }}</p>
-    <p v-else-if="visibleRegistrations.length === 0" class="text-slate-600">Brak zgłoszeń</p>
+    <p v-if="loading && !hasLoadedRegistrations" class="text-slate-600">Ładowanie...</p>
+    <p v-else-if="errorMessage && !hasLoadedRegistrations" class="text-red-600">{{ errorMessage }}</p>
+    <template v-else>
+    <p v-if="errorMessage" class="mb-2 text-sm text-red-600" role="status">{{ errorMessage }}</p>
+    <p v-if="hasLoadedRegistrations && visibleRegistrations.length === 0" class="text-slate-600">Brak zgłoszeń</p>
 
-    <table v-else class="w-full min-w-[1050px] whitespace-nowrap text-sm">
+    <table v-if="hasLoadedRegistrations && visibleRegistrations.length > 0" class="w-full min-w-[1050px] whitespace-nowrap text-sm">
       <thead>
       <tr class="text-left border-b border-slate-200">
         <th v-for="column in columns" :key="column.key" scope="col"
@@ -181,6 +201,7 @@ watch(
       </tr>
       </tbody>
     </table>
+    </template>
 
     <AcceptRejectModal
         v-if="selectedRegistration"
