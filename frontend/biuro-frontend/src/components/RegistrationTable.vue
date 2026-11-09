@@ -6,7 +6,7 @@ import StatusBadge from './StatusBadge.vue'
 import AcceptRejectModal from './AcceptRejectModal.vue'
 import RegistrationDetailModal from './RegistrationDetailModal.vue'
 import { formatDateTime } from '../utils/dateUtils'
-import { sortRegistrations } from '../utils/registrationSorting'
+import { sortRegistrations, sortRegistrationsByDefaultQueue } from '../utils/registrationSorting'
 import { setupRegistrationListAutoRefresh } from '../utils/registrationListAutoRefresh'
 import { createQueuedRefresh } from '../utils/queuedRefresh'
 const props = defineProps({
@@ -28,6 +28,7 @@ const modalAction = ref('ACCEPT')
 const detailCode = ref(null)
 const sortKey = ref('createdAt')
 const sortDirection = ref('asc')
+const userHasSelectedSort = ref(false)
 let stopAutoRefresh
 const columns = [
   { key: 'registrationCode', label: 'Kod zgłoszenia' },
@@ -40,6 +41,7 @@ const columns = [
 ]
 
 function toggleSort(key) {
+  userHasSelectedSort.value = true
   if (sortKey.value === key) {
     sortDirection.value = sortDirection.value === 'asc' ? 'desc' : 'asc'
   } else {
@@ -61,7 +63,9 @@ const visibleRegistrations = computed(() => {
       r.lastName?.toLowerCase().includes(q) ||
       `${r.firstName || ''} ${r.lastName || ''}`.toLowerCase().includes(q)
   )
-  return sortRegistrations(filtered, sortKey.value, sortDirection.value)
+  return userHasSelectedSort.value
+    ? sortRegistrations(filtered, sortKey.value, sortDirection.value)
+    : sortRegistrationsByDefaultQueue(filtered)
 })
 
 const loadRegistrations = createQueuedRefresh(async (isCurrent) => {

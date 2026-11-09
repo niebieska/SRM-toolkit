@@ -35,3 +35,17 @@ export function sortRegistrations(registrations, key, direction = 'asc') {
     return comparison * multiplier || collator.compare(a.registrationCode || '', b.registrationCode || '')
   })
 }
+
+export function sortRegistrationsByDefaultQueue(registrations) {
+  const statusOrder = ['NEW', 'WAITLIST', 'ACCEPTED', 'REJECTED']
+  return statusOrder.flatMap((status) => {
+    const statusRegistrations = registrations.filter((registration) => registration.status === status)
+    return sortRegistrations(statusRegistrations, 'createdAt', 'asc')
+  }).concat(
+    sortRegistrations(
+      registrations.filter((registration) => !statusOrder.includes(registration.status)),
+      'createdAt',
+      'asc',
+    ),
+  )
+}
