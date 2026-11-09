@@ -15,7 +15,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.Mockito.*;
 
 class TurnusCacheSchedulingTest {
-    @Test void startsWithoutCatalogueAndSchedulerRetriesThenRefreshes() throws Exception {
+    @Test void retriesStartupLoadAndRefreshesOnConfiguredCron() throws Exception {
         var client = mock(BiuroTurnusClient.class);
         var calls = new AtomicInteger();
         var refreshed = new CountDownLatch(1);
@@ -28,7 +28,8 @@ class TurnusCacheSchedulingTest {
         new ApplicationContextRunner().withUserConfiguration(Config.class)
                 .withBean(BiuroTurnusClient.class, () -> client)
                 .withPropertyValues("turnus.catalogue.retry-interval=PT0.01S",
-                        "turnus.catalogue.refresh-interval=PT0.05S")
+                        "turnus.catalogue.refresh-cron=0/1 * * * * *",
+                        "turnus.catalogue.time-zone=Europe/Warsaw")
                 .run(context -> {
                     assertThat(context).hasNotFailed();
                     assertThat(refreshed.await(5, TimeUnit.SECONDS)).isTrue();

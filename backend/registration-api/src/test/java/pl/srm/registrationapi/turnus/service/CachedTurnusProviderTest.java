@@ -5,17 +5,14 @@ import pl.srm.registrationapi.registration.exception.RegistrationException;
 import pl.srm.registrationapi.registration.validator.TurnusValidator;
 import pl.srm.registrationapi.turnus.model.Turnus;
 import pl.srm.registrationapi.turnus.model.SeasonType;
-import java.time.Duration;
 import java.time.LocalDate;
 import java.util.List;
-import java.util.concurrent.atomic.AtomicLong;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
 class CachedTurnusProviderTest {
     final BiuroTurnusClient client = mock(BiuroTurnusClient.class);
-    final AtomicLong time = new AtomicLong();
-    final CachedTurnusProvider provider = new CachedTurnusProvider(client, Duration.ofHours(1), time::get);
+    final CachedTurnusProvider provider = new CachedTurnusProvider(client);
 
     Turnus turnus(String code, boolean active, boolean open) {
         return new Turnus(code, "Turnus", null, "Miejsce", SeasonType.SUMMER, 2026,
@@ -25,33 +22,32 @@ class CachedTurnusProviderTest {
     @Test void unavailableUntilFirstSuccessThenRecoversOnRetry() throws Exception {
         when(client.fetch()).thenThrow(new IllegalStateException("offline"))
                 .thenReturn(List.of(turnus("T1", true, true)));
-        provider.refreshIfDue();
+        provider.retryPendingRefresh();
         assertEquals("TURNUS_CATALOGUE_UNAVAILABLE",
                 assertThrows(RegistrationException.class, provider::getAvailableTurnuses).getCode());
         assertEquals("TURNUS_CATALOGUE_UNAVAILABLE",
                 assertThrows(RegistrationException.class, () -> provider.getByCode("T1")).getCode());
-        time.addAndGet(Duration.ofSeconds(30).toNanos());
-        provider.refreshIfDue();
+        provider.retryPendingRefresh();
         assertEquals("T1", provider.getByCode("T1").turnusCode());
+        provider.retryPendingRefresh();
+        verify(client, times(2)).fetch();
     }
 
-    @Test void replacesWholeSnapshotHourlyAndPreservesPreviousSnapshotDuringOutage() throws Exception {
+    @Test void failedHourlyRefreshRetainsSnapshotAndRetriesUntilSuccess() throws Exception {
         Turnus first = turnus("T1", true, true);
         when(client.fetch()).thenReturn(List.of(first))
                 .thenThrow(new IllegalStateException("offline"))
                 .thenReturn(List.of(turnus("T2", true, true)));
-        provider.refreshIfDue();
-        provider.refreshIfDue();
+        provider.retryPendingRefresh();
+        provider.retryPendingRefresh();
         verify(client, times(1)).fetch();
-        time.addAndGet(Duration.ofHours(1).toNanos());
-        provider.refreshIfDue();
+
+        provider.refreshAtFullHour();
         assertEquals(List.of(first), provider.getAvailableTurnuses());
-        provider.refreshIfDue();
-        verify(client, times(2)).fetch();
-        time.addAndGet(Duration.ofHours(24).toNanos());
-        assertEquals(first, provider.getByCode("T1")); // No expiry cutoff.
-        provider.refreshIfDue();
+        provider.retryPendingRefresh();
         assertEquals("T2", provider.getAvailableTurnuses().getFirst().turnusCode());
+        provider.retryPendingRefresh();
+        verify(client, times(3)).fetch();
         assertEquals("TURNUS_NOT_FOUND", assertThrows(RegistrationException.class,
                 () -> provider.getByCode("T1")).getCode());
     }
@@ -59,7 +55,7 @@ class CachedTurnusProviderTest {
     @Test void filtersFormOptionsButRetainsClosedAndInactiveDefinitionsForSubmissionValidation() throws Exception {
         when(client.fetch()).thenReturn(List.of(turnus("OPEN", true, true),
                 turnus("CLOSED", true, false), turnus("ARCHIVED", false, false)));
-        provider.refreshIfDue();
+        provider.retryPendingRefresh();
         assertEquals(List.of("OPEN"), provider.getAvailableTurnuses().stream().map(Turnus::turnusCode).toList());
         var validator = new TurnusValidator();
         assertEquals("REGISTRATION_CLOSED", assertThrows(RegistrationException.class,
@@ -76,7 +72,7 @@ class CachedTurnusProviderTest {
                 participant.seasonType(), participant.seasonYear(), participant.startDate(), participant.endDate(),
                 14, 60, 10, true, true, false);
         when(client.fetch()).thenReturn(List.of(participant, staff, turnus("ARCHIVED", false, true)));
-        provider.refreshIfDue();
+        provider.retryPendingRefresh();
         assertEquals(List.of("PARTICIPANTS"), provider.getAvailableTurnuses(
                 pl.srm.registrationapi.registration.model.RegistrationType.PARTICIPANT).stream().map(Turnus::turnusCode).toList());
         assertEquals(List.of("STAFF"), provider.getAvailableTurnuses(
@@ -91,13 +87,15 @@ class CachedTurnusProviderTest {
 
     @Test void successfulEmptyCatalogueIsAvailableAndDoesNotRetryEveryThirtySeconds() throws Exception {
         when(client.fetch()).thenReturn(List.of());
-        provider.refreshIfDue();
+        provider.retryPendingRefresh();
         assertEquals(List.of(), provider.getAvailableTurnuses());
         assertEquals("TURNUS_NOT_FOUND", assertThrows(RegistrationException.class,
                 () -> provider.getByCode("T1")).getCode());
-        time.addAndGet(Duration.ofSeconds(30).toNanos());
-        provider.refreshIfDue();
+        provider.retryPendingRefresh();
         verify(client, times(1)).fetch();
+
+        provider.refreshAtFullHour();
+        verify(client, times(2)).fetch();
     }
 
     @Test void readersKeepOldSnapshotWhileRefreshIsInFlight() throws Exception {
@@ -110,10 +108,9 @@ class CachedTurnusProviderTest {
                 throw new IllegalStateException("Refresh test timed out");
             return List.of(turnus("NEW", true, true));
         });
-        provider.refreshIfDue();
-        time.addAndGet(Duration.ofHours(1).toNanos());
+        provider.retryPendingRefresh();
         try (var executor = java.util.concurrent.Executors.newSingleThreadExecutor()) {
-            var refresh = executor.submit(provider::refreshIfDue);
+            var refresh = executor.submit(provider::refreshAtFullHour);
             try {
                 assertTrue(entered.await(5, java.util.concurrent.TimeUnit.SECONDS));
                 assertEquals(List.of(old), provider.getAvailableTurnuses());

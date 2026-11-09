@@ -48,4 +48,5 @@ turnus:
     connect-timeout: ${TURNUS_CONNECT_TIMEOUT:PT15S}
     read-timeout: ${TURNUS_READ_TIMEOUT:PT30S}
     retry-interval: ${TURNUS_RETRY_INTERVAL:PT30S}
-    refresh-interval: ${TURNUS_REFRESH_INTERVAL:PT1H}
+    refresh-cron: "${TURNUS_REFRESH_CRON:0 0 * * * *}"
+    time-zone: ${TURNUS_REFRESH_TIME_ZONE:Europe/Warsaw}
