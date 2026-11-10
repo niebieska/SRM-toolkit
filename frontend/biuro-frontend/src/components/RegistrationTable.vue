@@ -88,7 +88,7 @@ const loadRegistrations = createQueuedRefresh(async (isCurrent) => {
       errorMessage.value = error.message || 'Nie udało się pobrać listy zgłoszeń'
     }
   } finally {
-    if (initialLoad) loading.value = false
+    if (initialLoad && isCurrent()) loading.value = false
   }
 })
 
@@ -129,7 +129,12 @@ onUnmounted(() => {
 
 watch(
     () => [props.filters.status, props.filters.registrationType, props.filters.turnusCode],
-    loadRegistrations,
+    () => {
+      hasLoadedRegistrations.value = false
+      loading.value = true
+      errorMessage.value = ''
+      loadRegistrations()
+    },
 )
 </script>
 
