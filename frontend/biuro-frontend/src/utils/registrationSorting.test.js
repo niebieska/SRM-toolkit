@@ -1,6 +1,6 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
-import { sortRegistrations } from './registrationSorting.js'
+import { sortRegistrations, sortRegistrationsByDefaultQueue } from './registrationSorting.js'
 
 const codes = (rows) => rows.map(row => row.registrationCode)
 
@@ -67,4 +67,19 @@ test('equal dates have deterministic numeric code order and filtered subsets can
   assert.deepEqual(codes(sortRegistrations(rows, 'createdAt')), ['REG-P-T1-1', 'REG-P-T1-2', 'REG-P-T1-10'])
   assert.deepEqual(codes(sortRegistrations(rows.filter(r => r.registrationCode !== 'REG-P-T1-1'), 'registrationCode')),
     ['REG-P-T1-2', 'REG-P-T1-10'])
+})
+
+test('default queue prioritizes status and sorts oldest-first within every status', () => {
+  const rows = [
+    { registrationCode: 'accepted', status: 'ACCEPTED', createdAt: '2026-10-09T10:00:00Z' },
+    { registrationCode: 'new-late', status: 'NEW', createdAt: '2026-10-10T10:00:00Z' },
+    { registrationCode: 'rejected', status: 'REJECTED', createdAt: '2026-10-11T10:00:00Z' },
+    { registrationCode: 'waitlist-late', status: 'WAITLIST', createdAt: '2026-10-10T10:00:00Z' },
+    { registrationCode: 'new-early', status: 'NEW', createdAt: '2026-10-08T10:00:00Z' },
+    { registrationCode: 'waitlist-early', status: 'WAITLIST', createdAt: '2026-10-07T10:00:00Z' },
+  ]
+
+  assert.deepEqual(codes(sortRegistrationsByDefaultQueue(rows)), [
+    'new-early', 'new-late', 'waitlist-early', 'waitlist-late', 'accepted', 'rejected',
+  ])
 })
