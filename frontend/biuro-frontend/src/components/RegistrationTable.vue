@@ -26,7 +26,7 @@ const hasLoadedRegistrations = ref(false)
 const selectedRegistration = ref(null)
 const modalAction = ref('ACCEPT')
 const detailCode = ref(null)
-const sortKey = ref('createdAt')
+const sortKey = ref(null)
 const sortDirection = ref('asc')
 const userHasSelectedSort = ref(false)
 let stopAutoRefresh
