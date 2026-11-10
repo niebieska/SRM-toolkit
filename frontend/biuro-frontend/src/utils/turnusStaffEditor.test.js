@@ -19,7 +19,7 @@ source = source.replace(/from '([^']+)'/g, (match, path) => {
   return path.startsWith('.') ? `from '${new URL(path + '.js', file).href}'` : match
 })
 source = source.replace('__expose();', '')
-source = source.replace('return __returned__', '__expose({ error, validationError, validateField, canLeave, reload, discardPrompt, decideDiscard, form, fieldErrors, plannedStaff, categories, categoriesLoading, categoriesError, dirty, save, setRequirement, loadCategories }); return __returned__')
+source = source.replace('return __returned__', '__expose({ error, validationError, validateField, canLeave, reload, discardPrompt, decideDiscard, form, fieldErrors, plannedStaff, categories, categoriesLoading, categoriesError, dirty, success, nextCacheRefreshAt, save, setRequirement, loadCategories }); return __returned__')
 const { default: Editor } = await import(`data:text/javascript;base64,${Buffer.from(source).toString('base64')}`)
 Editor.render = () => null
 const renderer = createRenderer({ createComment: () => ({}), insert() {}, remove() {},
@@ -76,6 +76,13 @@ test('Winter targets save with version and flags; zero removes the target', asyn
   assert.equal(submitted.version, 3); assert.equal(submitted.staffCapacity, 10)
   assert.equal(submitted.staffRegistrationOpen, true)
   assert.equal(vm.form.version, 4); assert.equal(vm.dirty, false)
+  assert.match(vm.nextCacheRefreshAt, /^\d{2}:\d{2}$/)
+  assert.ok(vm.success)
+  vm.form.turnusName = 'Updated after save'
+  await settle()
+  assert.equal(vm.dirty, true)
+  assert.equal(vm.success, '')
+  assert.equal(vm.nextCacheRefreshAt, '')
 })
 test('category failure preserves targets and blocks saving until retry succeeds', async t => {
   let failing = true, writes = 0

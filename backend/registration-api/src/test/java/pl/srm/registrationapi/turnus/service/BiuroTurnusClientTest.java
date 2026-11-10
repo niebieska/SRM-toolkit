@@ -10,7 +10,6 @@ import java.net.InetSocketAddress;
 import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.util.Base64;
-import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.AfterEach;
@@ -105,15 +104,13 @@ class BiuroTurnusClientTest {
 
     @Test void invalidStaffOptionsKeepThePreviousWholeCachedCatalogue() throws Exception {
         var mapper = new ObjectMapper();
-        var time = new AtomicLong();
-        var provider = new CachedTurnusProvider(client(Duration.ofSeconds(30)), Duration.ofHours(1), time::get);
-        provider.refreshIfDue();
+        var provider = new CachedTurnusProvider(client(Duration.ofSeconds(30)));
+        provider.retryPendingRefresh();
         var original = provider.getByCode("T1").staffCatalogue();
         var tree = mapper.readTree(VALID);
         ((ObjectNode) tree.get(0).path("staffCatalogue")).put("seasonType", "WINTER");
         body = tree.toString();
-        time.addAndGet(Duration.ofHours(1).toNanos());
-        provider.refreshIfDue();
+        provider.refreshAtFullHour();
         assertEquals(original, provider.getByCode("T1").staffCatalogue());
         assertEquals("SUMMER", original.seasonType());
     }

@@ -9,6 +9,7 @@ import { validateTurnusForm } from '../utils/turnusFormValidation'
 import { useAuthStore } from '../stores/auth'
 import { createTurnus, fetchTurnus, updateTurnus, fetchStaffingCategories } from '../api/turnusApi'
 import { requirementCount, withRequirement } from '../utils/staffRequirements'
+import { nextTurnusCacheRefreshTime } from '../utils/turnusCacheSchedule'
 const { prompt: discardPrompt, confirm: confirmDiscard, decide: decideDiscard } = createDiscardConfirmation()
 const formElement = ref(null), fieldErrors = ref({})
 const categories = ref([]), categoriesLoading = ref(false), categoriesError = ref('')
@@ -17,6 +18,7 @@ const route = useRoute(), router = useRouter(), auth = useAuthStore()
 const isNew = computed(() => route.name === 'turnus-create')
 const form = reactive({})
 const original = ref(''), error = ref(''), validationError = ref(''), success = ref('')
+const nextCacheRefreshAt = ref('')
 const loading = ref(false), loaded = ref(false), saving = ref(false), conflict = ref(false)
 let loadSequence = 0
 let createdTurnusCode = null
@@ -24,6 +26,12 @@ const dirty = computed(() => loaded.value && JSON.stringify(form) !== original.v
 const plannedStaff = computed(() => (form.staffRequirements || []).reduce((total, item) =>
   total + (Number.isInteger(item.requiredCount) && item.requiredCount > 0 ? item.requiredCount : 0), 0))
 const status = computed(() => !form.active ? 'Nieaktywny' : 'Aktywny')
+watch(dirty, hasUnsavedChanges => {
+  if (hasUnsavedChanges) {
+    success.value = ''
+    nextCacheRefreshAt.value = ''
+  }
+})
 function defaults() {
   return { turnusCode: '', turnusName: '', turnusDescription: '', turnusLocation: '', seasonType: 'SUMMER',
     seasonYear: new Date().getFullYear(), startDate: '', endDate: '', minAge: 14, participantCapacity: 50, staffCapacity: 10,
@@ -40,7 +48,7 @@ async function load() {
   const sequence = ++loadSequence
   loading.value = true
   loaded.value = false
-  error.value = ''; validationError.value = ''; conflict.value = false; success.value = ''
+  error.value = ''; validationError.value = ''; conflict.value = false; success.value = ''; nextCacheRefreshAt.value = ''
   try {
     const value = isNew.value ? defaults() : await fetchTurnus(auth.token, route.params.code)
     if (sequence === loadSequence) apply(value)
@@ -107,7 +115,7 @@ function descriptionId(name, help = false) {
 }
 async function save() {
   if (saving.value || categoriesLoading.value || categoriesError.value) return
-  error.value = ''; validationError.value = ''; success.value = ''
+  error.value = ''; validationError.value = ''; success.value = ''; nextCacheRefreshAt.value = ''
   fieldErrors.value = validateTurnusForm(form, categories.value)
   if (Object.keys(fieldErrors.value).length) {
     validationError.value = 'Sprawdź zaznaczone pola przed zapisaniem turnusu.'
@@ -131,6 +139,7 @@ async function save() {
       }
     }
     success.value = created ? 'Turnus został utworzony.' : 'Zmiany zostały zapisane.'
+    nextCacheRefreshAt.value = nextTurnusCacheRefreshTime()
   } catch (e) {
     error.value = e.message
     conflict.value = e.status === 409 && !isNew.value
@@ -168,7 +177,10 @@ async function save() {
         <p>{{ error || validationError }}</p>
         <button v-if="conflict || !loaded" type="button" class="mt-2 rounded font-semibold underline focus-visible:ring-2 focus-visible:ring-red-600" :disabled="loading || saving" @click="reload">Wczytaj aktualną wersję</button>
       </div>
-      <p v-if="success" role="status" class="rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800">{{ success }}</p>
+      <p v-if="success" role="status" class="rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm text-emerald-800">
+        {{ success }}
+        <span v-if="nextCacheRefreshAt" class="font-medium"> · Najbliższa synchronizacja danych o godzinie {{ nextCacheRefreshAt }}.</span>
+      </p>
       <form v-if="loaded && !loading" ref="formElement" novalidate class="space-y-5" :aria-busy="saving" @submit.prevent="save" @input="onFieldInput" @focusout="event => event.target.name && validateField(event.target.name)">
         <fieldset :disabled="saving" class="grid min-w-0 grid-cols-1 items-start gap-5 lg:grid-cols-3">
           <legend class="sr-only">Szczegóły turnusu</legend>
@@ -289,7 +301,10 @@ async function save() {
           </div>
         </fieldset>
         <div class="turnus-card flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
-          <p class="text-sm text-slate-600" role="status">{{ saving ? 'Zapisywanie turnusu…' : dirty ? 'Masz niezapisane zmiany.' : isNew ? 'Nowy turnus zostanie zapisany z wybranymi ustawieniami.' : 'Wszystkie zmiany zapisane.' }}</p>
+          <p class="text-sm text-slate-600" role="status">
+            {{ saving ? 'Zapisywanie turnusu…' : dirty ? 'Masz niezapisane zmiany.' : isNew ? 'Nowy turnus zostanie zapisany z wybranymi ustawieniami.' : 'Wszystkie zmiany zapisane.' }}
+            <span v-if="success && nextCacheRefreshAt" class="text-slate-500"> · Najbliższa synchronizacja danych o godzinie {{ nextCacheRefreshAt }}.</span>
+          </p>
           <div class="flex flex-col-reverse gap-2 sm:flex-row sm:gap-3">
             <button type="button" class="turnus-button border border-slate-300 bg-white text-slate-700 hover:bg-slate-50" :disabled="saving" @click="router.push('/turnusy')">{{ isNew ? 'Anuluj' : 'Wróć do listy' }}</button>
             <button type="submit" class="turnus-button bg-slate-800 text-white hover:bg-slate-900" :disabled="saving || categoriesLoading || !!categoriesError || (!isNew && !dirty)">{{ saving ? 'Zapisywanie…' : isNew ? 'Utwórz turnus' : 'Zapisz zmiany' }}</button>
