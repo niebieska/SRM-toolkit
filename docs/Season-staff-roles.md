@@ -7,7 +7,7 @@ Branch: `feature/season-staff-roles`, based on development after PR #33.
 Summer keeps its existing role codes, age restrictions, mandatory function choices
 and certificate lists. No saved registrations or historical payloads are rewritten.
 
-Winter:
+Winter (adult/minor eligibility is evaluated on the Turnus start date):
 
 | Role | Functions | Eligibility |
 |---|---|---|
@@ -84,8 +84,9 @@ behavior remain unchanged.
 
 Step 2 loads options for the selected Turnus. It does not fall back to hardcoded
 Summer options on failure; errors offer retry and Back while Next is disabled.
-Changing season/age clears unavailable role/function choices and certificate
-selections without discarding personal data. Choices still valid in the new
+Changing season or the age classification for the Turnus start date clears
+unavailable role/function choices and certificate selections without discarding
+personal data. Choices still valid in the new
 catalogue are retained; unavailable certificate IDs are removed. Returning through
 Back preserves selected certificates and details. Instructor discipline is required;
 optional functions show a no-additional-function option. For a minor Winter

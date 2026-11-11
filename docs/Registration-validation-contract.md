@@ -6,13 +6,15 @@ PESEL/Turnus eligibility and before counter allocation, persistence or notificat
 
 - Both types require person first/last name, email and country-prefixed telephone,
   address (street, house number, Polish postal code and city), and health answers.
-- The backend derives minority from PESEL at submission time, as before; submitted
-  adult flag and gender must agree. Turnus minimum age is **rocznikowy**: compare
+- The backend derives minority from PESEL at submission time; submitted adult flag
+  and gender must agree. That submission-time age still determines guardian/contact
+  requirements. For staff role eligibility, the backend separately checks adulthood
+  on the Turnus start date. The frontend uses the same date to show available roles.
+  Turnus minimum age is **rocznikowy**: compare
   the Turnus start year with the birth year from PESEL, without checking whether
   the participant's birthday has occurred by the start date. For example, a person
   born in 2012 qualifies for a 14+ Turnus starting in 2026, even if they turn 14
-  later that year. This product rule was agreed 2026-11-02; the current backend
-  still checks exact age on the Turnus start date and requires implementation.
+  later that year. This product rule was agreed 2026-11-02 and is implemented.
 - Minors require guardian names, relationship, combined parent names and contact.
   Minor participants also need the separate guardian address when sameAddress=false.
 - Adults require ICE names, relationship and telephone. The "inna" relationship
@@ -21,7 +23,8 @@ PESEL/Turnus eligibility and before counter allocation, persistence or notificat
   Image consent remains optional and false is accepted.
 - Health answers must be tak/nie; tak requires details. Participants answer q1–q3;
   staff answer q1–q2.
-- Staff need a current age-appropriate role and valid subrole where applicable.
+- Staff need a role appropriate to their age on the Turnus start date and a valid
+  subrole where applicable.
   Certificate selections remain declarations, not required qualifications.
   Other-certificate selections require an explanation. Role/subrole options are
   temporarily mirrored in backend code; replace with the agreed season source.
