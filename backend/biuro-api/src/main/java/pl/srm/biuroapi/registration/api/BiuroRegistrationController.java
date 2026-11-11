@@ -11,9 +11,13 @@ import pl.srm.biuroapi.registration.model.RegistrationDetail;
 import pl.srm.biuroapi.registration.model.RegistrationSummary;
 import pl.srm.biuroapi.registration.model.TurnusRegistrationStats;
 import pl.srm.biuroapi.registration.service.RegistrationStatisticsService;
+import pl.srm.biuroapi.turnus.TurnusCatalogue;
+import pl.srm.biuroapi.turnus.TurnusDefinition;
 
 import java.util.List;
 import java.util.Locale;
+import java.util.Set;
+import java.util.stream.Collectors;
 
 @RestController
 @RequestMapping("/api/biuro/registrations")
@@ -21,17 +25,27 @@ public class BiuroRegistrationController {
 
     private final RegistrationApiClient registrationApiClient;
     private final RegistrationStatisticsService statisticsService;
+    private final TurnusCatalogue turnusCatalogue;
 
-    public BiuroRegistrationController(RegistrationApiClient registrationApiClient,RegistrationStatisticsService statisticsService) {
+    public BiuroRegistrationController(RegistrationApiClient registrationApiClient,
+                                       RegistrationStatisticsService statisticsService,
+                                       TurnusCatalogue turnusCatalogue) {
         this.registrationApiClient = registrationApiClient;
         this.statisticsService = statisticsService;
+        this.turnusCatalogue = turnusCatalogue;
     }
 
     @GetMapping
     public List<RegistrationSummary> getRegistrations(@RequestParam(required = false) String status,
                                                       @RequestParam(required = false) String registrationType,
                                                       @RequestParam(required = false) String turnusCode) {
+        Set<String> activeTurnusCodes = turnusCatalogue.list().stream()
+                .filter(TurnusDefinition::active)
+                .map(TurnusDefinition::turnusCode)
+                .collect(Collectors.toSet());
+
         return registrationApiClient.fetchRegistrations().stream()
+                .filter(registration -> activeTurnusCodes.contains(registration.turnusCode()))
                 .filter(registration -> matches(status, registration.status()))
                 .filter(registration -> matches(registrationType, registration.registrationType()))
                 .filter(registration -> matches(turnusCode, registration.turnusCode()))
