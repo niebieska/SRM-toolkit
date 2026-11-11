@@ -27,10 +27,10 @@ const summer = await catalogue('summer'), winter = await catalogue('winter')
 async function settle() {
   for (let i = 0; i < 5; i++) { await new Promise(resolve => setImmediate(resolve)); await nextTick() }
 }
-async function mount(t, formData, isAdult = true) {
+async function mount(t, formData, isAdultAtTurnusStart = true) {
   const originalFetch = globalThis.fetch
   globalThis.fetch = async url => new Response(JSON.stringify(String(url).includes('WINTER') ? winter : summer))
-  const props = reactive({ formData, isAdult })
+  const props = reactive({ formData, isAdultAtTurnusStart })
   const events = []
   const instance = ref(null)
   const app = renderer.createApp({ render: () => h(Step, {
@@ -78,7 +78,7 @@ test('Winter minor candidate can advance; instructor needs exactly one disciplin
     subrole: 'kandydat_na_animatora', certificates: {}, certificateDetails: {} }, false)
   vm.goNext()
   assert.equal(events.at(-1)[0], 'next')
-  await update({ isAdult: true })
+  await update({ isAdultAtTurnusStart: true })
   vm.local.role = 'instruktor'
   vm.local.subrole = ''
   await settle()
@@ -90,9 +90,20 @@ test('Winter minor candidate can advance; instructor needs exactly one disciplin
   await settle()
   vm.goNext()
   assert.equal(events.at(-1)[0], 'next')
-  await update({ isAdult: false })
+  await update({ isAdultAtTurnusStart: false })
   assert.equal(vm.local.role, '')
   assert.equal(vm.local.subrole, '')
+})
+
+test('applicant minor at submission can choose adult roles when adult by turnus start', async t => {
+  const { vm, events } = await mount(t, {
+    turnusCode: 'WINTER', isAdult: false, role: 'instruktor', subrole: 'narty',
+    certificates: {}, certificateDetails: {},
+  }, true)
+
+  vm.goNext()
+
+  assert.equal(events.at(-1)[0], 'next')
 })
 
 test('selected certificate details enforce the configured maximum length', async t => {

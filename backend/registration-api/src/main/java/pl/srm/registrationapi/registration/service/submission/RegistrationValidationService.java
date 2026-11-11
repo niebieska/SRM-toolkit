@@ -33,7 +33,9 @@ public class RegistrationValidationService {
 
     public void validatePayload(String payload, RegistrationContext context,
                                 RegistrationType type, Turnus turnus) {
-        payloadValidator.validate(payload, context, type, turnus.staffCatalogue());
+        boolean minorAtTurnusStart = type == RegistrationType.STAFF
+                && peselHelper.isMinor(context.pesel(), turnus.startDate());
+        payloadValidator.validate(payload, context, type, turnus.staffCatalogue(), minorAtTurnusStart);
     }
 
     private void validatePesel(RegistrationContext data) {
@@ -55,9 +57,9 @@ public class RegistrationValidationService {
     }
 
     private void validateAge(RegistrationContext data, Turnus turnus) {
-        int age = peselHelper.calculateAge(data.pesel(), turnus.startDate());
+        int age = peselHelper.calculateCalendarYearAge(data.pesel(), turnus.startDate());
         if (age < turnus.minAge()) {
-            throw new RegistrationException("AGE_TOO_LOW", "Zgłaszany  nie spełnia minimalnego wieku dla tego turnusu.");
+            throw new RegistrationException("AGE_TOO_LOW", "Zgłaszana osoba nie spełnia minimalnego wieku dla tego turnusu.");
         }
     }
 

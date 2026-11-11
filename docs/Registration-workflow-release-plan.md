@@ -40,8 +40,9 @@ acceptance and verification tasks are tracked separately.
   stays optional. Current role choices are mirrored in code pending season work.
 - [x] Preserve emergency-contact "other relationship" text through payload/storage/details.
 - [x] Correct in-flight submit state and preserve meaningful API error codes.
-- [x] Add dedicated PESEL checksum, birth-date/century and age-boundary tests,
-  payload-rule tests and rejection-before-persistence/notification regressions.
+- [x] Add dedicated PESEL checksum and birth-date/century tests, rocznikowy
+  minimum-age boundary tests, payload-rule tests and
+  rejection-before-persistence/notification regressions.
 - [x] Agree and implement frontend usability caps for registration fields. The
   implementation and component-level tests were merged in PR #55; see
   [Form field capacity review](Form-field-capacity-review.md).
@@ -105,9 +106,10 @@ Details: [catalogue](Turnus-catalogue-implementation.md),
   the warning must not block saving. See [staff requirements](Turnus-staff-requirements.md).
 - [x] Agree Turnus minimum age as rocznikowy: compare the Turnus start year with
   the birth year from PESEL, regardless of whether the birthday has occurred by
-  the start date. Implementation is still pending. Lists separately display age
-  at Turnus start provisionally; registration minor/adult routing remains based
-  on age at submission and is unchanged by this decision.
+  the start date. This rule is implemented and covered by backend boundary tests.
+  Lists separately display age at Turnus start provisionally; registration
+  minor/adult routing remains based on age at submission and is unchanged by
+  this decision.
 - Status history is audit-only. Keep the existing status workflow and permissions;
   do not add transition restrictions. Returning to an earlier status uses the
   same existing action flow. A same-status request is not a notification resend.

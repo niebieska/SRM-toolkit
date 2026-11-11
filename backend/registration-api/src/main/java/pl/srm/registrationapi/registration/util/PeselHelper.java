@@ -18,6 +18,10 @@ public class PeselHelper {
         return Period.between(extractBirthDate(pesel), referenceDate).getYears();
     }
 
+    public int calculateCalendarYearAge(String pesel, LocalDate referenceDate) {
+        return referenceDate.getYear() - extractBirthDate(pesel).getYear();
+    }
+
     public boolean isMinor(String pesel, LocalDate referenceDate) {
         if (!canExtractBirthDate(pesel)) {
             return false;

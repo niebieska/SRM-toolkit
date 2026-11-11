@@ -21,7 +21,8 @@ public class SubmissionPayloadValidator {
         this.staffRoles = staffRoles;
     }
 
-    public void validate(String payload, RegistrationContext context, RegistrationType type, StaffCatalogue catalogue) {
+    public void validate(String payload, RegistrationContext context, RegistrationType type,
+                         StaffCatalogue catalogue, boolean minorAtTurnusStart) {
         final JsonNode root;
         try { root = mapper.readTree(payload); }
         catch (Exception ex) { throw invalid("Nieprawidłowy format zgłoszenia."); }
@@ -74,7 +75,7 @@ public class SubmissionPayloadValidator {
             text(person, "fatherName", 100);
             text(person, "birthSurname", 150);
             text(root, "role", 50);
-            staffRoles.validate(root, context.isMinor(), catalogue);
+            staffRoles.validate(root, minorAtTurnusStart, catalogue);
         }
     }
 

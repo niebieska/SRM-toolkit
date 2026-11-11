@@ -28,6 +28,7 @@ class PeselHelperTest {
             String code = pesel(String.format("00%02d01", value[0]));
             assertTrue(helper.isValid(code));
             assertEquals(2300-value[1],helper.calculateAge(code,reference));
+            assertEquals(2300-value[1],helper.calculateCalendarYearAge(code,reference));
         }
     }
     @Test void adulthoodChangesOnBirthday() {

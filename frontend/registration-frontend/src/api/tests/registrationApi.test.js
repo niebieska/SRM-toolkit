@@ -28,10 +28,13 @@ test('both payloads preserve other ICE relationship and omit guardian for adults
 
 test('minor payload uses guardian and omits ICE', () => {
   for (const build of [buildParticipantPayload, buildStaffPayload]) {
-    const payload = build({ ...form(), isAdult: false, guardianFirstName: 'Anna', parentNames: 'Anna Testowa' })
+    const payload = build({ ...form(), isAdult: false, isAdultAtTurnusStart: true,
+      guardianFirstName: 'Anna', parentNames: 'Anna Testowa' })
+    assert.equal(payload.person.isAdult, false)
     assert.equal(payload.ice, null)
     assert.equal(payload.guardian.firstName, 'Anna')
     assert.equal(payload.guardian.names, 'Anna Testowa')
+    assert.equal(payload.isAdultAtTurnusStart, undefined)
   }
 })
 

@@ -37,8 +37,10 @@ Use synthetic personal data and a test email destination. For successful submiss
 ## Decisions and coverage gaps
 
 - Turnus minimum age was agreed as rocznikowy on 2026-11-02. The backend currently
-  checks exact age on the start date; implementation and automated boundary tests
-  remain required.
+  compares the Turnus start year with the birth year from PESEL, regardless of
+  whether the birthday has occurred. Automated boundary tests cover a qualifying
+  birth year with a later birthday and rejection of the following birth year.
+  The end-to-end participant/staff acceptance scenario above remains pending.
 - Frontend usability limits were merged in PR #55 and are shorter than some backend
   defensive ceilings; see [field capacity review](Form-field-capacity-review.md).
   Automated component-level checks pass, while the manual

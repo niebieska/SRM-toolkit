@@ -26,7 +26,7 @@
       <Step2Role
         v-else-if="currentStep === 2"
         v-model:formData="formData"
-        :isAdult="formData.isAdult"
+        :isAdultAtTurnusStart="formData.isAdultAtTurnusStart"
         @prev="currentStep = 1"
         @next="currentStep = 3"
       />
@@ -87,6 +87,7 @@ const emptyForm = () => ({
   birthSurnameDifferent: false,
   pesel: '',
   isAdult: false,
+  isAdultAtTurnusStart: false,
   gender: null,
   email: '',
   phone: '',
