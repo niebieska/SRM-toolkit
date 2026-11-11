@@ -55,9 +55,9 @@ public class RegistrationValidationService {
     }
 
     private void validateAge(RegistrationContext data, Turnus turnus) {
-        int age = peselHelper.calculateAge(data.pesel(), turnus.startDate());
+        int age = peselHelper.calculateCalendarYearAge(data.pesel(), turnus.startDate());
         if (age < turnus.minAge()) {
-            throw new RegistrationException("AGE_TOO_LOW", "Zgłaszany  nie spełnia minimalnego wieku dla tego turnusu.");
+            throw new RegistrationException("AGE_TOO_LOW", "Zgłaszana osoba nie spełnia minimalnego wieku dla tego turnusu.");
         }
     }
 
