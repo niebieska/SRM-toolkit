@@ -64,7 +64,5 @@ public class StaffRegistrationService implements RegistrationService {
 
         return code;
     }
-
-
 }
 

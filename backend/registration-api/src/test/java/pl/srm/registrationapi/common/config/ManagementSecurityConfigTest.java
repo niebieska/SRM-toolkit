@@ -32,6 +32,7 @@ import pl.srm.registrationapi.registration.exception.RegistrationException;
 import pl.srm.registrationapi.registration.repository.RegistrationRepository;
 import pl.srm.registrationapi.registration.service.management.RegistrationManagementService;
 import pl.srm.registrationapi.registration.service.submission.ParticipantRegistrationService;
+import pl.srm.registrationapi.registration.service.submission.ManualStaffRegistrationService;
 import pl.srm.registrationapi.registration.service.submission.StaffRegistrationService;
 import pl.srm.registrationapi.season.TestStaffCatalogues;
 import pl.srm.registrationapi.turnus.controller.TurnusController;
@@ -284,11 +285,16 @@ class ManagementSecurityConfigTest {
         @Bean GlobalExceptionHandler exceptionHandler() { return new GlobalExceptionHandler(); }
         @Bean ParticipantRegistrationService participantService() { return mock(ParticipantRegistrationService.class); }
         @Bean StaffRegistrationService staffService() { return mock(StaffRegistrationService.class); }
+        @Bean ManualStaffRegistrationService manualStaffRegistrationService() {
+            return mock(ManualStaffRegistrationService.class);
+        }
         @Bean RegistrationManagementService managementService() { return mock(RegistrationManagementService.class); }
         @Bean TurnusProvider provider() { return mock(TurnusProvider.class); }
         @Bean RegistrationController registrations(ParticipantRegistrationService participant,
-                StaffRegistrationService staff, RegistrationManagementService management) {
-            return new RegistrationController(participant, staff, management,
+                StaffRegistrationService staff,
+                ManualStaffRegistrationService manualStaff,
+                RegistrationManagementService management) {
+            return new RegistrationController(participant, staff, manualStaff, management,
                     mock(pl.srm.registrationapi.registration.service.management.RegistrationEditService.class));
         }
         @Bean TurnusController turnuses(TurnusProvider provider) { return new TurnusController(provider); }

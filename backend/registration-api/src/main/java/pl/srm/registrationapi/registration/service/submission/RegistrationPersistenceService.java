@@ -41,10 +41,21 @@ public class RegistrationPersistenceService {
         return save(context, payload, RegistrationType.STAFF);
     }
 
+    public String saveStaffAccepted(RegistrationContext context, String payload,
+                                    String actorAccountId, String actorUsername) {
+        return save(context, payload, RegistrationType.STAFF, RegistrationStatus.ACCEPTED.name(),
+                actorAccountId, actorUsername);
+    }
+
     private String save(RegistrationContext context, String payload, RegistrationType type) {
+        return save(context, payload, type, RegistrationStatus.NEW.name(), null, null);
+    }
+
+    private String save(RegistrationContext context, String payload, RegistrationType type, String initialStatus,
+                        String actorAccountId, String actorUsername) {
         for (int attempt = 0; ; attempt++) {
             try {
-                return saveOnce(context, payload, type);
+                return saveOnce(context, payload, type, initialStatus, actorAccountId, actorUsername);
             } catch (RuntimeException exception) {
                 boolean deadlock = false;
                 for (Throwable cause = exception; cause != null; cause = cause.getCause()) {
@@ -64,7 +75,8 @@ public class RegistrationPersistenceService {
         }
     }
 
-    private String saveOnce(RegistrationContext context, String payload, RegistrationType type) {
+    private String saveOnce(RegistrationContext context, String payload, RegistrationType type, String initialStatus,
+                            String actorAccountId, String actorUsername) {
         try {
             // The upsert locks this group until commit; SELECT uses the same transaction.
             // Rollback undoes both the allocation and the registration insert.
@@ -85,9 +97,24 @@ public class RegistrationPersistenceService {
                 String code = type == RegistrationType.PARTICIPANT
                         ? codeGenerator.generateParticipantCode(context.turnusCode(), sequence)
                         : codeGenerator.generateStaffCode(context.turnusCode(), sequence);
-                repository.saveAndFlush(new Registration(code, type.name(), context.turnusCode(),
-                        context.key(), context.isMinor(), RegistrationStatus.NEW.name(), null,
-                        payload, LocalDateTime.now(), null));
+                LocalDateTime createdAt = LocalDateTime.now();
+                Registration saved = repository.saveAndFlush(new Registration(code, type.name(), context.turnusCode(),
+                        context.key(), context.isMinor(), initialStatus, null,
+                        payload, createdAt, actorAccountId == null ? null : createdAt));
+                if (actorAccountId != null) {
+                    entityManager.createNativeQuery("""
+                            INSERT INTO registration_status_history
+                              (registration_id, previous_status, new_status, changed_at, actor_account_id, actor_username)
+                            VALUES (:registrationId, :previousStatus, :newStatus, :changedAt, :actorId, :actorUsername)
+                            """)
+                            .setParameter("registrationId", saved.getId())
+                            .setParameter("previousStatus", RegistrationStatus.NEW.name())
+                            .setParameter("newStatus", initialStatus)
+                            .setParameter("changedAt", createdAt)
+                            .setParameter("actorId", actorAccountId)
+                            .setParameter("actorUsername", actorUsername.trim())
+                            .executeUpdate();
+                }
                 return code;
             });
         } catch (RuntimeException exception) {
