@@ -28,7 +28,10 @@ qualifications do not block submission or acceptance.
 For later staffing statistics: Ksiądz + Prowadzący counts separately as Ksiądz
 prowadzący. All other priest functions count as Ksiądz, including instructor
 functions. One person occupies one staff place and one staffing category.
-Required headcounts and those statistics are NOT implemented in phase 1.
+Required headcounts and statistics were outside this phase's original scope. The
+Turnus editor and basic configured-role occupancy statistics were implemented
+later; see [staffing statistics](Staffing-statistics.md). Subrole breakdowns are
+still deferred.
 
 ## Configuration ownership and update path
 
@@ -104,8 +107,11 @@ Manual acceptance pending:
    options match the current form, including both minor roles and priest certificate
    precedence. Verify the ordinary participant form still works.
 2. Activate a synthetic Winter Turnus and manually open staff registration. Wait for
-   the hourly cache refresh, restart Registration, or temporarily use
-   `TURNUS_REFRESH_INTERVAL=PT10S` for testing and restore PT1H afterward.
+   the next full-hour cache refresh, restart Registration, or temporarily set
+   `TURNUS_REFRESH_CRON='0/5 * * * * *'` for testing and restore
+   `0 0 * * * *` afterward. The schedule uses `TURNUS_REFRESH_TIME_ZONE`
+   (default `Europe/Warsaw`); `TURNUS_RETRY_INTERVAL` applies only to startup and
+   failed-refresh retries, not the normal scheduled refresh.
 3. Adult Winter: test regular Animator, candidate, plain Ksiądz, each priest function,
    instructor Narty/Snowboard, Kucharka and Kierowca. Instructor without a discipline
    must fail; no certificate selection must be accepted.

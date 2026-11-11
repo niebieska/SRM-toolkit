@@ -6,7 +6,18 @@ email templates. No code changes or browser/SMTP tests were performed for this
 review. Findings concern existing behavior, not regressions from counter changes.
 This complements the security/deployment plan rather than replacing it.
 
-## Confirmed corrections before real registrations
+This is a historical snapshot, not the live release plan. Some risks and open
+questions below have since been decided or delivered; use the current
+[registration workflow release plan](Registration-workflow-release-plan.md) for
+status and acceptance gates. In particular, capacity enforcement is implemented,
+status history is audit-only with the existing status workflow, and payments
+remain a probable (not confirmed) MVP feature.
+
+## Historical findings from the 2026-10-08 review
+
+The table below records issues found at that time. Later implementation and
+decisions may have superseded individual rows; use the current release plan for
+actionable work and acceptance status.
 
 | Finding | Evidence | Required correction / delivery |
 |---|---|---|
@@ -22,7 +33,7 @@ This complements the security/deployment plan rather than replacing it.
 
 Paths containing `...` are abbreviated package paths within the indicated module.
 
-## Product decisions to settle during Turnus/season delivery
+## Product decisions recorded as open in the 2026-10-08 review
 
 - **Age reference:** adult/minor routing and staff role availability use today's
   age; minimum participant age is calculated at Turnus start. This is not itself
@@ -40,9 +51,10 @@ Paths containing `...` are abbreviated package paths within the indicated module
 - **Parent fields:** currently one combined parent-name field for minors, not
   separate mother/father fields. Confirm the information needed for agreed lists;
   do not add mandatory parent details for adults without a product requirement.
-- **Status changes:** repeating the same status sends another email, and any allowed
-  status can replace another. Agree resend behavior and whether stale simultaneous
-  operator changes require conflict handling; audit history remains planned.
+- **Status changes (historical finding):** the early review recorded that any
+  status could replace another and treated same-status email behavior as open.
+  The later decision is audit-only history with the existing status workflow;
+  same-status selection is not a resend. See the current release plan.
 - **Season options:** define stable role/subrole/certificate codes and historical
   labels. Confirm whether disabling an option affects only new registrations.
 - **Documents/contact details:** privacy/regulations URLs and organizer contacts
@@ -61,11 +73,10 @@ other emergency relationship, new/closed Turnus, all status notifications,
 capacity reached, slow/double submit, API business errors, and SMTP unavailable.
 Verify payload persistence and Biuro presentation, not only frontend validation.
 
-## Priority and limits
+## Historical priority and limits
 
-Include shared dates/capacity and season-role corrections in the already agreed
-Turnus work. Fix lossy payload mapping, missing mandatory validation, misleading
-payment/email content and submit/error behavior before real public registrations.
-Editable email bodies and group announcements stay deferred; this review does
-not make their full implementation a release prerequisite. Existing secrets,
-service security, Docker/API/CORS/HTTPS and backup tasks remain required separately.
+The review prioritized shared dates/capacity and season-role corrections, lossy
+payload mapping, mandatory validation, payment/email content and submit/error
+behavior. Several were subsequently delivered. This list is historical; the live
+functional and deployment gates are in the [release plan](Registration-workflow-release-plan.md)
+and [deployment checklist](deployment-checklist.md).

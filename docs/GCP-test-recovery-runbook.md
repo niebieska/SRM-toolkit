@@ -10,6 +10,12 @@ These procedures have **not yet been run or accepted**. Use synthetic TEST data
 only. Do not run `docker compose down --volumes`, remove Docker volumes, or
 restore over the live application databases during these checks.
 
+The operator chose to park these checks for the disposable, synthetic-data GCP
+TEST because the intended production destination is a VPS. This is a deferral,
+not a successful backup/recovery verification. A production VPS still requires
+its own independent backup destination, retention/access policy and tested
+restore procedure before real data is used.
+
 ## Environment
 
 - Checkout: `/opt/srm-toolkit`

@@ -18,13 +18,18 @@ credentials. Missing/blank lookup credentials prevent startup.
 | `TURNUS_LOOKUP_PASSWORD` | Required | Internal reader password |
 | `TURNUS_CONNECT_TIMEOUT` | `PT15S` | Connection timeout |
 | `TURNUS_READ_TIMEOUT` | `PT30S` | Read timeout |
-| `TURNUS_RETRY_INTERVAL` | `PT30S` | Initial retry delay / scheduler polling delay |
-| `TURNUS_REFRESH_INTERVAL` | `PT1H` | Minimum delay between attempts once a catalogue exists |
+| `TURNUS_RETRY_INTERVAL` | `PT30S` | Retry delay after startup or scheduled refresh failure |
+| `TURNUS_REFRESH_CRON` | `0 0 * * * *` | Refresh at the start of each hour |
+| `TURNUS_REFRESH_TIME_ZONE` | `Europe/Warsaw` | Time zone used by the refresh schedule |
 
-Durations use ISO-8601 notation. Scheduled delays are measured after work completes;
-slow requests therefore extend the effective interval. Normal catalogue reads and
-submissions never call Biuro or wait for refresh. The scheduler checks whether an
-hourly fetch is due; a check alone does not make an HTTP request.
+Timeouts and retry delays use ISO-8601 notation. Normal catalogue reads and
+submissions never call Biuro or wait for refresh. The hourly cron runs at the
+beginning of each full hour in the configured time zone.
+After saving a Turnus, Biuro shows the next planned refresh time in Warsaw local
+time. It is an estimate for the default hourly `Europe/Warsaw` configuration,
+not confirmation that the fetch succeeded; if the cron or time zone is overridden,
+the displayed time can be inaccurate. This limitation is recorded as a low-priority
+follow-up. Already-open registration forms do not reload their options automatically.
 
 ## Startup and outages
 
@@ -38,8 +43,9 @@ submissions return HTTP 503 with `TURNUS_CATALOGUE_UNAVAILABLE` and a Polish ret
 message. Submissions are not persisted and emails are not sent. Retry every 30
 seconds after a failed attempt until a valid catalogue arrives.
 
-After success, refresh hourly. On authentication, network, server or malformed
-catalogue errors, retain the last successful catalogue without expiry. A restart
+After the initial success, refresh at each full hour. On authentication, network,
+server or malformed-catalogue errors, retain the last successful catalogue without
+expiry and retry every `TURNUS_RETRY_INTERVAL` until a refresh succeeds. A restart
 loses the in-memory catalogue and repeats the initial-fetch strategy. There is no
 JSON fallback or persistent snapshot.
 
@@ -64,14 +70,17 @@ Valid registrations remain NEW. No global season switch is introduced.
 3. Restart Registration with Biuro stopped. Check GET returns 503, then start Biuro
    and verify recovery after the next initial retry.
 4. After a successful fetch, stop Biuro. GET should still return the cached list.
-5. Close a Turnus in Biuro. After refresh it disappears from the form list and a
-   submission using its code is rejected as closed. For a local verification run,
-   temporarily shorten `TURNUS_REFRESH_INTERVAL` and `TURNUS_RETRY_INTERVAL`;
-   restore defaults afterwards. Changing the setting requires a restart.
+5. Close a Turnus in Biuro. After the next full-hour refresh it disappears from the
+   form list and a submission using its code is rejected as closed. For a local
+   verification run, set `TURNUS_REFRESH_CRON='0/5 * * * * *'` to refresh every five
+   seconds, then restore `0 0 * * * *`. Set `TURNUS_REFRESH_TIME_ZONE` to the
+   intended zone (default `Europe/Warsaw`). `TURNUS_RETRY_INTERVAL` controls retries
+   after startup or a failed refresh; it does not change the normal cron schedule.
+   Changing settings requires a restart.
 6. Reopen the Turnus and verify it reappears after refresh.
 
 Automated tests cover Basic authentication, timeout/error handling, malformed and
-empty responses, retry/refresh scheduling, atomic replacement, outage fallback,
+empty responses, retry/cron scheduling, atomic replacement, outage fallback,
 503 mapping, and no persistence/email for submissions before catalogue readiness.
 They use isolated local HTTP servers/mocks rather than live Biuro data.
 

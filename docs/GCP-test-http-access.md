@@ -4,6 +4,15 @@ This Compose override routes both TEST frontends through one Caddy proxy using
 their domain names. It is for synthetic data only. It does not deploy anything
 or change DNS records or GCP firewall rules.
 
+## Current status — 2026-10-28
+
+Operator reports that both domains are accessible from the internet and basic
+Biuro operation, form submission and external SMTP sending work. Local checks
+with the expected Host headers returned HTTP 200 for both sites. The VM was
+reported to have only TCP 80 listening; the public GCP ingress rule for TCP 8080
+was removed. HTTPS is not configured, and reboot/backup/restore checks remain
+pending or deferred; see the [recovery runbook](GCP-test-recovery-runbook.md).
+
 ## Addresses and DNS
 
 - Registration: `http://formularz-srm.watroba.com.pl/`
@@ -33,11 +42,10 @@ docker compose --env-file /etc/srm-toolkit/compose.env \
 ```
 
 Start or update the deployment only as a separately approved operational step.
-For HTTP, GCP ingress must allow TCP 80 to the VM. Port 8080 is no longer used;
-remove it from the public firewall rule after confirming the domain routing. If
-external SMTP is deliberately required, also include
-`docker-compose.external-smtp.yml` and keep recipient addresses controlled;
-otherwise the base configuration sends test messages to MailHog.
+For HTTP, GCP ingress must allow TCP 80 to the VM. Port 8080 is no longer used
+and its public ingress rule has been removed. GCP TEST uses external SMTP by
+including `docker-compose.external-smtp.yml`; keep recipient addresses controlled.
+Without that override, the base configuration sends test messages to MailHog.
 
 ## Security limitation
 
