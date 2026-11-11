@@ -7,8 +7,8 @@
       {{ loadError }}
       <button type="button" class="ml-2 underline" :disabled="loading" @click="loadCatalogue">Spróbuj ponownie</button>
     </div>
-    <div v-if="!isAdult && catalogue" class="bg-yellow-50 border border-yellow-200 rounded-lg p-3 text-sm text-yellow-800">
-      Dostępne role i funkcje uwzględniają niepełnoletność. Wybierz jedną z przedstawionych opcji.
+    <div v-if="!isAdultAtTurnusStart && catalogue" class="bg-yellow-50 border border-yellow-200 rounded-lg p-3 text-sm text-yellow-800">
+      Dostępne role i funkcje uwzględniają wiek w dniu rozpoczęcia turnusu.
     </div>
 
     <!-- Role dropdown -->
@@ -99,7 +99,7 @@ import {applyLengthErrors, FORM_FIELD_LIMITS} from '../../../utils/formFieldLimi
 
 const props = defineProps({
   formData: { type: Object, required: true },
-  isAdult: { type: Boolean, default: false },
+  isAdultAtTurnusStart: { type: Boolean, default: false },
 })
 const emit = defineEmits(['update:formData', 'prev', 'next'])
 const local = ref({ ...props.formData, subrole: props.formData.subrole || '',
@@ -111,10 +111,10 @@ const loadError = ref('')
 const roleError = ref('')
 const certificateDetailErrors = reactive({})
 let requestSequence = 0
-const roleOptions = computed(() => availableRoles(catalogue.value, props.isAdult))
+const roleOptions = computed(() => availableRoles(catalogue.value, props.isAdultAtTurnusStart))
 const currentRole = computed(() => roleOptions.value.find(role => role.value === local.value.role))
-const functionOptions = computed(() => availableFunctions(currentRole.value, props.isAdult))
-const requiresFunction = computed(() => functionRequired(currentRole.value, props.isAdult))
+const functionOptions = computed(() => availableFunctions(currentRole.value, props.isAdultAtTurnusStart))
+const requiresFunction = computed(() => functionRequired(currentRole.value, props.isAdultAtTurnusStart))
 const currentCertificates = computed(() => currentRole.value
   ? certificatesFor(catalogue.value, local.value.role, local.value.subrole) : [])
 
@@ -157,7 +157,7 @@ async function loadCatalogue() {
   }
 }
 watch(() => props.formData.turnusCode, loadCatalogue, { immediate: true })
-watch(() => props.isAdult, normalizeSelection)
+watch(() => props.isAdultAtTurnusStart, normalizeSelection)
 watch(() => local.value.role, () => {
   if (local.value.subrole && !functionOptions.value.some(option => option.value === local.value.subrole)) local.value.subrole = ''
 })
@@ -177,7 +177,7 @@ function goPrev() {
 function goNext() {
   if (loading.value || !catalogue.value) return
   Object.keys(certificateDetailErrors).forEach(key => delete certificateDetailErrors[key])
-  roleError.value = selectionError(catalogue.value, local.value.role, local.value.subrole, props.isAdult)
+  roleError.value = selectionError(catalogue.value, local.value.role, local.value.subrole, props.isAdultAtTurnusStart)
   if (roleError.value) return
   const certificatesWithDetails = currentCertificates.value.filter(option =>
     option.hasDetails && selectedCertificates.value.includes(option.id))

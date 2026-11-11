@@ -1,21 +1,21 @@
 // Options come from Registration's cached, Biuro-owned season configuration.
-export function ageAllowed(option, isAdult) {
-  return isAdult ? !option.minorOnly : !option.adultOnly
+export function ageAllowed(option, isAdultAtTurnusStart) {
+  return isAdultAtTurnusStart ? !option.minorOnly : !option.adultOnly
 }
-export function availableFunctions(role, isAdult) {
-  return (role?.subroles || []).filter(option => ageAllowed(option, isAdult))
+export function availableFunctions(role, isAdultAtTurnusStart) {
+  return (role?.subroles || []).filter(option => ageAllowed(option, isAdultAtTurnusStart))
 }
-export function availableRoles(catalogue, isAdult) {
-  return (catalogue?.roles || []).filter(role => ageAllowed(role, isAdult) || availableFunctions(role, isAdult).length > 0)
+export function availableRoles(catalogue, isAdultAtTurnusStart) {
+  return (catalogue?.roles || []).filter(role => ageAllowed(role, isAdultAtTurnusStart) || availableFunctions(role, isAdultAtTurnusStart).length > 0)
 }
-export function functionRequired(role, isAdult) {
-  return !!role && (role.subroleRequired || !ageAllowed(role, isAdult))
+export function functionRequired(role, isAdultAtTurnusStart) {
+  return !!role && (role.subroleRequired || !ageAllowed(role, isAdultAtTurnusStart))
 }
-export function selectionError(catalogue, roleCode, functionCode, isAdult) {
-  const role = availableRoles(catalogue, isAdult).find(role => role.value === roleCode)
+export function selectionError(catalogue, roleCode, functionCode, isAdultAtTurnusStart) {
+  const role = availableRoles(catalogue, isAdultAtTurnusStart).find(role => role.value === roleCode)
   if (!role) return 'Wybierz rolę w kadrze.'
-  if (!functionCode) return functionRequired(role, isAdult) ? 'Wybierz funkcję.' : ''
-  return availableFunctions(role, isAdult).some(option => option.value === functionCode) ? '' : 'Wybierz prawidłową funkcję.'
+  if (!functionCode) return functionRequired(role, isAdultAtTurnusStart) ? 'Wybierz funkcję.' : ''
+  return availableFunctions(role, isAdultAtTurnusStart).some(option => option.value === functionCode) ? '' : 'Wybierz prawidłową funkcję.'
 }
 export function resolveCertificateSource(catalogue, role, subrole) {
   const options = catalogue?.certificatesByRole || {}

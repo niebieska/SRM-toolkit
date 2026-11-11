@@ -249,7 +249,7 @@
 
 <script setup>
 import {ref, computed, onMounted, watch, reactive} from 'vue'
-import {usePesel} from '../../../composables/usePesel.js'
+import {isAdultOnDate, usePesel} from '../../../composables/usePesel.js'
 import {fetchTurnusy} from '../../../api/turnusApi.js'
 import {validatePesel, validateEmail, validatePhone, validatePostalCode} from '../../../utils/validators.js'
 import {applyLengthErrors, FORM_FIELD_LIMITS} from '../../../utils/formFieldLimits.js'
@@ -313,6 +313,9 @@ onMounted(async () => {
 
 const selectedTurnus = computed(() =>
     turnusy.value.find(t => t.turnusCode === local.value.turnusCode) || null
+)
+const isAdultAtTurnusStart = computed(() =>
+    isAdultOnDate(pesel.value, selectedTurnus.value?.startDate)
 )
 
 // Validation
@@ -450,7 +453,12 @@ function validate() {
 
 function goNext() {
   if (!validate()) return
-  emit('update:formData', {...local.value, isAdult: isAdult.value, gender: gender.value})
+  emit('update:formData', {
+    ...local.value,
+    isAdult: isAdult.value,
+    isAdultAtTurnusStart: isAdultAtTurnusStart.value,
+    gender: gender.value,
+  })
   emit('next')
 }
 </script>

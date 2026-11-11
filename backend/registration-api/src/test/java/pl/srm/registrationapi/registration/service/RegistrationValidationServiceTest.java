@@ -4,11 +4,13 @@ import static org.junit.jupiter.api.Assertions.assertDoesNotThrow;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 import java.time.LocalDate;
 import org.junit.jupiter.api.Test;
 import pl.srm.registrationapi.registration.exception.RegistrationException;
+import pl.srm.registrationapi.registration.model.RegistrationType;
 import pl.srm.registrationapi.registration.parser.RegistrationContext;
 import pl.srm.registrationapi.registration.repository.RegistrationRepository;
 import pl.srm.registrationapi.registration.service.submission.RegistrationValidationService;
@@ -23,8 +25,9 @@ class RegistrationValidationServiceTest {
     private static final String TURNUS_CODE = "TEST2027T1";
 
     private final RegistrationRepository repository = mock(RegistrationRepository.class);
+    private final SubmissionPayloadValidator payloadValidator = mock(SubmissionPayloadValidator.class);
     private final RegistrationValidationService service = new RegistrationValidationService(
-            new PeselHelper(), repository, mock(SubmissionPayloadValidator.class));
+            new PeselHelper(), repository, payloadValidator);
 
     @Test
     void acceptsMinimumAgeCohortWhenBirthdayIsAfterTurnusStart() {
@@ -46,6 +49,30 @@ class RegistrationValidationServiceTest {
                 () -> service.validateEligibility(registration, turnusWithMinimumAge(14)));
 
         assertEquals("AGE_TOO_LOW", error.getCode());
+    }
+
+    @Test
+    void computesStaffRoleEligibilityFromTurnusStartWithoutChangingSubmissionMinority() {
+        String pesel = pesel("083210"); // 10 December 2008: minor now, adult by the January 2027 turnus
+        RegistrationContext registration = registration(pesel);
+        Turnus turnus = turnusWithMinimumAge(14);
+
+        service.validatePayload("{}", registration, RegistrationType.STAFF, turnus);
+
+        verify(payloadValidator).validate("{}", registration, RegistrationType.STAFF,
+                turnus.staffCatalogue(), false);
+    }
+
+    @Test
+    void keepsStaffRoleMinorityWhenEighteenthBirthdayIsAfterTurnusStart() {
+        String pesel = pesel("093210"); // 10 December 2009: still 17 on the January 2027 turnus
+        RegistrationContext registration = registration(pesel);
+        Turnus turnus = turnusWithMinimumAge(14);
+
+        service.validatePayload("{}", registration, RegistrationType.STAFF, turnus);
+
+        verify(payloadValidator).validate("{}", registration, RegistrationType.STAFF,
+                turnus.staffCatalogue(), true);
     }
 
     private static RegistrationContext registration(String pesel) {

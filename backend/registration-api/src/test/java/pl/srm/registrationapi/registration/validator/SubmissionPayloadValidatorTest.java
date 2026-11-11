@@ -21,6 +21,7 @@ class SubmissionPayloadValidatorTest {
     private final RegistrationContext minor = new RegistrationContext("T", "10210112312", "hash", true, true, true);
 
     private final StaffCatalogue summer = TestStaffCatalogues.load("summer");
+    private final StaffCatalogue winter = TestStaffCatalogues.load("winter");
 
     private ObjectNode payload(boolean isMinor) throws Exception {
         ObjectNode root = (ObjectNode) mapper.readTree("""
@@ -43,7 +44,7 @@ class SubmissionPayloadValidatorTest {
     @Test void acceptsAllFourPathsWithOptionalImageConsentDeclined() throws Exception {
         for (boolean isMinor : new boolean[]{false, true}) {
             for (var type : RegistrationType.values()) {
-                assertDoesNotThrow(() -> validator.validate(payload(isMinor).toString(), isMinor ? minor : adult, type, summer));
+                assertDoesNotThrow(() -> validate(payload(isMinor).toString(), isMinor ? minor : adult, type));
             }
         }
     }
@@ -51,7 +52,7 @@ class SubmissionPayloadValidatorTest {
     @Test void personalEmailIsOptionalOnlyForMinorParticipants() throws Exception {
         var minorParticipant = payload(true);
         ((ObjectNode) minorParticipant.path("person").path("contact")).put("email", "");
-        assertDoesNotThrow(() -> validator.validate(minorParticipant.toString(), minor, RegistrationType.PARTICIPANT, summer));
+        assertDoesNotThrow(() -> validate(minorParticipant.toString(), minor, RegistrationType.PARTICIPANT));
 
         var minorStaff = payload(true);
         ((ObjectNode) minorStaff.path("person").path("contact")).put("email", "");
@@ -83,7 +84,7 @@ class SubmissionPayloadValidatorTest {
     @ParameterizedTest @ValueSource(strings = {"dataProcessing", "regulations", "truthDeclaration"})
     void rejectsMissingMandatoryConsents(String field) throws Exception {
         var root = payload(false); ((ObjectNode) root.path("consents")).put(field, false);
-        var ex = assertThrows(RegistrationException.class, () -> validator.validate(root.toString(), adult, RegistrationType.PARTICIPANT, summer));
+        var ex = assertThrows(RegistrationException.class, () -> validate(root.toString(), adult, RegistrationType.PARTICIPANT));
         assertEquals("MISSING_CONSENTS", ex.getCode());
     }
 
@@ -98,16 +99,16 @@ class SubmissionPayloadValidatorTest {
     @Test void requiresSeparateGuardianAddressForMinorParticipantOnly() throws Exception {
         var root = payload(true); ((ObjectNode) root.path("address")).put("sameAddress", false);
         rejects(root, minor, RegistrationType.PARTICIPANT);
-        assertDoesNotThrow(() -> validator.validate(root.toString(), minor, RegistrationType.STAFF, summer));
+        assertDoesNotThrow(() -> validate(root.toString(), minor, RegistrationType.STAFF));
         ((ObjectNode) root.path("address")).set("guardianAddress", root.path("address").deepCopy());
-        assertDoesNotThrow(() -> validator.validate(root.toString(), minor, RegistrationType.PARTICIPANT, summer));
+        assertDoesNotThrow(() -> validate(root.toString(), minor, RegistrationType.PARTICIPANT));
     }
 
     @Test void validatesHealthAnswersAndPositiveAnswerDetails() throws Exception {
         var root = payload(false); ((ObjectNode) root.path("health").path("q1")).put("answer", "tak");
         rejects(root, adult, RegistrationType.PARTICIPANT);
         ((ObjectNode) root.path("health").path("q1")).put("detail", "Informacja testowa");
-        assertDoesNotThrow(() -> validator.validate(root.toString(), adult, RegistrationType.PARTICIPANT, summer));
+        assertDoesNotThrow(() -> validate(root.toString(), adult, RegistrationType.PARTICIPANT));
     }
 
     @Test void validatesRoleAgeAndSubroleCombinations() throws Exception {
@@ -117,7 +118,7 @@ class SubmissionPayloadValidatorTest {
         rejects(root, adult, RegistrationType.STAFF);
         root.put("subrole", "prowadzacy");
         final var valid = root;
-        assertDoesNotThrow(() -> validator.validate(valid.toString(), adult, RegistrationType.STAFF, summer));
+        assertDoesNotThrow(() -> validate(valid.toString(), adult, RegistrationType.STAFF));
         root.put("subrole", "animator"); rejects(root, adult, RegistrationType.STAFF);
     }
 
@@ -125,7 +126,7 @@ class SubmissionPayloadValidatorTest {
         var root = payload(false); ((ObjectNode) root.path("certificates")).put("inne", true);
         rejects(root, adult, RegistrationType.STAFF);
         ((ObjectNode) root.path("certificateDetails")).put("inne", "Kurs testowy");
-        assertDoesNotThrow(() -> validator.validate(root.toString(), adult, RegistrationType.STAFF, summer));
+        assertDoesNotThrow(() -> validate(root.toString(), adult, RegistrationType.STAFF));
     }
 
     @Test void rejectsWrongJsonTypesAndExcessiveNames() throws Exception {
@@ -135,8 +136,22 @@ class SubmissionPayloadValidatorTest {
         rejects(root, adult, RegistrationType.PARTICIPANT);
     }
 
+    @Test void staffRoleAgeUsesTurnusStartWhilePersonalDataUsesSubmissionAge() throws Exception {
+        var root = payload(true);
+        root.put("role", "instruktor");
+        root.put("subrole", "narty");
+
+        assertDoesNotThrow(() -> validator.validate(root.toString(), minor, RegistrationType.STAFF, winter, false));
+        assertThrows(RegistrationException.class,
+                () -> validator.validate(root.toString(), minor, RegistrationType.STAFF, winter, true));
+    }
+
     private void rejects(ObjectNode root, RegistrationContext context, RegistrationType type) {
-        assertThrows(RegistrationException.class, () -> validator.validate(root.toString(), context, type, summer));
+        assertThrows(RegistrationException.class, () -> validate(root.toString(), context, type));
+    }
+
+    private void validate(String payload, RegistrationContext context, RegistrationType type) {
+        validator.validate(payload, context, type, summer, context.isMinor());
     }
 
     @ParameterizedTest @ValueSource(strings = {"motherName", "fatherName", "birthSurname"})
@@ -147,7 +162,7 @@ class SubmissionPayloadValidatorTest {
             person.remove(field);
             var context = isMinor ? minor : adult;
             rejects(root, context, RegistrationType.STAFF);
-            assertDoesNotThrow(() -> validator.validate(root.toString(), context, RegistrationType.PARTICIPANT, summer));
+            assertDoesNotThrow(() -> validate(root.toString(), context, RegistrationType.PARTICIPANT));
             person.put(field, "   ");
             rejects(root, context, RegistrationType.STAFF);
             person.put(field, 123);
