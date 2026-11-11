@@ -83,24 +83,29 @@ Turnus fields. Counts are nonnegative JSON integers within Java Integer range;
 unknown categories, duplicates, null entries, negative/fractional counts and
 numeric strings are rejected. Zero entries are removed before storage. An empty
 list means requirements are unconfigured/cleared; it does not deactivate a Turnus.
-There is no restriction relating targets to total capacity.
+Role targets are not automatically synchronized with total capacity. The agreed
+UI should show an advisory warning when the sum of required role counts exceeds
+**Miejsca dla kadry**; this does not rewrite either value or prevent saving the
+definition.
 
 ### Client verification: staff places versus required staffing
 
-For now these values remain independent:
+These values remain independent, with an advisory comparison:
 
 - **Miejsca dla kadry**: the configured total number of staff places.
 - **Łącznie wymagana kadra**: the sum of role-specific staffing targets.
 
-Neither value is the accepted staff count. No automatic synchronization,
-capacity changes, save restrictions or new warnings are introduced by this decision.
+Neither value is the accepted staff count. Do not automatically synchronize them,
+change capacity, or block saving when requirements exceed capacity. Show a warning
+for that mismatch. Acceptance itself is subject to the separate hard capacity
+limit described in [capacity management](Turnus-capacity-management.md).
 
-- [ ] Confirm with the client whether these represent separate concepts in their
-  workflow or whether staff places should eventually be derived from role targets.
-- [ ] If they remain separate, confirm whether a comparison/warning is useful
-  when the required total exceeds the available staff places.
+- [x] Confirm that these remain separate concepts and staff places are not derived
+  from role targets.
+- [x] Confirm that a warning is needed when required role totals exceed staff
+  capacity. The warning is advisory; it does not block saving.
 
-Any later change requires an explicit product decision; current behavior is retained.
+These decisions are agreed; implementation and browser acceptance remain pending.
 
 For backwards compatibility, omitted/null requirements mean an empty list on
 create and preserve current requirements on update. Explicit `[]` clears them.

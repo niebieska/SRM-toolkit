@@ -4,6 +4,8 @@ Implemented on `feature/turnus-list-presets`, 2026-10-15, with separate feature,
 test and documentation commits.
 Extends the existing Listy page; no additional page, endpoint, database table or dependency.
 Existing protected list responses are extended with the agreed optional fields.
+This file records Phase 2 at implementation time. Phase 3 exports were delivered
+later; see [Turnus list exports](Turnus-list-exports.md) for their current scope.
 
 ## Views
 
@@ -71,7 +73,9 @@ special-needs/organizational-information column appears in Wspólne for both lis
 - Retry keeps filters/view/custom columns. Changing Turnus resets them to Ogólny.
   Settings are not persisted after leaving/reloading the page. Selecting a preset
   then entering Własny again begins from that preset, rather than a saved template.
-- No Uwagi, Dopłata, payments or export controls. XLSX/CSV/PDF remain Phase 3.
+- At this Phase 2 implementation point there were no Uwagi, Dopłata, payments or
+  export controls. XLSX/CSV/PDF were delivered in Phase 3; payment status in Lists
+  remains deferred.
 
 ## Verification
 

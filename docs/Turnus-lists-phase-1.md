@@ -55,9 +55,10 @@ test and documentation commits.
 Phase 2 is implemented on `feature/turnus-list-presets`; see
 [presets, custom columns and verification](Turnus-list-presets.md).
 
-Phase 2 adds presets and custom columns to this same view. Phase 3 adds XLSX, CSV
-and PDF. Uwagi source, Dopłata/payment rules and PDF implementation remain open.
-No status updates, payments or exports were added in Phase 1.
+Phase 2 presets/custom columns and Phase 3 XLSX/CSV/PDF exports were delivered in
+later changes; see their linked scope documents. Uwagi source and Dopłata/payment
+rules were not part of Phase 1. Payment status in Lists remains deferred. No status
+updates, payments or exports were added in Phase 1.
 
 ## Follow-up after the baseline commit
 

@@ -9,8 +9,21 @@ Branch: `feature/turnus-capacity-management`.
   at 10 and can be edited individually. New editor defaults are 50 / 10.
 - Shared `active` controls archival; registration opening is manual and separate
   for participants and staff. Both new switches initially inherit the old switch.
-- Acceptance remains enabled at and beyond capacity. No acceptance-time catalogue
-  requests or automatic registration closure were added.
+- **Agreed follow-up (2026-11-09, not yet implemented):** acceptance must not
+  move a registration to ACCEPTED when the accepted count for its type has reached
+  that Turnus's capacity. Enforce this in Registration API within the status-change
+  transaction so concurrent requests cannot overbook; return a capacity-specific
+  business error and show a clear message in Biuro. WAITLIST/REJECTED decisions
+  remain available. Increasing capacity or freeing a place allows later acceptance.
+- This rule applies separately to participants and staff. Public submissions may
+  still be saved as NEW while a Turnus is full; registration-open switches remain
+  manual and independent of capacity.
+- Existing implementation still permits acceptance at and beyond capacity until
+  this follow-up is delivered. The old behavior is superseded by the decision above.
+- Implementation must enforce the limit against the current Turnus capacity, not
+  an outdated hourly Registration cache. Decide how Biuro capacity changes become
+  visible to the acceptance path, and serialize final-place allocation per Turnus
+  and registration type so concurrent acceptances cannot overbook.
 - A reduction below the accepted count of that type is rejected with 422. Equality
   is allowed. Only reduced capacities are checked: increasing capacity, unchanged
   limits and editing other fields do not require an accepted-count lookup.
@@ -71,8 +84,12 @@ Use synthetic registrations and record results before release:
    options. Closed-type submissions fail without losing entered data. Inactive
    Turnusy are unavailable to both types.
 4. Accept participant/staff registrations independently. Verify both statistics,
-   NEW/WAITLIST/REJECTED counts and filtering. At capacity, acceptance is still
-   available; one extra acceptance displays the excess.
+   NEW/WAITLIST/REJECTED counts and filtering. At capacity, acceptance to ACCEPTED
+   must fail with the capacity-specific response; WAITLIST/REJECTED remain available.
+   Verify that freeing a place or increasing capacity permits acceptance. Confirm
+   submissions can still be saved as NEW while capacity is full and registration is open.
+   Verify a capacity change is respected without waiting for the hourly catalogue
+   refresh, and concurrent attempts for the final place cannot both succeed.
 5. Reduce each capacity below accepted count: expect 422, useful Polish message,
    preserved inputs and unchanged database version. Reduce to accepted count:
    expect success. Increase capacity and verify the statistics.
@@ -83,6 +100,7 @@ Use synthetic registrations and record results before release:
 8. Repeat create navigation, duplicate-code errors, stale-version conflict reload,
    unsaved-edit warnings and logout checks from the editor verification document.
 
-Required staff roles/headcounts, per-role staffing statistics and acceptance-button
-blocking are separate follow-ups. Role-specific staffing requirements are not
-represented by these overall capacity fields.
+Required staff roles/headcounts and per-role staffing statistics are represented
+separately from overall capacity. A separate agreed warning should appear when the
+sum of required staff-role counts exceeds staff capacity; it is advisory and does
+not change either value. See [staff requirements](Turnus-staff-requirements.md).

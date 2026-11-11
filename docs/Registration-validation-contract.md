@@ -7,7 +7,12 @@ PESEL/Turnus eligibility and before counter allocation, persistence or notificat
 - Both types require person first/last name, email and country-prefixed telephone,
   address (street, house number, Polish postal code and city), and health answers.
 - The backend derives minority from PESEL at submission time, as before; submitted
-  adult flag and gender must agree. Minimum age still uses Turnus start date.
+  adult flag and gender must agree. Turnus minimum age is **rocznikowy**: compare
+  the Turnus start year with the birth year from PESEL, without checking whether
+  the participant's birthday has occurred by the start date. For example, a person
+  born in 2012 qualifies for a 14+ Turnus starting in 2026, even if they turn 14
+  later that year. This product rule was agreed 2026-11-02; the current backend
+  still checks exact age on the Turnus start date and requires implementation.
 - Minors require guardian names, relationship, combined parent names and contact.
   Minor participants also need the separate guardian address when sameAddress=false.
 - Adults require ICE names, relationship and telephone. The "inna" relationship
@@ -21,9 +26,11 @@ PESEL/Turnus eligibility and before counter allocation, persistence or notificat
   Other-certificate selections require an explanation. Role/subrole options are
   temporarily mirrored in backend code; replace with the agreed season source.
   Certificate allowlists/required qualification policies remain season work.
-- No aggregate payload-size limit is introduced. Per-field bounds added in this
-  branch need alignment with frontend fields and product review; see
-  Form-field-capacity-review.md. They are not database column limits.
+- No aggregate payload-size limit is introduced. Frontend usability caps are
+  implemented in PR #55 and are part of `development`; they may be shorter than the
+  wider backend request ceilings; see Form-field-capacity-review.md for exact
+  values and branch verification. They are not database column limits and do not
+  silently truncate input.
 
 Frontend changes retain server code/message/status, keep the submit lock through
 HTTP completion, prevent back navigation during submission, and preserve entered
