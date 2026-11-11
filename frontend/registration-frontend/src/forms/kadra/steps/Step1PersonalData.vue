@@ -240,7 +240,8 @@
 
     <div class="flex justify-end">
       <button @click="goNext"
-              class="bg-gray-800 text-white px-8 py-3 rounded-xl font-semibold hover:bg-gray-700 transition">
+              :disabled="loadingTurnusy"
+              class="bg-gray-800 text-white px-8 py-3 rounded-xl font-semibold hover:bg-gray-700 transition disabled:cursor-not-allowed disabled:opacity-50">
         Dalej →
       </button>
     </div>
@@ -338,7 +339,11 @@ function onPostalCodeInput() {
 function validate() {
   Object.keys(errors).forEach(k => delete errors[k])
 
-  if (!local.value.turnusCode) errors.turnusCode = 'Wybierz turnus.'
+  if (!local.value.turnusCode) {
+    errors.turnusCode = 'Wybierz turnus.'
+  } else if (!loadingTurnusy.value && !selectedTurnus.value) {
+    errors.turnusCode = 'Wybierz dostępny turnus.'
+  }
   if (!local.value.firstName?.trim()) errors.firstName = 'Podaj imię.'
   if (!local.value.lastName?.trim()) errors.lastName = 'Podaj nazwisko.'
   if (!local.value.motherName?.trim()) errors.motherName = 'Podaj imię matki.'
@@ -452,7 +457,7 @@ function validate() {
 }
 
 function goNext() {
-  if (!validate()) return
+  if (loadingTurnusy.value || !validate() || !selectedTurnus.value) return
   emit('update:formData', {
     ...local.value,
     isAdult: isAdult.value,
