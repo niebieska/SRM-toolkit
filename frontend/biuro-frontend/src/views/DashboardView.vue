@@ -1,5 +1,5 @@
 <script setup>
-import { computed, onBeforeUnmount, onMounted, reactive, ref, watch } from 'vue'
+import { computed, nextTick, onBeforeUnmount, onMounted, reactive, ref, watch } from 'vue'
 import { useAuthStore } from '../stores/auth'
 import RegistrationTable from '../components/RegistrationTable.vue'
 import BiuroHeader from '../components/BiuroHeader.vue'
@@ -7,10 +7,14 @@ import StaffingStatistics from '../components/StaffingStatistics.vue'
 import { visibleStaffingRoles } from '../utils/staffingStatistics.js'
 import { fetchTurnuses } from '../api/turnusApi'
 import { fetchTurnusStats } from '../api/registrationApi'
+import ManualStaffRegistrationModal from '../components/ManualStaffRegistrationModal.vue'
 
 const authStore = useAuthStore()
 
 const stats = ref(null)
+const registrationTable = ref(null)
+const showManualStaffForm = ref(false)
+const manualStaffSuccess = ref('')
 
 const filters = reactive({
   status: '',
@@ -48,6 +52,17 @@ function clearFilters() {
   filters.search = ''
 }
 
+async function handleManualStaffCreated(code) {
+  showManualStaffForm.value = false
+  manualStaffSuccess.value = `Dodano zaakceptowane zgłoszenie kadry: ${code}.`
+  filters.status = 'ACCEPTED'
+  filters.registrationType = 'STAFF'
+  filters.turnusCode = ''
+  filters.search = ''
+  await nextTick()
+  await registrationTable.value?.loadRegistrations()
+}
+
 async function loadTurnusStats() {
   const turnusCode = filters.turnusCode
   const request = ++statsRequest
@@ -76,6 +91,15 @@ watch(
   <main class="min-h-screen p-4 md:p-8">
     <div class="max-w-6xl mx-auto space-y-4">
       <BiuroHeader />
+
+      <section class="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
+        <div>
+          <h2 class="font-semibold text-slate-900">Zgłoszenia</h2>
+          <p class="mt-1 text-sm text-slate-600">Dodaj osobę z kadry, która nie może skorzystać z formularza.</p>
+        </div>
+        <button type="button" class="rounded-lg bg-slate-800 px-4 py-2.5 text-sm font-semibold text-white hover:bg-slate-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-500 focus-visible:ring-offset-2" @click="showManualStaffForm = true">+ Dodaj kadrę</button>
+      </section>
+      <p v-if="manualStaffSuccess" role="status" class="rounded-lg border border-emerald-200 bg-emerald-50 p-3 text-sm text-emerald-800">{{ manualStaffSuccess }}</p>
 
        <section class="bg-white rounded-xl shadow p-4 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-[repeat(4,minmax(0,1fr))_auto] gap-3">
         <select aria-label="Status zgłoszenia" v-model="filters.status" class="min-w-0 rounded border border-slate-300 px-3 py-2">
@@ -160,7 +184,9 @@ watch(
           :unmapped="stats?.unmappedAcceptedStaff || 0"
         />
       </section>
-      <RegistrationTable :filters="filters" @status-updated="loadTurnusStats"/>
+      <RegistrationTable ref="registrationTable" :filters="filters" @status-updated="loadTurnusStats"/>
     </div>
+    <ManualStaffRegistrationModal v-if="showManualStaffForm" :token="authStore.token" :turnuses="turnusOptions"
+      @close="showManualStaffForm = false" @created="handleManualStaffCreated" />
   </main>
 </template>

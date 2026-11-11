@@ -91,6 +91,7 @@ const loadRegistrations = createQueuedRefresh(async (isCurrent) => {
     if (initialLoad && isCurrent()) loading.value = false
   }
 })
+defineExpose({ loadRegistrations })
 
 function openModal(registration, action) {
   selectedRegistration.value = registration

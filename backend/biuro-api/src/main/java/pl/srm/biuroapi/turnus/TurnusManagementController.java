@@ -10,15 +10,24 @@ import pl.srm.biuroapi.common.api.ApiError;
 import org.springframework.web.bind.annotation.*;
 import java.util.List;
 import pl.srm.biuroapi.season.StaffingCategories;
+import pl.srm.biuroapi.season.SeasonStaffCatalogue;
+import pl.srm.biuroapi.season.StaffCatalogue;
 
 @RestController
 @RequestMapping("/api/turnuses")
 public class TurnusManagementController {
     private final TurnusCatalogue catalogue;
     private final StaffingCategories categories;
-    public TurnusManagementController(TurnusCatalogue catalogue, StaffingCategories categories) {
+    private final SeasonStaffCatalogue staffCatalogues;
+    public TurnusManagementController(TurnusCatalogue catalogue, StaffingCategories categories,
+                                      SeasonStaffCatalogue staffCatalogues) {
         this.catalogue = catalogue;
         this.categories = categories;
+        this.staffCatalogues = staffCatalogues;
+    }
+    @GetMapping("/staff-options")
+    public StaffCatalogue staffOptions(@RequestParam TurnusDefinition.SeasonType seasonType) {
+        return staffCatalogues.get(seasonType);
     }
     @GetMapping("/staffing-categories")
     public List<StaffingCategories.Category> staffingCategories(@RequestParam TurnusDefinition.SeasonType seasonType) {
