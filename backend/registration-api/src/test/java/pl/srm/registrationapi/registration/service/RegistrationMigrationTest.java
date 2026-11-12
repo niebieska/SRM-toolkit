@@ -48,12 +48,13 @@ class RegistrationMigrationTest {
     }
 
     @Test
-    void migrationRecognizesLegacyBiuroStaffButLeavesFormularzStaffAsFormularz() throws Exception {
+    void migrationRecoversEditedLegacyBiuroStaffButLeavesFormularzStaffAsFormularz() throws Exception {
         withDatabase(url -> {
             flyway(url, "3").migrate();
             try (var connection = connect(url); var sql = connection.createStatement()) {
                 sql.executeUpdate(insert("REG-S-A-1", "STAFF", "manual"));
-                sql.executeUpdate("UPDATE registration SET status = 'ACCEPTED', updated_at = created_at "
+                sql.executeUpdate("UPDATE registration SET status = 'ACCEPTED', "
+                        + "updated_at = DATE_ADD(created_at, INTERVAL 2 DAY) "
                         + "WHERE registration_code = 'REG-S-A-1'");
                 sql.executeUpdate("INSERT INTO registration_status_history "
                         + "(registration_id, previous_status, new_status, changed_at, actor_account_id, actor_username) "
@@ -68,6 +69,16 @@ class RegistrationMigrationTest {
                         + "(registration_id, previous_status, new_status, changed_at, actor_account_id, actor_username) "
                         + "SELECT id, 'NEW', 'ACCEPTED', updated_at, 'account-id', 'operator' "
                         + "FROM registration WHERE registration_code = 'REG-S-A-2'");
+
+                sql.executeUpdate(insert("REG-S-A-3", "STAFF", "form-after-waitlist"));
+                sql.executeUpdate("INSERT INTO registration_status_history "
+                        + "(registration_id, previous_status, new_status, changed_at, actor_account_id, actor_username) "
+                        + "SELECT id, 'NEW', 'WAITLIST', created_at + INTERVAL 100 MICROSECOND, 'account-id', 'operator' "
+                        + "FROM registration WHERE registration_code = 'REG-S-A-3'");
+                sql.executeUpdate("INSERT INTO registration_status_history "
+                        + "(registration_id, previous_status, new_status, changed_at, actor_account_id, actor_username) "
+                        + "SELECT id, 'WAITLIST', 'ACCEPTED', created_at + INTERVAL 500 MICROSECOND, 'account-id', 'operator' "
+                        + "FROM registration WHERE registration_code = 'REG-S-A-3'");
             }
 
             flyway(url, null).migrate();
@@ -76,6 +87,7 @@ class RegistrationMigrationTest {
                 var result = sql.executeQuery("SELECT registration_code, source FROM registration ORDER BY registration_code");
                 assertTrue(result.next()); assertEquals("REG-S-A-1", result.getString(1)); assertEquals("BIURO", result.getString(2));
                 assertTrue(result.next()); assertEquals("REG-S-A-2", result.getString(1)); assertEquals("FORMULARZ", result.getString(2));
+                assertTrue(result.next()); assertEquals("REG-S-A-3", result.getString(1)); assertEquals("FORMULARZ", result.getString(2));
                 assertFalse(result.next());
             }
         });
@@ -95,7 +107,7 @@ class RegistrationMigrationTest {
             assertThrows(org.flywaydb.core.api.FlywayException.class, () -> flyway(url, null).migrate());
             var adopted = Flyway.configure().dataSource(url, System.getenv("TEST_DB_USER"),
                     System.getenv("TEST_DB_PASSWORD")).baselineOnMigrate(true).baselineVersion("1").load();
-            assertEquals(5, adopted.migrate().migrationsExecuted);
+            assertEquals(6, adopted.migrate().migrationsExecuted);
             try (var connection = connect(url); var sql = connection.createStatement()) {
                 var result = sql.executeQuery("SELECT last_number FROM registration_counter");
                 assertTrue(result.next()); assertEquals(8, result.getLong(1));
