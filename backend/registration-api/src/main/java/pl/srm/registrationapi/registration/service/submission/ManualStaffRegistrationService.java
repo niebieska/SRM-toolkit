@@ -38,6 +38,9 @@ public class ManualStaffRegistrationService {
 
         RegistrationContext data = parser.parse(payload);
         Turnus turnus = turnusProvider.getByCode(data.turnusCode());
+        if (!turnus.active()) {
+            throw new RegistrationException("TURNUS_INACTIVE", "Nie można dodać zgłoszenia do nieaktywnego turnusu.");
+        }
         validationService.validateEligibility(data, turnus);
         validationService.validateManualStaffPayload(payload, data, turnus);
 
