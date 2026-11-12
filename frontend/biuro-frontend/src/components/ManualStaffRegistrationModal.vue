@@ -1,6 +1,8 @@
 <script setup>
-import { computed, reactive, ref, watch } from 'vue'
+import { computed, onBeforeUnmount, reactive, ref, watch } from 'vue'
 import PhoneInput from './PhoneInput.vue'
+import DiscardChangesDialog from './DiscardChangesDialog.vue'
+import { createDiscardConfirmation } from '../utils/discardConfirmation.js'
 import { createManualStaffRegistration } from '../api/registrationApi.js'
 import { fetchStaffCatalogue } from '../api/turnusApi.js'
 import {
@@ -13,9 +15,9 @@ import {
 const props = defineProps({ token: { type: String, required: true }, turnuses: { type: Array, default: () => [] } })
 const emit = defineEmits(['close', 'created'])
 const submitting = ref(false)
-const dirty = ref(false)
 const error = ref('')
 const validationErrors = ref({})
+const { prompt: discardPrompt, confirm: confirmDiscard, decide: decideDiscard } = createDiscardConfirmation()
 const catalogue = ref(null)
 const catalogueLoading = ref(false)
 const catalogueError = ref('')
@@ -30,6 +32,8 @@ const form = reactive({
   requiredConfirmations: false, imageUsage: false,
   _lastParentNames: '',
 })
+const initialFormSnapshot = JSON.stringify(form)
+const dirty = computed(() => JSON.stringify(form) !== initialFormSnapshot)
 const healthQuestions = [
   'Czy osoba posiada choroby przewlekłe, o których organizator powinien wiedzieć?',
   'Czy występują alergie lub nietolerancje pokarmowe, które należy uwzględnić przy przygotowywaniu posiłków?',
@@ -166,14 +170,14 @@ function validateForm() {
   return Object.keys(errors).length === 0
 }
 function onFormEdit() {
-  dirty.value = true
   if (Object.keys(validationErrors.value).length) validateForm()
 }
-function requestClose() {
+async function requestClose() {
   if (submitting.value) return
-  if (dirty.value && !window.confirm('Opuścić formularz bez zapisywania wprowadzonych danych?')) return
+  if (dirty.value && !(await confirmDiscard('form'))) return
   emit('close')
 }
+onBeforeUnmount(() => decideDiscard(false))
 function selectRole(value) { form.role = value; form.subrole = '' }
 function toggleCertificate(id, checked) {
   const updated = { ...form.certificates }
@@ -415,6 +419,12 @@ async function submit() {
         </footer>
       </form>
     </section>
+    <DiscardChangesDialog
+      v-if="discardPrompt"
+      :kind="discardPrompt.kind"
+      @stay="decideDiscard(false)"
+      @discard="decideDiscard(true)"
+    />
   </div>
 </template>
 
