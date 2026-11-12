@@ -48,6 +48,40 @@ class RegistrationMigrationTest {
     }
 
     @Test
+    void migrationRecognizesLegacyBiuroStaffButLeavesFormularzStaffAsFormularz() throws Exception {
+        withDatabase(url -> {
+            flyway(url, "3").migrate();
+            try (var connection = connect(url); var sql = connection.createStatement()) {
+                sql.executeUpdate(insert("REG-S-A-1", "STAFF", "manual"));
+                sql.executeUpdate("UPDATE registration SET status = 'ACCEPTED', updated_at = created_at "
+                        + "WHERE registration_code = 'REG-S-A-1'");
+                sql.executeUpdate("INSERT INTO registration_status_history "
+                        + "(registration_id, previous_status, new_status, changed_at, actor_account_id, actor_username) "
+                        + "SELECT id, 'NEW', 'ACCEPTED', created_at + INTERVAL 500 MICROSECOND, 'account-id', 'operator' "
+                        + "FROM registration WHERE registration_code = 'REG-S-A-1'");
+
+                sql.executeUpdate(insert("REG-S-A-2", "STAFF", "form"));
+                sql.executeUpdate("UPDATE registration SET status = 'ACCEPTED', "
+                        + "updated_at = DATE_ADD(created_at, INTERVAL 1 DAY) "
+                        + "WHERE registration_code = 'REG-S-A-2'");
+                sql.executeUpdate("INSERT INTO registration_status_history "
+                        + "(registration_id, previous_status, new_status, changed_at, actor_account_id, actor_username) "
+                        + "SELECT id, 'NEW', 'ACCEPTED', updated_at, 'account-id', 'operator' "
+                        + "FROM registration WHERE registration_code = 'REG-S-A-2'");
+            }
+
+            flyway(url, null).migrate();
+
+            try (var connection = connect(url); var sql = connection.createStatement()) {
+                var result = sql.executeQuery("SELECT registration_code, source FROM registration ORDER BY registration_code");
+                assertTrue(result.next()); assertEquals("REG-S-A-1", result.getString(1)); assertEquals("BIURO", result.getString(2));
+                assertTrue(result.next()); assertEquals("REG-S-A-2", result.getString(1)); assertEquals("FORMULARZ", result.getString(2));
+                assertFalse(result.next());
+            }
+        });
+    }
+
+    @Test
     void baselineAdoptsLegacySchemaWithoutHistoryAndAppliesCurrentMigrations() throws Exception {
         withDatabase(url -> {
             try (var connection = connect(url); var sql = connection.createStatement()) {
@@ -61,7 +95,7 @@ class RegistrationMigrationTest {
             assertThrows(org.flywaydb.core.api.FlywayException.class, () -> flyway(url, null).migrate());
             var adopted = Flyway.configure().dataSource(url, System.getenv("TEST_DB_USER"),
                     System.getenv("TEST_DB_PASSWORD")).baselineOnMigrate(true).baselineVersion("1").load();
-            assertEquals(3, adopted.migrate().migrationsExecuted);
+            assertEquals(5, adopted.migrate().migrationsExecuted);
             try (var connection = connect(url); var sql = connection.createStatement()) {
                 var result = sql.executeQuery("SELECT last_number FROM registration_counter");
                 assertTrue(result.next()); assertEquals(8, result.getLong(1));
@@ -77,6 +111,8 @@ class RegistrationMigrationTest {
                 result = sql.executeQuery("SELECT COUNT(*) FROM information_schema.columns "
                         + "WHERE table_schema = DATABASE() AND table_name = 'registration' AND column_name = 'version'");
                 assertTrue(result.next()); assertEquals(1, result.getInt(1));
+                result = sql.executeQuery("SELECT source FROM registration WHERE registration_code = 'REG-P-A-8'");
+                assertTrue(result.next()); assertEquals("FORMULARZ", result.getString(1));
             }
             assertEquals(0, flyway(url, null).migrate().migrationsExecuted);
         });

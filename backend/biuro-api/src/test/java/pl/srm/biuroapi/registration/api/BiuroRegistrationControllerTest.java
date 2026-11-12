@@ -84,7 +84,7 @@ class BiuroRegistrationControllerTest {
     @Test
     void registrationEditForwardsAuthenticatedActorToRegistrationApi() {
         RegistrationEditRequest request = new RegistrationEditRequest(2L, Map.of("person.firstName", "Alicja"));
-        RegistrationDetail expected = new RegistrationDetail("REG-1", "PARTICIPANT", "T1", false,
+        RegistrationDetail expected = new RegistrationDetail("REG-1", "PARTICIPANT", "FORMULARZ", "T1", false,
                 "NEW", null, null, null, null, null, Map.of(), List.of(), 3L, List.of());
         when(registrationApiClient.updateRegistrationData("REG-1", request, "account-id", "operator"))
                 .thenReturn(expected);

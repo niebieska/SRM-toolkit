@@ -91,7 +91,7 @@ class RegistrationApiClientTest {
         server.expect(requestTo("http://registration-api:8080/api/registrations/ABC"))
                 .andExpect(header(HttpHeaders.AUTHORIZATION, credentials))
                 .andRespond(withSuccess("""
-                        {"registrationCode":"ABC","minor":false,"statusHistory":[
+                        {"registrationCode":"ABC","minor":false,"source":"BIURO","statusHistory":[
                           {"id":1,"previousStatus":"NEW","newStatus":"ACCEPTED",
                            "changedAt":"2027-01-02T10:00:00","actorUsername":"operator"}]}
                         """, MediaType.APPLICATION_JSON));
@@ -106,6 +106,7 @@ class RegistrationApiClientTest {
         assertTrue(client.fetchRegistrations().isEmpty());
         var detail = client.fetchRegistration("ABC");
         assertEquals("ABC", detail.registrationCode());
+        assertEquals("BIURO", detail.source());
         assertEquals("operator", detail.statusHistory().getFirst().actorUsername());
         assertEquals("WAITLIST", client.updateStatus("ABC", new StatusUpdateRequest("WAITLIST", null), "actor-id", "operator").status());
         server.verify();
