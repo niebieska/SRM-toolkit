@@ -2,6 +2,12 @@
 import { computed, reactive, ref, watch } from 'vue'
 import { createManualStaffRegistration } from '../api/registrationApi.js'
 import { fetchStaffCatalogue } from '../api/turnusApi.js'
+import {
+  filterStaffRolesByAge,
+  filterStaffSubrolesByAge,
+  isAdultOnDate,
+  parseStaffPesel,
+} from '../utils/staffRegistrationAge.js'
 
 const props = defineProps({ token: { type: String, required: true }, turnuses: { type: Array, default: () => [] } })
 const emit = defineEmits(['close', 'created'])
@@ -28,12 +34,16 @@ const healthQuestions = [
 ]
 
 const selectedTurnus = computed(() => props.turnuses.find(item => item.turnusCode === form.turnusCode) || null)
-const peselInfo = computed(() => parsePesel(form.pesel))
-const eligible = option => (peselInfo.value.isAdult ? !option.minorOnly : !option.adultOnly)
-const availableRoles = computed(() => (catalogue.value?.roles || []).filter(role =>
-  eligible(role) || role.subroles.some(eligible)))
+const availableTurnuses = computed(() => props.turnuses.filter(turnus => turnus.active === true))
+const peselInfo = computed(() => parseStaffPesel(form.pesel))
+const roleEligibilityReady = computed(() => peselInfo.value.valid && !!selectedTurnus.value?.startDate)
+const adultAtTurnusStart = computed(() => roleEligibilityReady.value
+  && isAdultOnDate(form.pesel, selectedTurnus.value.startDate))
+const availableRoles = computed(() => roleEligibilityReady.value
+  ? filterStaffRolesByAge(catalogue.value?.roles, adultAtTurnusStart.value)
+  : [])
 const selectedRole = computed(() => availableRoles.value.find(role => role.value === form.role) || null)
-const availableSubroles = computed(() => (selectedRole.value?.subroles || []).filter(eligible))
+const availableSubroles = computed(() => filterStaffSubrolesByAge(selectedRole.value?.subroles, adultAtTurnusStart.value))
 const selectedCertificates = computed(() => {
   const options = catalogue.value?.certificatesByRole || {}
   const key = form.subrole && options[`${form.role}_${form.subrole}`] ? `${form.role}_${form.subrole}`
@@ -66,32 +76,22 @@ watch(() => [form.role, form.subrole], () => {
   form.certificateDetails = {}
 })
 
+watch(availableRoles, roles => {
+  if (form.role && !roles.some(role => role.value === form.role)) {
+    form.role = ''
+    form.subrole = ''
+  }
+})
+
+watch(availableSubroles, subroles => {
+  if (form.subrole && !subroles.some(subrole => subrole.value === form.subrole)) form.subrole = ''
+})
+
 watch(() => [form.guardianFirstName, form.guardianLastName], ([first, last]) => {
   const names = [first, last].filter(Boolean).join(' ')
   if (!form.parentNames || form.parentNames === form._lastParentNames) form.parentNames = names
   form._lastParentNames = names
 })
-
-function parsePesel(value) {
-  if (!/^\d{11}$/.test(value)) return { isAdult: false, gender: null, valid: false }
-  const weights = [1, 3, 7, 9, 1, 3, 7, 9, 1, 3, 1]
-  const valid = value.split('').reduce((sum, digit, index) => sum + Number(digit) * weights[index], 0) % 10 === 0
-  const year = Number(value.slice(0, 2)), day = Number(value.slice(4, 6))
-  let month = Number(value.slice(2, 4)), century
-  if (month >= 1 && month <= 12) century = 1900
-  else if (month >= 21 && month <= 32) { month -= 20; century = 2000 }
-  else if (month >= 41 && month <= 52) { month -= 40; century = 2100 }
-  else if (month >= 61 && month <= 72) { month -= 60; century = 2200 }
-  else if (month >= 81 && month <= 92) { month -= 80; century = 1800 }
-  else return { isAdult: false, gender: null, valid: false }
-  const birth = new Date(century + year, month - 1, day)
-  if (birth.getFullYear() !== century + year || birth.getMonth() !== month - 1 || birth.getDate() !== day)
-    return { isAdult: false, gender: null, valid: false }
-  let age = new Date().getFullYear() - birth.getFullYear()
-  const current = new Date()
-  if (current.getMonth() < birth.getMonth() || (current.getMonth() === birth.getMonth() && current.getDate() < birth.getDate())) age--
-  return { isAdult: age >= 18, gender: Number(value[9]) % 2 === 0 ? 'female' : 'male', valid }
-}
 
 function clearError() { error.value = '' }
 function requestClose() {
@@ -145,7 +145,10 @@ async function submit() {
   if (submitting.value) return
   clearError()
   if (!peselInfo.value.valid) { error.value = 'Podaj prawidłowy numer PESEL.'; return }
-  if (!form.role || (selectedRole.value?.subroleRequired && !form.subrole)) { error.value = 'Wybierz prawidłową rolę i funkcję kadry.'; return }
+  if (!selectedRole.value || (selectedRole.value.subroleRequired && !form.subrole)
+      || (form.subrole && !availableSubroles.value.some(subrole => subrole.value === form.subrole))) {
+    error.value = 'Wybierz prawidłową rolę i funkcję kadry.'; return
+  }
   if (selectedCertificates.value.some(item => item.hasDetails && form.certificates[item.id] && !form.certificateDetails[item.id]?.trim())) {
     error.value = 'Uzupełnij opis wybranego uprawnienia.'; return
   }
@@ -180,9 +183,9 @@ async function submit() {
           <div class="grid gap-4 sm:grid-cols-2">
             <label class="field sm:col-span-2">Turnus *
               <select v-model="form.turnusCode" required><option value="">Wybierz turnus</option>
-                <option v-for="turnus in turnuses" :key="turnus.turnusCode" :value="turnus.turnusCode">{{ turnus.turnusName }} · {{ turnus.turnusCode }}{{ turnus.active ? '' : ' · nieaktywny' }}{{ turnus.staffRegistrationOpen ? '' : ' · zapisy zamknięte' }}</option>
+                <option v-for="turnus in availableTurnuses" :key="turnus.turnusCode" :value="turnus.turnusCode">{{ turnus.turnusName }} · {{ turnus.turnusCode }}{{ turnus.staffRegistrationOpen ? '' : ' · zapisy zamknięte' }}</option>
               </select>
-              <span v-if="!turnuses.length" class="font-normal text-red-700">Lista turnusów jest niedostępna.</span>
+              <span v-if="!availableTurnuses.length" class="font-normal text-slate-600">Brak aktywnych turnusów do wyboru.</span>
             </label>
             <label class="field">Imię (imiona) *<input v-model.trim="form.firstName" maxlength="60" required /></label>
             <label class="field">Nazwisko *<input v-model.trim="form.lastName" maxlength="80" required />
@@ -237,6 +240,8 @@ async function submit() {
           <p v-if="selectedTurnus" class="mb-4 text-sm text-slate-600">Role zgodne z sezonem: {{ selectedTurnus.seasonType === 'WINTER' ? 'Zima' : 'Lato' }}.</p>
           <p v-if="catalogueLoading" role="status" class="text-sm text-slate-500">Wczytywanie ról…</p>
           <p v-else-if="catalogueError" role="alert" class="text-sm text-red-700">{{ catalogueError }}</p>
+          <p v-else-if="!roleEligibilityReady" role="status" class="text-sm text-slate-600">Wpisz prawidłowy PESEL, aby dopasować role do wieku w dniu rozpoczęcia turnusu.</p>
+          <p v-else-if="!availableRoles.length" role="status" class="text-sm text-slate-600">Brak ról dostępnych dla wieku osoby w dniu rozpoczęcia turnusu.</p>
           <div v-else class="grid gap-4 sm:grid-cols-2">
             <label class="field">Rola *<select :value="form.role" required @change="selectRole($event.target.value)"><option value="">Wybierz rolę</option><option v-for="role in availableRoles" :key="role.value" :value="role.value">{{ role.label }}</option></select></label>
             <label v-if="selectedRole?.subroles?.length" class="field">Funkcja
@@ -281,7 +286,7 @@ async function submit() {
         <p v-if="error" role="alert" class="rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-800">{{ error }}</p>
         <footer class="flex flex-col-reverse gap-2 border-t border-slate-200 pt-4 sm:flex-row sm:justify-end">
           <button type="button" class="rounded-lg border border-slate-300 bg-white px-4 py-2.5 text-sm font-medium text-slate-700 hover:bg-slate-50" :disabled="submitting" @click="requestClose">Anuluj</button>
-          <button type="submit" class="rounded-lg bg-slate-800 px-5 py-2.5 text-sm font-semibold text-white hover:bg-slate-900 disabled:cursor-wait disabled:opacity-60" :disabled="submitting || catalogueLoading || !!catalogueError || !turnuses.length">{{ submitting ? 'Zapisywanie…' : 'Dodaj zaakceptowaną kadrę' }}</button>
+          <button type="submit" class="rounded-lg bg-slate-800 px-5 py-2.5 text-sm font-semibold text-white hover:bg-slate-900 disabled:cursor-wait disabled:opacity-60" :disabled="submitting || catalogueLoading || !!catalogueError || !availableTurnuses.length">{{ submitting ? 'Zapisywanie…' : 'Dodaj zaakceptowaną kadrę' }}</button>
         </footer>
       </form>
     </section>

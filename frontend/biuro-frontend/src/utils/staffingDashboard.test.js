@@ -7,7 +7,7 @@ import { parse, compileScript } from '@vue/compiler-sfc'
 const file = new URL('../views/DashboardView.vue', import.meta.url)
 const { descriptor } = parse(await readFile(file, 'utf8'))
 let source = compileScript(descriptor, { id: 'staffing-dashboard-test' }).content
-source = source.replace(/import (RegistrationTable|BiuroHeader|StaffingStatistics) .*\n/g, (_, name) => `const ${name} = {};\n`)
+source = source.replace(/import (RegistrationTable|BiuroHeader|StaffingStatistics|ManualStaffRegistrationModal) .*\n/g, (_, name) => `const ${name} = {};\n`)
 source = source.replace(/import .* from '..\/stores\/auth'/, "const useAuthStore = () => ({ token: 'operator-token' });")
 source = source.replace(/from '([^']+)'/g, (match, path) => {
   if (path === 'vue') return `from '${import.meta.resolve('vue')}'`
