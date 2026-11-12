@@ -63,7 +63,12 @@ replace the broader release plan.
 
 ## Decision / verification still needed
 
-- [ ] Agree supported phone-number formats and align frontend/backend validation.
+- [ ] Revisit international phone-number lengths and align frontend/backend
+  validation. The current segmented input caps the national number at 9 digits
+  and silently truncates longer input (for example, a 10-digit number with the
+  `+1` country prefix). It is retained for now; decide the supported formats
+  before changing the control, then verify that valid numbers are never
+  silently altered and frontend/backend accept the same values.
 - [ ] Manually verify refresh behavior with a new registration, changed filters,
   an open detail modal, a failed request and a hidden/foregrounded browser tab.
 - [ ] Verify capacity boundaries for both registration types, including freeing
