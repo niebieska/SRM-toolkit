@@ -3,6 +3,7 @@ package pl.srm.registrationapi.registration.service.management;
 import com.fasterxml.jackson.databind.JsonNode;
 import org.springframework.stereotype.Component;
 import pl.srm.registrationapi.registration.model.Registration;
+import pl.srm.registrationapi.registration.model.RegistrationSource;
 
 import java.util.HashSet;
 import java.util.Map;
@@ -69,9 +70,13 @@ final class RegistrationEditPolicy {
 
     boolean isRequired(String path, Registration registration) {
         return REQUIRED_FIELDS.contains(path)
-                && !("person.contact.email".equals(path)
-                && registration.isMinor()
-                && !isStaff(registration));
+                && !("person.contact.email".equals(path) && isPersonEmailOptional(registration));
+    }
+
+    private boolean isPersonEmailOptional(Registration registration) {
+        boolean staff = isStaff(registration);
+        return (registration.isMinor() && !staff)
+                || (staff && registration.getSource() == RegistrationSource.BIURO);
     }
 
     int maxLength(String path) {

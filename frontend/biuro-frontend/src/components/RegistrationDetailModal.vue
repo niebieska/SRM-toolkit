@@ -209,7 +209,10 @@ function visibleRegistrationSections(registration) {
     <div :class="['w-full rounded-xl bg-white px-6 pb-6 pt-5 my-8 space-y-5', editing ? 'max-w-3xl' : 'max-w-2xl']">
 
       <div class="flex items-center justify-between">
-        <h2 class="text-lg font-semibold">{{ editing ? 'Edytuj dane zgłoszenia' : 'Szczegóły zgłoszenia' }}</h2>
+        <div class="flex flex-wrap items-center gap-2">
+          <h2 class="text-lg font-semibold">{{ editing ? 'Edytuj dane zgłoszenia' : 'Szczegóły zgłoszenia' }}</h2>
+          <span v-if="!editing && detail?.source === 'BIURO'" class="rounded-full border border-blue-200 bg-blue-50 px-2 py-0.5 text-xs font-medium text-blue-800">Dodane przez Biuro</span>
+        </div>
         <button class="text-slate-500 hover:text-slate-800 text-xl leading-none" aria-label="Zamknij szczegóły zgłoszenia" @click="requestClose">✕</button>
       </div>
 

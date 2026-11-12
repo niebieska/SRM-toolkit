@@ -66,6 +66,7 @@ public class RegistrationManagementService {
         return new RegistrationDetailResponse(
                 summary.registrationCode(),
                 summary.registrationType(),
+                registration.getSource().name(),
                 summary.turnusCode(),
                 summary.minor(),
                 summary.status(),
