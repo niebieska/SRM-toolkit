@@ -28,6 +28,7 @@ const renderer = createRenderer({ createComment: () => ({}), insert() {}, remove
 async function settle() {
   for (let i = 0; i < 5; i++) { await new Promise(resolve => setImmediate(resolve)); await nextTick() }
 }
+const winterCategories = JSON.parse(await readFile(new URL('../../../../backend/biuro-api/src/main/resources/staff-seasons/winter-staffing.json', import.meta.url), 'utf8'))
 const summerCategories = JSON.parse(await readFile(new URL('../../../../backend/biuro-api/src/main/resources/staff-seasons/summer-staffing.json', import.meta.url), 'utf8'))
 const definition = { turnusCode: 'T1', turnusName: 'Winter', turnusDescription: null,
   turnusLocation: 'Gliczarów Górny', seasonYear: 2027, minAge: 14, seasonType: 'WINTER', startDate: '2027-01-17', endDate: '2027-01-24', version: 3,
@@ -46,12 +47,14 @@ async function mount(t, fetch, isNew = false) {
   await settle()
   return vm
 }
-test('new Summer editor loads categories before any season change', async t => {
+test('new Turnus editor defaults to the upcoming winter and loads winter categories', async t => {
   const calls = []
-  const vm = await mount(t, async url => { calls.push(url); return new Response(JSON.stringify(summerCategories)) }, true)
-  assert.ok(calls.some(url => url.endsWith('staffing-categories?seasonType=SUMMER')))
+  const vm = await mount(t, async url => { calls.push(url); return new Response(JSON.stringify(winterCategories)) }, true)
+  assert.ok(calls.some(url => url.endsWith('staffing-categories?seasonType=WINTER')))
   assert.equal(vm.categoriesLoading, false)
-  assert.equal(vm.categories.length, 8)
+  assert.equal(vm.categories.length, winterCategories.length)
+  assert.equal(vm.form.seasonType, 'WINTER')
+  assert.equal(vm.form.seasonYear, new Date().getMonth() < 2 ? new Date().getFullYear() : new Date().getFullYear() + 1)
   assert.equal(vm.form.active, false)
   assert.equal(vm.form.participantRegistrationOpen, false)
   assert.equal(vm.form.staffRegistrationOpen, false)

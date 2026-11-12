@@ -10,6 +10,7 @@ import { useAuthStore } from '../stores/auth'
 import { createTurnus, fetchTurnus, updateTurnus, fetchStaffingCategories } from '../api/turnusApi'
 import { requirementCount, withRequirement } from '../utils/staffRequirements'
 import { nextTurnusCacheRefreshTime } from '../utils/turnusCacheSchedule'
+import { defaultWinterSeasonYear } from '../utils/turnusDefaults'
 const { prompt: discardPrompt, confirm: confirmDiscard, decide: decideDiscard } = createDiscardConfirmation()
 const formElement = ref(null), fieldErrors = ref({})
 const categories = ref([]), categoriesLoading = ref(false), categoriesError = ref('')
@@ -33,8 +34,8 @@ watch(dirty, hasUnsavedChanges => {
   }
 })
 function defaults() {
-  return { turnusCode: '', turnusName: '', turnusDescription: '', turnusLocation: '', seasonType: 'SUMMER',
-    seasonYear: new Date().getFullYear(), startDate: '', endDate: '', minAge: 14, participantCapacity: 50, staffCapacity: 10,
+  return { turnusCode: '', turnusName: '', turnusDescription: '', turnusLocation: '', seasonType: 'WINTER',
+    seasonYear: defaultWinterSeasonYear(), startDate: '', endDate: '', minAge: 14, participantCapacity: 50, staffCapacity: 10,
     active: false, participantRegistrationOpen: false, staffRegistrationOpen: false, version: null, staffRequirements: [] }
 }
 function apply(value) {
