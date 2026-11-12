@@ -92,13 +92,6 @@ watch(
     <div class="max-w-6xl mx-auto space-y-4">
       <BiuroHeader />
 
-      <section class="flex flex-wrap items-center justify-between gap-3 rounded-xl border border-slate-200 bg-white p-4 shadow-sm">
-        <div>
-          <h2 class="font-semibold text-slate-900">Zgłoszenia</h2>
-          <p class="mt-1 text-sm text-slate-600">Dodaj osobę z kadry, która nie może skorzystać z formularza.</p>
-        </div>
-        <button type="button" class="rounded-lg bg-slate-800 px-4 py-2.5 text-sm font-semibold text-white hover:bg-slate-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-500 focus-visible:ring-offset-2" @click="showManualStaffForm = true">+ Dodaj kadrę</button>
-      </section>
       <p v-if="manualStaffSuccess" role="status" class="rounded-lg border border-emerald-200 bg-emerald-50 p-3 text-sm text-emerald-800">{{ manualStaffSuccess }}</p>
 
        <section class="bg-white rounded-xl shadow p-4 grid grid-cols-1 md:grid-cols-2 lg:grid-cols-[repeat(4,minmax(0,1fr))_auto] gap-3">
@@ -184,7 +177,11 @@ watch(
           :unmapped="stats?.unmappedAcceptedStaff || 0"
         />
       </section>
-      <RegistrationTable ref="registrationTable" :filters="filters" @status-updated="loadTurnusStats"/>
+      <RegistrationTable ref="registrationTable" :filters="filters" @status-updated="loadTurnusStats">
+        <template #header-actions>
+          <button type="button" class="-translate-y-0.5 whitespace-nowrap rounded-lg bg-slate-800 px-4 py-2 text-sm font-semibold text-white hover:bg-slate-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-500 focus-visible:ring-offset-2" @click="showManualStaffForm = true">+ Dodaj kadrę</button>
+        </template>
+      </RegistrationTable>
     </div>
     <ManualStaffRegistrationModal v-if="showManualStaffForm" :token="authStore.token" :turnuses="turnusOptions"
       @close="showManualStaffForm = false" @created="handleManualStaffCreated" />

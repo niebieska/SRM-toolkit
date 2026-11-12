@@ -145,9 +145,7 @@ watch(
     <p v-else-if="errorMessage && !hasLoadedRegistrations" class="text-red-600">{{ errorMessage }}</p>
     <template v-else>
     <p v-if="errorMessage" class="mb-2 text-sm text-red-600" role="status">{{ errorMessage }}</p>
-    <p v-if="hasLoadedRegistrations && visibleRegistrations.length === 0" class="text-slate-600">Brak zgłoszeń</p>
-
-    <table v-if="hasLoadedRegistrations && visibleRegistrations.length > 0" class="w-full min-w-[1050px] whitespace-nowrap text-sm">
+    <table v-if="hasLoadedRegistrations" class="w-full min-w-[1050px] whitespace-nowrap text-sm">
       <thead>
       <tr class="text-left border-b border-slate-200">
         <th v-for="column in columns" :key="column.key" scope="col"
@@ -162,10 +160,18 @@ watch(
             </span>
           </button>
         </th>
-        <th scope="col" class="py-2">Akcje</th>
+        <th scope="col" class="py-2">
+          <div class="flex items-center justify-between gap-3">
+            <span>Akcje</span>
+            <slot name="header-actions" />
+          </div>
+        </th>
       </tr>
       </thead>
       <tbody>
+      <tr v-if="visibleRegistrations.length === 0" class="border-b border-slate-100">
+        <td colspan="8" class="py-4 text-center text-slate-600">Brak zgłoszeń</td>
+      </tr>
       <tr v-for="registration in visibleRegistrations" :key="registration.registrationCode"
           class="border-b border-slate-100">
         <td class="py-2 pr-3">{{ registration.registrationCode }}</td>
