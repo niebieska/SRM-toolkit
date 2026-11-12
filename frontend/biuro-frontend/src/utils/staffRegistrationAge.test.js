@@ -4,6 +4,7 @@ import {
   filterStaffRolesByAge,
   filterStaffSubrolesByAge,
   isAdultOnDate,
+  isStaffSubroleRequired,
   parseStaffPesel,
 } from './staffRegistrationAge.js'
 
@@ -44,6 +45,15 @@ test('staff role eligibility handles the 18th birthday boundary and subroles', (
   assert.deepEqual(filterStaffRolesByAge(roles, false), roles)
   assert.deepEqual(filterStaffSubrolesByAge(roles[0].subroles, false).map(option => option.value), ['kandydat'])
   assert.deepEqual(filterStaffSubrolesByAge(roles[0].subroles, true).map(option => option.value), ['wychowawca'])
+})
+
+test('requires a subrole when the selected base role is not age-eligible', () => {
+  const animator = { value: 'animator', adultOnly: true, subroles: [{ value: 'candidate', minorOnly: true }] }
+
+  assert.equal(isStaffSubroleRequired(animator, false), true)
+  assert.equal(isStaffSubroleRequired(animator, true), false)
+  assert.equal(isStaffSubroleRequired({ value: 'leader', subroleRequired: true }, true), true)
+  assert.equal(isStaffSubroleRequired({ value: 'helper' }, false), false)
 })
 
 test('invalid PESEL or Turnus date cannot be classified as adult', () => {

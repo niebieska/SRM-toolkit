@@ -1,5 +1,5 @@
 <script setup>
-import { computed, onBeforeUnmount, reactive, ref, watch } from 'vue'
+import { computed, onBeforeUnmount, onMounted, reactive, ref, watch } from 'vue'
 import PhoneInput from './PhoneInput.vue'
 import DiscardChangesDialog from './DiscardChangesDialog.vue'
 import { createDiscardConfirmation } from '../utils/discardConfirmation.js'
@@ -8,12 +8,15 @@ import { fetchStaffCatalogue } from '../api/turnusApi.js'
 import {
   filterStaffRolesByAge,
   filterStaffSubrolesByAge,
+  isStaffSubroleRequired,
   isAdultOnDate,
   parseStaffPesel,
 } from '../utils/staffRegistrationAge.js'
 
 const props = defineProps({ token: { type: String, required: true }, turnuses: { type: Array, default: () => [] } })
 const emit = defineEmits(['close', 'created'])
+const dialogElement = ref(null)
+let previouslyFocusedElement = null
 const submitting = ref(false)
 const error = ref('')
 const validationErrors = ref({})
@@ -48,7 +51,14 @@ const adultAtTurnusStart = computed(() => roleEligibilityReady.value
 const availableRoles = computed(() => roleEligibilityReady.value
   ? filterStaffRolesByAge(catalogue.value?.roles, adultAtTurnusStart.value)
   : [])
-const selectedRole = computed(() => availableRoles.value.find(role => role.value === form.role) || null)
+const selectedRole = computed(() => {
+  const role = availableRoles.value.find(item => item.value === form.role)
+  if (!role) return null
+  return {
+    ...role,
+    subroleRequired: isStaffSubroleRequired(role, adultAtTurnusStart.value),
+  }
+})
 const availableSubroles = computed(() => filterStaffSubrolesByAge(selectedRole.value?.subroles, adultAtTurnusStart.value))
 const selectedCertificates = computed(() => {
   const options = catalogue.value?.certificatesByRole || {}
@@ -177,7 +187,15 @@ async function requestClose() {
   if (dirty.value && !(await confirmDiscard('form'))) return
   emit('close')
 }
-onBeforeUnmount(() => decideDiscard(false))
+onMounted(() => {
+  previouslyFocusedElement = document.activeElement instanceof HTMLElement ? document.activeElement : null
+  dialogElement.value?.showModal()
+})
+onBeforeUnmount(() => {
+  decideDiscard(false)
+  if (dialogElement.value?.open) dialogElement.value.close()
+  if (previouslyFocusedElement?.isConnected) previouslyFocusedElement.focus()
+})
 function selectRole(value) { form.role = value; form.subrole = '' }
 function toggleCertificate(id, checked) {
   const updated = { ...form.certificates }
@@ -238,8 +256,9 @@ async function submit() {
 </script>
 
 <template>
-  <div class="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-black/40 p-3 sm:p-4">
-    <section role="dialog" aria-modal="true" aria-labelledby="manual-staff-title" class="my-4 w-full max-w-3xl space-y-5 rounded-xl bg-white px-4 pb-5 pt-4 shadow-xl sm:my-8 sm:px-6 sm:pb-6 sm:pt-5">
+  <dialog ref="dialogElement" aria-modal="true" aria-labelledby="manual-staff-title" class="manual-staff-dialog fixed inset-0 m-0 h-dvh max-h-none w-screen max-w-none overflow-y-auto border-0 bg-transparent p-3 backdrop:bg-black/40 sm:p-4" @cancel.prevent="requestClose">
+    <div class="flex min-h-full justify-center">
+      <section class="my-4 w-full max-w-3xl space-y-5 rounded-xl bg-white px-4 pb-5 pt-4 shadow-xl sm:my-8 sm:px-6 sm:pb-6 sm:pt-5">
       <header class="flex items-center justify-between gap-4">
         <h2 id="manual-staff-title" class="text-lg font-semibold text-slate-900">Dodaj kadrę</h2>
         <button type="button" aria-label="Zamknij" class="text-xl leading-none text-slate-500 hover:text-slate-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-700" @click="requestClose">✕</button>
@@ -418,14 +437,15 @@ async function submit() {
           <button type="submit" class="min-h-10 rounded-lg bg-blue-900 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-950 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-700 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60" :disabled="submitting || catalogueLoading || !!catalogueError || !availableTurnuses.length">{{ submitting ? 'Zapisywanie…' : 'Dodaj zaakceptowaną kadrę' }}</button>
         </footer>
       </form>
-    </section>
+      </section>
+    </div>
     <DiscardChangesDialog
       v-if="discardPrompt"
       :kind="discardPrompt.kind"
       @stay="decideDiscard(false)"
       @discard="decideDiscard(true)"
     />
-  </div>
+  </dialog>
 </template>
 
 <style scoped>
@@ -438,4 +458,5 @@ async function submit() {
 .field-hint { display: block; margin-top: .25rem; color: #475569; font-size: .75rem; font-weight: 400; }
 .field-error { display: block; margin-top: .25rem; color: #b91c1c; font-size: .75rem; font-weight: 500; }
 .question-select { max-width: 8rem; }
+.manual-staff-dialog::backdrop { background: rgb(15 23 42 / 40%); }
 </style>

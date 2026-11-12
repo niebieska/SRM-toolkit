@@ -62,6 +62,10 @@ export function isStaffOptionAgeEligible(option, adultAtTurnusStart) {
   return adultAtTurnusStart ? !option.minorOnly : !option.adultOnly
 }
 
+export function isStaffSubroleRequired(role, adultAtTurnusStart) {
+  return !!role && (!!role.subroleRequired || !isStaffOptionAgeEligible(role, adultAtTurnusStart))
+}
+
 export function filterStaffRolesByAge(roles, adultAtTurnusStart) {
   return (roles || []).filter(role =>
     isStaffOptionAgeEligible(role, adultAtTurnusStart)
