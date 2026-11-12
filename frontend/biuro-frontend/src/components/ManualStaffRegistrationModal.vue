@@ -25,7 +25,7 @@ const form = reactive({
   guardianEmail: '', guardianPhone: '', parentNames: '', iceFirstName: '', iceLastName: '', iceRelation: '',
   iceRelationOther: '', icePhone: '', role: '', subrole: '', certificates: {}, certificateDetails: {},
   health: { q1: { answer: '', detail: '' }, q2: { answer: '', detail: '' }, additionalInfo: '' },
-  dataProcessing: false, imageUsage: false, regulations: false, truthDeclaration: false,
+  requiredConfirmations: false, imageUsage: false,
   _lastParentNames: '',
 })
 const healthQuestions = [
@@ -136,8 +136,12 @@ function buildPayload() {
       q2: { question: 'Czy występują u Ciebie alergie lub nietolerancje pokarmowe, które powinny zostać uwzględnione przy przygotowywaniu posiłków?', ...form.health.q2 },
       additionalInfo: { question: 'Dodatkowe informacje istotne pod kątem organizacji turnusu', value: form.health.additionalInfo.trim() },
     },
-    consents: { dataProcessing: form.dataProcessing, imageUsage: form.imageUsage,
-      regulations: form.regulations, truthDeclaration: form.truthDeclaration },
+    consents: {
+      dataProcessing: form.requiredConfirmations,
+      imageUsage: form.imageUsage,
+      regulations: form.requiredConfirmations,
+      truthDeclaration: form.requiredConfirmations,
+    },
   }
 }
 
@@ -152,8 +156,8 @@ async function submit() {
   if (selectedCertificates.value.some(item => item.hasDetails && form.certificates[item.id] && !form.certificateDetails[item.id]?.trim())) {
     error.value = 'Uzupełnij opis wybranego uprawnienia.'; return
   }
-  if (!form.dataProcessing || !form.regulations || !form.truthDeclaration) {
-    error.value = 'Potwierdź uzyskanie wymaganych zgód i oświadczenia.'; return
+  if (!form.requiredConfirmations) {
+    error.value = 'Potwierdź uzyskanie wymaganych zgód i oświadczeń.'; return
   }
   if (form.health.q1.answer === 'tak' && !form.health.q1.detail.trim()
       || form.health.q2.answer === 'tak' && !form.health.q2.detail.trim()) {
@@ -169,17 +173,20 @@ async function submit() {
 </script>
 
 <template>
-  <div class="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-slate-950/50 p-3 sm:p-6">
-    <section role="dialog" aria-modal="true" aria-labelledby="manual-staff-title" class="my-auto w-full max-w-4xl rounded-2xl bg-slate-50 shadow-2xl">
-      <header class="sticky top-0 z-10 flex items-start justify-between gap-4 rounded-t-2xl border-b border-slate-200 bg-white px-5 py-4 sm:px-7">
-        <div><h2 id="manual-staff-title" class="text-xl font-semibold text-slate-900">Dodaj kadrę</h2>
-          <p class="mt-1 text-sm text-slate-600">Zgłoszenie zostanie zapisane jako zaakceptowane. E-mail osoby jest opcjonalny; zapis nie wysyła automatycznej wiadomości.</p></div>
-        <button type="button" aria-label="Zamknij" class="rounded px-2 py-1 text-2xl leading-none text-slate-500 hover:bg-slate-100" @click="requestClose">×</button>
+  <div class="fixed inset-0 z-50 flex items-start justify-center overflow-y-auto bg-black/40 p-3 sm:p-4">
+    <section role="dialog" aria-modal="true" aria-labelledby="manual-staff-title" class="my-4 w-full max-w-3xl space-y-5 rounded-xl bg-white px-4 pb-5 pt-4 shadow-xl sm:my-8 sm:px-6 sm:pb-6 sm:pt-5">
+      <header class="flex items-center justify-between gap-4">
+        <h2 id="manual-staff-title" class="text-lg font-semibold text-slate-900">Dodaj kadrę</h2>
+        <button type="button" aria-label="Zamknij" class="text-xl leading-none text-slate-500 hover:text-slate-800 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-700" @click="requestClose">✕</button>
       </header>
 
-      <form class="space-y-4 p-4 sm:p-7" @input="dirty = true" @change="dirty = true" @submit.prevent="submit">
-        <section class="rounded-xl border border-slate-200 bg-white p-4 sm:p-5">
-          <h3 class="mb-4 font-semibold text-slate-900">Turnus i dane osobowe</h3>
+      <form class="space-y-5" @input="dirty = true" @change="dirty = true" @submit.prevent="submit">
+        <div class="rounded-lg border border-blue-100 bg-blue-50 px-4 py-3 text-sm text-blue-950">
+          Zgłoszenie zostanie zapisane jako zaakceptowane. E-mail osoby jest opcjonalny; zapis nie wysyła automatycznej wiadomości.
+        </div>
+
+        <section class="space-y-3">
+          <h3 class="border-b border-slate-200 pb-2 text-sm font-semibold text-slate-800">Turnus i dane osobowe</h3>
           <div class="grid gap-4 sm:grid-cols-2">
             <label class="field sm:col-span-2">Turnus *
               <select v-model="form.turnusCode" required><option value="">Wybierz turnus</option>
@@ -195,15 +202,16 @@ async function submit() {
             <label class="field">Imię ojca *<input v-model.trim="form.fatherName" maxlength="60" required /></label>
             <label v-if="!form.birthSurnameSame" class="field">Nazwisko rodowe *<input v-model.trim="form.birthSurname" maxlength="80" required /></label>
             <label class="field">PESEL *<input v-model.trim="form.pesel" inputmode="numeric" maxlength="11" pattern="[0-9]{11}" required />
-              <span v-if="form.pesel.length === 11" class="font-normal text-slate-500">{{ peselInfo.gender === 'female' ? 'Kobieta' : 'Mężczyzna' }} · {{ peselInfo.isAdult ? 'osoba pełnoletnia' : 'osoba niepełnoletnia' }}</span>
+              <span v-if="peselInfo.valid" class="field-hint">{{ peselInfo.gender === 'female' ? 'Kobieta' : 'Mężczyzna' }} · {{ peselInfo.isAdult ? 'osoba pełnoletnia' : 'osoba niepełnoletnia' }}</span>
+              <span v-else-if="form.pesel.length === 11" class="field-error">Nieprawidłowy numer PESEL.</span>
             </label>
             <label class="field">Telefon *<input v-model.trim="form.phone" type="tel" maxlength="16" placeholder="+48123456789" required /></label>
             <label class="field">E-mail osoby (opcjonalnie)<input v-model.trim="form.email" type="email" maxlength="254" /></label>
           </div>
         </section>
 
-        <section class="rounded-xl border border-slate-200 bg-white p-4 sm:p-5">
-          <h3 class="mb-4 font-semibold text-slate-900">Adres</h3>
+        <section class="space-y-3">
+          <h3 class="border-b border-slate-200 pb-2 text-sm font-semibold text-slate-800">Adres</h3>
           <div class="grid gap-4 sm:grid-cols-2">
             <label class="field">Ulica *<input v-model.trim="form.street" maxlength="100" required /></label>
             <label class="field">Numer domu / mieszkania *<input v-model.trim="form.houseNumber" maxlength="20" required /></label>
@@ -212,8 +220,8 @@ async function submit() {
           </div>
         </section>
 
-        <section v-if="form.pesel.length === 11 && !peselInfo.isAdult" class="rounded-xl border border-slate-200 bg-white p-4 sm:p-5">
-          <h3 class="mb-4 font-semibold text-slate-900">Dane opiekuna</h3>
+        <section v-if="peselInfo.valid && !peselInfo.isAdult" class="space-y-3">
+          <h3 class="border-b border-slate-200 pb-2 text-sm font-semibold text-slate-800">Dane opiekuna</h3>
           <div class="grid gap-4 sm:grid-cols-2">
             <label class="field">Imię opiekuna *<input v-model.trim="form.guardianFirstName" maxlength="60" required /></label>
             <label class="field">Nazwisko opiekuna *<input v-model.trim="form.guardianLastName" maxlength="80" required /></label>
@@ -224,8 +232,8 @@ async function submit() {
           </div>
         </section>
 
-        <section v-if="form.pesel.length === 11 && peselInfo.isAdult" class="rounded-xl border border-slate-200 bg-white p-4 sm:p-5">
-          <h3 class="mb-4 font-semibold text-slate-900">Kontakt awaryjny (ICE)</h3>
+        <section v-if="peselInfo.valid && peselInfo.isAdult" class="space-y-3">
+          <h3 class="border-b border-slate-200 pb-2 text-sm font-semibold text-slate-800">Kontakt awaryjny (ICE)</h3>
           <div class="grid gap-4 sm:grid-cols-2">
             <label class="field">Imię *<input v-model.trim="form.iceFirstName" maxlength="60" required /></label>
             <label class="field">Nazwisko *<input v-model.trim="form.iceLastName" maxlength="80" required /></label>
@@ -235,12 +243,13 @@ async function submit() {
           </div>
         </section>
 
-        <section class="rounded-xl border border-slate-200 bg-white p-4 sm:p-5">
-          <h3 class="mb-1 font-semibold text-slate-900">Rola i uprawnienia</h3>
+        <section class="space-y-3">
+          <h3 class="border-b border-slate-200 pb-2 text-sm font-semibold text-slate-800">Rola i uprawnienia</h3>
           <p v-if="selectedTurnus" class="mb-4 text-sm text-slate-600">Role zgodne z sezonem: {{ selectedTurnus.seasonType === 'WINTER' ? 'Zima' : 'Lato' }}.</p>
           <p v-if="catalogueLoading" role="status" class="text-sm text-slate-500">Wczytywanie ról…</p>
           <p v-else-if="catalogueError" role="alert" class="text-sm text-red-700">{{ catalogueError }}</p>
-          <p v-else-if="!roleEligibilityReady" role="status" class="text-sm text-slate-600">Wpisz prawidłowy PESEL, aby dopasować role do wieku w dniu rozpoczęcia turnusu.</p>
+          <p v-else-if="!peselInfo.valid" role="status" class="text-sm text-slate-600">Wpisz prawidłowy PESEL, aby dopasować role do wieku w dniu rozpoczęcia turnusu.</p>
+          <p v-else-if="!selectedTurnus?.startDate" role="status" class="text-sm text-slate-600">Wybierz turnus, aby dopasować role do wieku w dniu jego rozpoczęcia.</p>
           <p v-else-if="!availableRoles.length" role="status" class="text-sm text-slate-600">Brak ról dostępnych dla wieku osoby w dniu rozpoczęcia turnusu.</p>
           <div v-else class="grid gap-4 sm:grid-cols-2">
             <label class="field">Rola *<select :value="form.role" required @change="selectRole($event.target.value)"><option value="">Wybierz rolę</option><option v-for="role in availableRoles" :key="role.value" :value="role.value">{{ role.label }}</option></select></label>
@@ -259,34 +268,39 @@ async function submit() {
           </div>
         </section>
 
-        <section class="rounded-xl border border-slate-200 bg-white p-4 sm:p-5">
-          <h3 class="mb-4 font-semibold text-slate-900">Kwestionariusz</h3>
-          <div class="space-y-4">
-            <div v-for="(question, index) in healthQuestions" :key="index" class="grid gap-3 sm:grid-cols-[1fr_10rem]">
-              <label class="field">{{ question }} *
-                <select v-model="form.health[`q${index + 1}`].answer" required><option value="">Wybierz odpowiedź</option><option value="tak">Tak</option><option value="nie">Nie</option></select>
-                <textarea v-if="form.health[`q${index + 1}`].answer === 'tak'" v-model.trim="form.health[`q${index + 1}`].detail" maxlength="500" rows="2" class="mt-2" placeholder="Jakie? Proszę krótko opisać" required />
+        <section class="space-y-3">
+          <h3 class="border-b border-slate-200 pb-2 text-sm font-semibold text-slate-800">Kwestionariusz</h3>
+          <div class="space-y-3">
+            <article v-for="(question, index) in healthQuestions" :key="index" class="space-y-2 rounded-lg border border-slate-200 p-3">
+              <p class="text-sm font-medium text-slate-800">{{ question }} *</p>
+              <label class="field">Odpowiedź
+                <select v-model="form.health[`q${index + 1}`].answer" class="question-select" required><option value="">Wybierz odpowiedź</option><option value="tak">Tak</option><option value="nie">Nie</option></select>
               </label>
-            </div>
+              <label v-if="form.health[`q${index + 1}`].answer === 'tak'" class="field">Szczegóły
+                <textarea v-model.trim="form.health[`q${index + 1}`].detail" maxlength="500" rows="3" placeholder="Jakie? Proszę krótko opisać" required />
+              </label>
+            </article>
             <label class="field">Dodatkowe informacje istotne pod kątem organizacji turnusu (opcjonalnie)<textarea v-model.trim="form.health.additionalInfo" maxlength="500" rows="3" /></label>
           </div>
         </section>
 
-        <section class="rounded-xl border border-slate-200 bg-white p-4 sm:p-5">
-          <h3 class="mb-3 font-semibold text-slate-900">Zgody i oświadczenia</h3>
-          <p class="mb-3 text-sm text-slate-600">Zaznacz wymagane pozycje po potwierdzeniu, że osoba udzieliła zgód lub złożyła oświadczenie. Bez tego zgłoszenie nie zostanie zapisane.</p>
-          <div class="space-y-3 text-sm text-slate-700">
-            <label class="flex gap-2"><input v-model="form.dataProcessing" type="checkbox" required /> Potwierdzam uzyskanie zgody na przetwarzanie danych osobowych *</label>
-            <label class="flex gap-2"><input v-model="form.regulations" type="checkbox" required /> Potwierdzam akceptację regulaminu przez osobę zgłaszaną *</label>
-            <label class="flex gap-2"><input v-model="form.truthDeclaration" type="checkbox" required /> Potwierdzam złożenie oświadczenia o prawdziwości danych *</label>
-            <label class="flex gap-2"><input v-model="form.imageUsage" type="checkbox" /> Zgoda na wykorzystanie wizerunku (opcjonalnie)</label>
-          </div>
+        <section class="space-y-3">
+          <h3 class="border-b border-slate-200 pb-2 text-sm font-semibold text-slate-800">Zgody i oświadczenia</h3>
+          <p class="text-sm text-slate-600">Przed zapisaniem zgłoszenia potwierdź, że osoba zgłaszana udzieliła wymaganej zgody na przetwarzanie danych, zaakceptowała regulamin i złożyła oświadczenie o prawdziwości danych.</p>
+          <label class="flex cursor-pointer items-start gap-2 rounded-lg border border-slate-200 px-3 py-3 text-sm text-slate-700">
+            <input v-model="form.requiredConfirmations" type="checkbox" required class="mt-0.5 h-4 w-4 shrink-0 accent-blue-800" />
+            <span>Potwierdzam uzyskanie wymaganych zgód i oświadczeń <span class="text-red-600">*</span></span>
+          </label>
+          <label class="flex cursor-pointer items-start gap-2 rounded-lg border border-slate-200 px-3 py-3 text-sm text-slate-700">
+            <input v-model="form.imageUsage" type="checkbox" class="mt-0.5 h-4 w-4 shrink-0 accent-blue-800" />
+            <span>Osoba zgłaszana udzieliła zgody na wykorzystanie wizerunku <span class="font-normal text-slate-500">(opcjonalnie)</span></span>
+          </label>
         </section>
 
-        <p v-if="error" role="alert" class="rounded-lg border border-red-200 bg-red-50 p-3 text-sm text-red-800">{{ error }}</p>
-        <footer class="flex flex-col-reverse gap-2 border-t border-slate-200 pt-4 sm:flex-row sm:justify-end">
-          <button type="button" class="rounded-lg border border-slate-300 bg-white px-4 py-2.5 text-sm font-medium text-slate-700 hover:bg-slate-50" :disabled="submitting" @click="requestClose">Anuluj</button>
-          <button type="submit" class="rounded-lg bg-slate-800 px-5 py-2.5 text-sm font-semibold text-white hover:bg-slate-900 disabled:cursor-wait disabled:opacity-60" :disabled="submitting || catalogueLoading || !!catalogueError || !availableTurnuses.length">{{ submitting ? 'Zapisywanie…' : 'Dodaj zaakceptowaną kadrę' }}</button>
+        <p v-if="error" role="alert" class="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm text-red-800">{{ error }}</p>
+        <footer class="flex flex-col-reverse gap-2 border-t border-slate-200 pt-4 sm:flex-row sm:justify-between">
+          <button type="button" class="min-h-10 rounded-lg border border-slate-300 px-4 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50 disabled:opacity-60" :disabled="submitting" @click="requestClose">Anuluj</button>
+          <button type="submit" class="min-h-10 rounded-lg bg-blue-900 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-950 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-700 focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-60" :disabled="submitting || catalogueLoading || !!catalogueError || !availableTurnuses.length">{{ submitting ? 'Zapisywanie…' : 'Dodaj zaakceptowaną kadrę' }}</button>
         </footer>
       </form>
     </section>
@@ -294,7 +308,11 @@ async function submit() {
 </template>
 
 <style scoped>
-.field { display: flex; min-width: 0; flex-direction: column; gap: .35rem; color: #334155; font-size: .875rem; font-weight: 500; }
-.field input, .field select, .field textarea { width: 100%; min-width: 0; border: 1px solid #cbd5e1; border-radius: .5rem; background: #fff; padding: .6rem .75rem; color: #0f172a; font-weight: 400; outline: none; }
-.field input:focus, .field select:focus, .field textarea:focus { border-color: #475569; box-shadow: 0 0 0 2px rgb(71 85 105 / 20%); }
+.field { display: block; min-width: 0; color: #334155; font-size: .875rem; font-weight: 500; }
+.field input, .field select, .field textarea { display: block; width: 100%; min-width: 0; min-height: 2.5rem; margin-top: .25rem; border: 1px solid #cbd5e1; border-radius: .5rem; padding: .5rem .75rem; color: #0f172a; font-size: .875rem; font-weight: 400; outline: none; }
+.field input:focus-visible, .field select:focus-visible, .field textarea:focus-visible { outline: 2px solid #1d4ed8; outline-offset: 1px; }
+.field input[type="checkbox"] { display: inline-block; width: 1rem; min-height: 1rem; margin: 0; padding: 0; accent-color: #1e40af; }
+.field-hint { display: block; margin-top: .25rem; color: #475569; font-size: .75rem; font-weight: 400; }
+.field-error { display: block; margin-top: .25rem; color: #b91c1c; font-size: .75rem; font-weight: 500; }
+.question-select { max-width: 8rem; }
 </style>
