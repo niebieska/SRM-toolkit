@@ -6,5 +6,6 @@ export const fetchTurnusLists = (token, code) => call(token, `/${encodeURICompon
 export const createTurnus = (token, payload) => call(token, '', 'POST', payload)
 export const updateTurnus = (token, code, payload) => call(token, `/${encodeURIComponent(code)}`, 'PATCH', payload)
 export const fetchStaffingCategories = (token, seasonType) => call(token, `/staffing-categories?seasonType=${encodeURIComponent(seasonType)}`)
+export const fetchStaffCatalogue = (token, seasonType) => call(token, `/staff-options?seasonType=${encodeURIComponent(seasonType)}`)
 export const fetchViewerTurnuses = token => request('/api/viewer/turnuses', { token })
 export const fetchViewerLists = (token, code) => request(`/api/viewer/turnuses/${encodeURIComponent(code)}/lists`, { token })

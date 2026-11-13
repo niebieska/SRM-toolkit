@@ -4,6 +4,7 @@ const props = defineProps({ kind: { type: String, default: 'leave' } })
 const emit = defineEmits(['stay', 'discard'])
 const dialog = ref(null)
 const message = computed(() => ({
+  form: 'Zamknięcie formularza spowoduje utratę wprowadzonych danych.',
   leave: 'Opuszczenie strony spowoduje utratę wprowadzonych zmian.',
   reload: 'Wczytanie zapisanej wersji zastąpi Twoje niezapisane zmiany.',
   logout: 'Wylogowanie spowoduje utratę wprowadzonych zmian.',

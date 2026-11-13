@@ -6,6 +6,7 @@ import java.util.List;
 public record RegistrationDetail(
         String registrationCode,
         String registrationType,
+        String source,
         String turnusCode,
         boolean minor,
         String status,

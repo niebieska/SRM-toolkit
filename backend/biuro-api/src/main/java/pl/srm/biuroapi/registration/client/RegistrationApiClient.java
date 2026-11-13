@@ -6,6 +6,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.stereotype.Component;
 import org.springframework.util.Assert;
 import org.springframework.web.client.RestClient;
@@ -30,6 +31,7 @@ public class RegistrationApiClient {
                                        String actorAccountId, String actorUsername) {}
     private record RegistrationChangePayload(Long expectedVersion, java.util.Map<String, Object> changes,
                                              String actorAccountId, String actorUsername) {}
+    public record RegistrationCreated(String registrationCode) {}
 
     public RegistrationApiClient(RestClient.Builder restClientBuilder,
                                  @Value("${registration.api.url:http://localhost:8080}") String registrationApiUrl,
@@ -153,6 +155,33 @@ public class RegistrationApiClient {
         } catch (Exception exception) {
             log.error("Nie udało się zaktualizować danych zgłoszenia {}", code, exception);
             throw new ResponseStatusException(HttpStatus.BAD_GATEWAY, "Błąd komunikacji z registration-api");
+        }
+    }
+
+    public RegistrationCreated createManualStaffRegistration(String payload, String actorAccountId, String actorUsername) {
+        try {
+            RegistrationCreated body = restClient.post()
+                    .uri(registrationApiUrl + "/api/registrations/staff/manual")
+                    .contentType(MediaType.APPLICATION_JSON)
+                    .header("X-Actor-Account-Id", actorAccountId)
+                    .header("X-Actor-Username", actorUsername)
+                    .body(payload)
+                    .retrieve().body(RegistrationCreated.class);
+            if (body == null || body.registrationCode() == null || body.registrationCode().isBlank())
+                throw new ResponseStatusException(HttpStatus.BAD_GATEWAY, "Brak kodu utworzonego zgłoszenia.");
+            return body;
+        } catch (ResponseStatusException ex) {
+            throw ex;
+        } catch (RestClientResponseException exception) {
+            if (exception.getStatusCode().is4xxClientError()) {
+                throw new ResponseStatusException(exception.getStatusCode(),
+                        "Nie można dodać kadry. Sprawdź dane i upewnij się, że osoba nie jest już przypisana do turnusu.");
+            }
+            log.error("Nie udało się dodać zgłoszenia kadry z Biura", exception);
+            throw new ResponseStatusException(HttpStatus.BAD_GATEWAY, "Błąd komunikacji z registration-api.");
+        } catch (Exception exception) {
+            log.error("Nie udało się dodać zgłoszenia kadry z Biura", exception);
+            throw new ResponseStatusException(HttpStatus.BAD_GATEWAY, "Błąd komunikacji z registration-api.");
         }
     }
 }

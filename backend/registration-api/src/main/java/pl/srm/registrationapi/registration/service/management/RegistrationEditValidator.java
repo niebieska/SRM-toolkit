@@ -50,9 +50,8 @@ final class RegistrationEditValidator {
             throw invalid("Adres opiekuna jest oznaczony jako taki sam jak adres uczestnika.");
         }
 
-        boolean participantMinor = registration.isMinor() && !policy.isStaff(registration);
         for (String path : RegistrationEditPolicy.BASE_FIELDS) {
-            if (participantMinor && "person.contact.email".equals(path)) continue;
+            if (!policy.isRequired(path, registration)) continue;
             JsonNode node = at(payload, path);
             if (node == null || !node.isTextual() || node.asText().isBlank()) throw invalid("Uzupełnij wymagane pole: " + path + ".");
         }
@@ -60,7 +59,7 @@ final class RegistrationEditValidator {
         if (personEmail != null && !personEmail.isNull() && !personEmail.isTextual())
             throw invalid("Podaj prawidłowy adres e-mail.");
         String personEmailValue = personEmail != null && personEmail.isTextual() ? personEmail.asText().trim() : "";
-        if ((!participantMinor || !personEmailValue.isBlank())
+        if ((policy.isRequired("person.contact.email", registration) || !personEmailValue.isBlank())
                 && !personEmailValue.matches("[^\\s@]+@[^\\s@]+\\.[^\\s@]+")) throw invalid("Podaj prawidłowy adres e-mail.");
         if (!at(payload, "person.contact.phone").asText().matches("\\+[1-9][0-9]{9,14}")) throw invalid("Podaj prawidłowy numer telefonu z prefiksem kraju.");
         if (!at(payload, "address.postalCode").asText().matches("[0-9]{2}-[0-9]{3}")) throw invalid("Podaj kod pocztowy w formacie XX-XXX.");

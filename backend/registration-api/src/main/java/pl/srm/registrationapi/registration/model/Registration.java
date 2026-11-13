@@ -3,6 +3,8 @@ package pl.srm.registrationapi.registration.model;
 import com.fasterxml.jackson.annotation.JsonRawValue;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
@@ -26,6 +28,10 @@ public class Registration {
 
     @Column(name = "registration_type", nullable = false)
     private String registrationType;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "source", nullable = false)
+    private RegistrationSource source = RegistrationSource.FORMULARZ;
 
     @Column(name = "turnus_code", nullable = false)
     private String turnusCode;
@@ -68,8 +74,24 @@ public class Registration {
                         String payload,
                         LocalDateTime createdAt,
                         LocalDateTime updatedAt) {
+        this(registrationCode, registrationType, turnusCode, peselHash, minor, status, rejectionReason,
+                payload, createdAt, updatedAt, RegistrationSource.FORMULARZ);
+    }
+
+    public Registration(String registrationCode,
+                        String registrationType,
+                        String turnusCode,
+                        String peselHash,
+                        boolean minor,
+                        String status,
+                        String rejectionReason,
+                        String payload,
+                        LocalDateTime createdAt,
+                        LocalDateTime updatedAt,
+                        RegistrationSource source) {
         this.registrationCode = registrationCode;
         this.registrationType = registrationType;
+        this.source = source;
         this.turnusCode = turnusCode;
         this.peselHash = peselHash;
         this.minor = minor;
@@ -102,6 +124,14 @@ public class Registration {
 
     public void setRegistrationType(String registrationType) {
         this.registrationType = registrationType;
+    }
+
+    public RegistrationSource getSource() {
+        return source;
+    }
+
+    public void setSource(RegistrationSource source) {
+        this.source = source;
     }
 
     public String getTurnusCode() {

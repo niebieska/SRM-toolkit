@@ -80,7 +80,9 @@ test('filter changes hide old rows until matching data loads and keep them hidde
   assert.equal(vm.loading, true)
   assert.equal(vm.hasLoadedRegistrations, false)
   assert.equal(vm.errorMessage, '')
-  assert.match(descriptor.template.content, /v-if="hasLoadedRegistrations && visibleRegistrations\.length > 0"/)
+  assert.match(descriptor.template.content, /<table v-if="hasLoadedRegistrations"/)
+  assert.match(descriptor.template.content, /<slot name="header-actions"\s*\/>/)
+  assert.match(descriptor.template.content, /v-if="visibleRegistrations\.length === 0"/)
 
   nextFilterRequest.reject(new Error('Brak połączenia'))
   await settle()

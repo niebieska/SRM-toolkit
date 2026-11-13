@@ -8,6 +8,7 @@ import org.springframework.transaction.support.TransactionTemplate;
 import pl.srm.registrationapi.registration.exception.RegistrationException;
 import pl.srm.registrationapi.registration.model.Registration;
 import pl.srm.registrationapi.registration.model.RegistrationStatus;
+import pl.srm.registrationapi.registration.model.RegistrationSource;
 import pl.srm.registrationapi.registration.model.RegistrationType;
 import pl.srm.registrationapi.registration.parser.RegistrationContext;
 import pl.srm.registrationapi.registration.repository.RegistrationRepository;
@@ -34,17 +35,29 @@ public class RegistrationPersistenceService {
     }
 
     public String saveParticipant(RegistrationContext context, String payload) {
-        return save(context, payload, RegistrationType.PARTICIPANT);
+        return save(context, payload, RegistrationType.PARTICIPANT, RegistrationSource.FORMULARZ);
     }
 
     public String saveStaff(RegistrationContext context, String payload) {
-        return save(context, payload, RegistrationType.STAFF);
+        return save(context, payload, RegistrationType.STAFF, RegistrationSource.FORMULARZ);
     }
 
-    private String save(RegistrationContext context, String payload, RegistrationType type) {
+    public String saveStaffAccepted(RegistrationContext context, String payload,
+                                    String actorAccountId, String actorUsername) {
+        return save(context, payload, RegistrationType.STAFF, RegistrationStatus.ACCEPTED.name(),
+                actorAccountId, actorUsername, RegistrationSource.BIURO);
+    }
+
+    private String save(RegistrationContext context, String payload, RegistrationType type,
+                        RegistrationSource source) {
+        return save(context, payload, type, RegistrationStatus.NEW.name(), null, null, source);
+    }
+
+    private String save(RegistrationContext context, String payload, RegistrationType type, String initialStatus,
+                        String actorAccountId, String actorUsername, RegistrationSource source) {
         for (int attempt = 0; ; attempt++) {
             try {
-                return saveOnce(context, payload, type);
+                return saveOnce(context, payload, type, initialStatus, actorAccountId, actorUsername, source);
             } catch (RuntimeException exception) {
                 boolean deadlock = false;
                 for (Throwable cause = exception; cause != null; cause = cause.getCause()) {
@@ -64,7 +77,8 @@ public class RegistrationPersistenceService {
         }
     }
 
-    private String saveOnce(RegistrationContext context, String payload, RegistrationType type) {
+    private String saveOnce(RegistrationContext context, String payload, RegistrationType type, String initialStatus,
+                            String actorAccountId, String actorUsername, RegistrationSource source) {
         try {
             // The upsert locks this group until commit; SELECT uses the same transaction.
             // Rollback undoes both the allocation and the registration insert.
@@ -85,9 +99,24 @@ public class RegistrationPersistenceService {
                 String code = type == RegistrationType.PARTICIPANT
                         ? codeGenerator.generateParticipantCode(context.turnusCode(), sequence)
                         : codeGenerator.generateStaffCode(context.turnusCode(), sequence);
-                repository.saveAndFlush(new Registration(code, type.name(), context.turnusCode(),
-                        context.key(), context.isMinor(), RegistrationStatus.NEW.name(), null,
-                        payload, LocalDateTime.now(), null));
+                LocalDateTime createdAt = LocalDateTime.now();
+                Registration saved = repository.saveAndFlush(new Registration(code, type.name(), context.turnusCode(),
+                        context.key(), context.isMinor(), initialStatus, null,
+                        payload, createdAt, actorAccountId == null ? null : createdAt, source));
+                if (actorAccountId != null) {
+                    entityManager.createNativeQuery("""
+                            INSERT INTO registration_status_history
+                              (registration_id, previous_status, new_status, changed_at, actor_account_id, actor_username)
+                            VALUES (:registrationId, :previousStatus, :newStatus, :changedAt, :actorId, :actorUsername)
+                            """)
+                            .setParameter("registrationId", saved.getId())
+                            .setParameter("previousStatus", RegistrationStatus.NEW.name())
+                            .setParameter("newStatus", initialStatus)
+                            .setParameter("changedAt", createdAt)
+                            .setParameter("actorId", actorAccountId)
+                            .setParameter("actorUsername", actorUsername.trim())
+                            .executeUpdate();
+                }
                 return code;
             });
         } catch (RuntimeException exception) {

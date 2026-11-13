@@ -13,6 +13,7 @@ const errorMessage = ref('')
 const staleVersion = ref(false)
 
 const isStaff = computed(() => props.detail.registrationType === 'STAFF')
+const isManualStaff = computed(() => isStaff.value && props.detail.source === 'BIURO')
 const isMinor = computed(() => props.detail.minor === true)
 const questionEntries = computed(() => Object.entries(draft.value.health || {})
   .filter(([key, value]) => (isStaff.value ? ['q1', 'q2'] : ['q1', 'q2', 'q3']).includes(key) && value && typeof value === 'object')
@@ -86,7 +87,7 @@ function readFrom(root, path) {
 }
 
 const requiredPaths = computed(() => [
-  'person.firstName', 'person.lastName', 'person.contact.email', 'person.contact.phone',
+  'person.firstName', 'person.lastName', ...(isManualStaff.value ? [] : ['person.contact.email']), 'person.contact.phone',
   'address.street', 'address.houseNumber', 'address.postalCode', 'address.city',
   ...(isStaff.value ? ['person.motherName', 'person.fatherName', 'person.birthSurname'] : []),
   ...(isMinor.value ? ['guardian.firstName', 'guardian.lastName', 'guardian.relation', 'guardian.names', 'guardian.contact.email', 'guardian.contact.phone'] : ['ice.firstName', 'ice.lastName', 'ice.relation', 'ice.phone']),

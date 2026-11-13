@@ -35,7 +35,13 @@ public class RegistrationValidationService {
                                 RegistrationType type, Turnus turnus) {
         boolean minorAtTurnusStart = type == RegistrationType.STAFF
                 && peselHelper.isMinor(context.pesel(), turnus.startDate());
-        payloadValidator.validate(payload, context, type, turnus.staffCatalogue(), minorAtTurnusStart);
+        payloadValidator.validate(payload, context, type, turnus.staffCatalogue(), minorAtTurnusStart, true);
+    }
+
+    public void validateManualStaffPayload(String payload, RegistrationContext context, Turnus turnus) {
+        boolean minorAtTurnusStart = peselHelper.isMinor(context.pesel(), turnus.startDate());
+        payloadValidator.validate(payload, context, RegistrationType.STAFF,
+                turnus.staffCatalogue(), minorAtTurnusStart, false);
     }
 
     private void validatePesel(RegistrationContext data) {

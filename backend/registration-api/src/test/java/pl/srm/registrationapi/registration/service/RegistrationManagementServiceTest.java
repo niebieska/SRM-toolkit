@@ -139,6 +139,7 @@ class RegistrationManagementServiceTest {
 
         var detail = service.getDetailByCode("REG-P-T1-1");
 
+        assertEquals("FORMULARZ", detail.source());
         assertEquals(1, detail.statusHistory().size());
         assertEquals("NEW", detail.statusHistory().getFirst().previousStatus());
         assertEquals("ACCEPTED", detail.statusHistory().getFirst().newStatus());

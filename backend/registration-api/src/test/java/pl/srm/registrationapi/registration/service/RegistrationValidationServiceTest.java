@@ -60,7 +60,7 @@ class RegistrationValidationServiceTest {
         service.validatePayload("{}", registration, RegistrationType.STAFF, turnus);
 
         verify(payloadValidator).validate("{}", registration, RegistrationType.STAFF,
-                turnus.staffCatalogue(), false);
+                turnus.staffCatalogue(), false, true);
     }
 
     @Test
@@ -72,7 +72,19 @@ class RegistrationValidationServiceTest {
         service.validatePayload("{}", registration, RegistrationType.STAFF, turnus);
 
         verify(payloadValidator).validate("{}", registration, RegistrationType.STAFF,
-                turnus.staffCatalogue(), true);
+                turnus.staffCatalogue(), true, true);
+    }
+
+    @Test
+    void manualStaffPayloadKeepsTurnusAgeRuleAndMakesPersonalEmailOptional() {
+        String pesel = pesel("083210"); // Minor now, adult at the January 2027 Turnus.
+        RegistrationContext registration = registration(pesel);
+        Turnus turnus = turnusWithMinimumAge(14);
+
+        service.validateManualStaffPayload("{}", registration, turnus);
+
+        verify(payloadValidator).validate("{}", registration, RegistrationType.STAFF,
+                turnus.staffCatalogue(), false, false);
     }
 
     private static RegistrationContext registration(String pesel) {

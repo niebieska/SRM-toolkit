@@ -8,6 +8,7 @@ import java.util.List;
 public record RegistrationDetailResponse(
         String registrationCode,
         String registrationType,
+        String source,
         String turnusCode,
         boolean minor,
         String status,

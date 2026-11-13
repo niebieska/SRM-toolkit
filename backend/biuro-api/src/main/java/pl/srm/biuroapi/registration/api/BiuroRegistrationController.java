@@ -80,6 +80,13 @@ public class BiuroRegistrationController {
         return registrationApiClient.updateRegistrationData(code, request, actor.id(), actor.username());
     }
 
+    @PostMapping("/staff/manual")
+    public RegistrationApiClient.RegistrationCreated createManualStaffRegistration(
+            @RequestBody String payload,
+            @AuthenticationPrincipal AccountPrincipal actor) {
+        return registrationApiClient.createManualStaffRegistration(payload, actor.id(), actor.username());
+    }
+
 
 
     private void validateRequest(StatusUpdateRequest request) {

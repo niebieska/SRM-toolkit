@@ -23,13 +23,18 @@ public class SubmissionPayloadValidator {
 
     public void validate(String payload, RegistrationContext context, RegistrationType type,
                          StaffCatalogue catalogue, boolean minorAtTurnusStart) {
+        validate(payload, context, type, catalogue, minorAtTurnusStart, true);
+    }
+
+    public void validate(String payload, RegistrationContext context, RegistrationType type,
+                         StaffCatalogue catalogue, boolean minorAtTurnusStart, boolean staffEmailRequired) {
         final JsonNode root;
         try { root = mapper.readTree(payload); }
         catch (Exception ex) { throw invalid("Nieprawidłowy format zgłoszenia."); }
         JsonNode person = root.path("person");
         name(person);
         contact(person.path("contact"), "person.contact",
-                type != RegistrationType.PARTICIPANT || !context.isMinor());
+                type == RegistrationType.PARTICIPANT ? !context.isMinor() : staffEmailRequired);
         // These derived fields are used by Biuro; never accept a contradictory client value.
         boolean adult = !context.isMinor();
         if (!person.path("isAdult").isBoolean() || person.path("isAdult").asBoolean() != adult)

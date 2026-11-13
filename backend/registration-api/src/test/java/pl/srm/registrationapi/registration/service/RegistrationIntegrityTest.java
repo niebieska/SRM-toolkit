@@ -80,6 +80,24 @@ class RegistrationIntegrityTest {
         jdbc.update("UPDATE registration SET status = 'REJECTED' WHERE pesel_hash = 'three'");
         assertEquals(0L, repository.countByTurnusCodeAndRegistrationTypeAndStatus("A", "STAFF", "ACCEPTED"));
     }
+
+    @Test
+    void manualStaffRegistrationSourceIsStoredAndReturnedInDetails() {
+        String code = service.saveStaffAccepted(context("MANUAL", "manual-person"), "{}", "account-id", "operator");
+
+        assertEquals("BIURO", jdbc.queryForObject(
+                "SELECT source FROM registration WHERE registration_code = ?", String.class, code));
+        assertEquals("BIURO", managementService.getDetailByCode(code).source());
+    }
+
+    @Test
+    void publicRegistrationMethodsUseFormularzSource() {
+        String participant = service.saveParticipant(context("PUBLIC", "participant"), "{}");
+        String staff = service.saveStaff(context("PUBLIC", "staff"), "{}");
+
+        assertEquals("FORMULARZ", managementService.getDetailByCode(participant).source());
+        assertEquals("FORMULARZ", managementService.getDetailByCode(staff).source());
+    }
     @Autowired pl.srm.registrationapi.registration.repository.RegistrationRepository repository;
 
     @Test
