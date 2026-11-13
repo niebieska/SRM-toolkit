@@ -21,10 +21,12 @@ public class SmtpEmailSender implements EmailSender {
 
     private final JavaMailSenderImpl mailSender;
     private final String from;
+    private final String replyTo;
     private final boolean enabled;
 
     public SmtpEmailSender(JavaMailSenderImpl mailSender,
                            @Value("${email.from:noreply@srm.pl}") String from,
+                           @Value("${email.reply-to:}") String replyTo,
                            @Value("${email.enabled:true}") boolean enabled) {
         Session session = mailSender.getSession();
         String protocol = mailSender.getProtocol();
@@ -43,6 +45,7 @@ public class SmtpEmailSender implements EmailSender {
         }
         this.mailSender = mailSender;
         this.from = from;
+        this.replyTo = replyTo == null ? "" : replyTo.trim();
         this.enabled = enabled;
     }
 
@@ -57,6 +60,7 @@ public class SmtpEmailSender implements EmailSender {
             MimeMessage mimeMessage = mailSender.createMimeMessage();
             MimeMessageHelper helper = new MimeMessageHelper(mimeMessage, true, "UTF-8");
             helper.setFrom(from);
+            if (!replyTo.isEmpty()) helper.setReplyTo(replyTo);
             helper.setTo(message.to());
             helper.setSubject(message.subject());
             helper.setText(message.htmlBody(), true);

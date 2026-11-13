@@ -21,7 +21,7 @@ class SmtpEmailSenderTest {
     private final JavaMailSenderImpl mailSender = mock(JavaMailSenderImpl.class);
     private SmtpEmailSender sender(boolean enabled) {
         when(mailSender.getSession()).thenReturn(Session.getInstance(boundedProperties()));
-        var sender = new SmtpEmailSender(mailSender, "sender@example.test", enabled);
+        var sender = new SmtpEmailSender(mailSender, "sender@example.test", "", enabled);
         clearInvocations(mailSender);
         return sender;
     }
@@ -90,7 +90,7 @@ class SmtpEmailSenderTest {
                 var properties = boundedProperties();
                 properties.setProperty("mail.smtp." + property, value);
                 var mail = new JavaMailSenderImpl(); mail.setJavaMailProperties(properties);
-                assertThrows(IllegalArgumentException.class, () -> new SmtpEmailSender(mail, "s@example.test", true));
+                assertThrows(IllegalArgumentException.class, () -> new SmtpEmailSender(mail, "s@example.test", "", true));
             }
         }
     }
@@ -105,6 +105,6 @@ class SmtpEmailSenderTest {
         var mail = new JavaMailSenderImpl(); mail.setJavaMailProperties(boundedProperties());
         var sessionProperties = boundedProperties(); sessionProperties.setProperty("mail.smtp.timeout", "0");
         mail.setSession(Session.getInstance(sessionProperties));
-        assertThrows(IllegalArgumentException.class, () -> new SmtpEmailSender(mail, "s@example.test", true));
+        assertThrows(IllegalArgumentException.class, () -> new SmtpEmailSender(mail, "s@example.test", "", true));
     }
 }

@@ -82,6 +82,8 @@ frontend regression suites separately before release.
   include `docker-compose.external-smtp.yml` in the Compose command. This override
   requires `MAIL_HOST`, `MAIL_PORT`, `MAIL_USER`, `MAIL_PASSWORD`,
   `MAIL_SMTP_AUTH`, `MAIL_STARTTLS` and `MAIL_FROM`, and enables actual sending.
+  `MAIL_REPLY_TO` is optional and sets the address that receives replies without
+  changing the SMTP-authenticated sender.
   Use only controlled recipient addresses: synthetic registrations may send to
   the email address entered in the form. Never print resolved Compose config.
 - Backend images run as a non-root numeric user. Build contexts exclude `.env`
