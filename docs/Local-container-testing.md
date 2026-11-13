@@ -84,6 +84,8 @@ frontend regression suites separately before release.
   `MAIL_SMTP_AUTH`, `MAIL_STARTTLS` and `MAIL_FROM`, and enables actual sending.
   `MAIL_REPLY_TO` is optional and sets the address that receives replies without
   changing the SMTP-authenticated sender.
+  `MAIL_FROM_NAME` is optional and sets the friendly display name shown beside
+  the configured `MAIL_FROM` address.
   Use only controlled recipient addresses: synthetic registrations may send to
   the email address entered in the form. Never print resolved Compose config.
 - Backend images run as a non-root numeric user. Build contexts exclude `.env`

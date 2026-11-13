@@ -20,6 +20,7 @@ email:
     username: ${EMAIL_SERVICE_USERNAME:registration-email-sender}
     password: ${EMAIL_SERVICE_PASSWORD}
   from: ${MAIL_FROM:noreply@srm.pl}
+  from-name: ${MAIL_FROM_NAME:}
   reply-to: ${MAIL_REPLY_TO:}
   enabled: ${MAIL_ENABLED:true}
   templates:
