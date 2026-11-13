@@ -16,6 +16,7 @@ public class StatusNotificationService {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(StatusNotificationService.class);
     private static final String STATUS_UPDATE_TEMPLATE = "status-update";
+    private static final String CANDIDATE_ANIMATOR = "kandydat_na_animatora";
 
     private final EmailServiceClient emailServiceClient;
     private final ObjectMapper objectMapper;
@@ -45,6 +46,7 @@ public class StatusNotificationService {
             variables.put("status", registration.getStatus());
             variables.put("statusLabel", statusLabel(registration.getStatus()));
             variables.put("registrationType", registration.getRegistrationType());
+            variables.put("requiresDeposit", Boolean.toString(requiresDeposit(registration, root)));
             variables.put("isMinor", Boolean.toString(registration.isMinor()));
             variables.put("includeParticipantCard", Boolean.toString(
                     "PARTICIPANT".equals(registration.getRegistrationType())
@@ -69,6 +71,18 @@ public class StatusNotificationService {
         String lastName = node.path("lastName").asText("").trim();
         String fullName = (firstName + " " + lastName).trim();
         return fullName.isBlank() ? fallback : fullName;
+    }
+
+    private boolean requiresDeposit(Registration registration, JsonNode root) {
+        if ("PARTICIPANT".equals(registration.getRegistrationType())) return true;
+        if (!"STAFF".equals(registration.getRegistrationType())) return false;
+
+        String role = root.path("role").asText("").trim();
+        String subrole = root.path("subrole").asText("").trim();
+        if (role.isBlank()) role = root.path("staff").path("role").asText("").trim();
+        if (subrole.isBlank()) subrole = root.path("staff").path("subrole").asText("").trim();
+
+        return CANDIDATE_ANIMATOR.equals(role) || CANDIDATE_ANIMATOR.equals(subrole);
     }
 
     private String statusLabel(String status) {
