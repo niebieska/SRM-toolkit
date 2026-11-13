@@ -40,6 +40,8 @@ Start with the registration workflow release plan for functional scope and the d
 - [Future product backlog](Future-product-backlog.md)
 - [Environment and deployment advice](Advises-for-future.md)
 - [Email reliability for controlled TEST](Email-test-reliability.md)
+- [Registration email notifications (English)](Email-notifications.en.md)
+- [Powiadomienia e-mail dotyczące zgłoszeń](Email-notifications.md)
 
 ## Reviews and reference material
 
