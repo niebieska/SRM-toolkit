@@ -1,23 +1,59 @@
 # Work in progress
 
-## 2026-11-14 — Email-service extensions
+## 2026-11-14 — Current development and release snapshot
 
-- Completed on `feature/email-service-extensions` through commit `49a6240`:
-  configurable SMTP `Reply-To` and friendly sender name; role-aware acceptance
-  content and candidate-animator deposit instructions; configurable email footer
-  names, contact details, information/social URLs and displayed labels. Compose and
-  `.env.example` forward/document the settings. Notification behavior is described
-  in the Polish and English email-notification docs.
-- The footer link layout was reviewed in the local Docker stack. Social links stay
-  left-aligned, shifted slightly inward; the Facebook URL is kept on one line.
-- Verification: full email-service suite passed (54 tests, zero failures/errors);
-  Compose configuration validation passed, and the local email-service container
-  rebuilt and reported healthy. Branch-wide `git diff --check` flags extra blank
-  lines at EOF in the two email-notification docs; this is cosmetic.
-- The sender records SMTP acceptance, not recipient-mailbox delivery. Adding a
-  validated registration code to email-service failure logs is tracked separately
-  as a small operational follow-up; notification-attempt audit history remains a
-  separate future feature.
+- `development` and `origin/development` are at `1f62f65` (PR #64). PR #63 added
+  OPERATOR-only manual staff registration through Biuro. It records source as
+  BIURO, accepts the entry in the creation transaction, permits email to be
+  omitted, and sends the existing confirmation only when an address is supplied.
+  The manual workflow is implemented; deployed/operator acceptance is still part
+  of the release checks.
+- PR #64 merged the email-service extensions: configurable SMTP `Reply-To` and
+  friendly sender name; configurable footer/contact/social links; readable
+  catalogue role/subrole labels; candidate-animator deposit instructions; and
+  status notifications to both a minor staff member and guardian. Email-service
+  logs include a validated registration code on failure. Registration-to-email
+  timeouts are bounded for two sequential recipients (25 seconds maximum per
+  attempt; 50 seconds total within Biuro's 60-second read timeout). The setting is
+  rejected at startup if its combined connect/read timeout exceeds that budget.
+- Verification recorded for the feature work: email-service suite passed (54
+  tests); 23 focused Registration API notification/timeout tests passed, including
+  the two-recipient stalled-email case. The MariaDB-gated suite and deployed
+  acceptance of the merged commit were not verified in this check.
+- SMTP acceptance means the configured SMTP server accepted the message; it does
+  not confirm inbox delivery. Persistent per-recipient notification-attempt
+  history in registration details remains unimplemented. Manual resend and
+  automatic retries remain deferred.
+- Payment work is not in `development`. Local branch
+  `feature/manual-payments-on-development` is 11 commits ahead and 5 behind
+  `development`, with a persistent ledger, Turnus fees, Biuro API and connected
+  Wpłaty UI. Its branch documentation marks Wpłaty as a confirmed MVP gate; the
+  `development` copy of [Manual-payments.md](Manual-payments.md) still says
+  probable and describes only the earlier UI prototype. Reconcile this decision
+  and documentation when preparing the payment branch for review. Full automated
+  regression, MariaDB migration verification and operator acceptance remain
+  pending on that branch.
+- Remaining functional release work includes atomic participant/staff capacity
+  enforcement during acceptance. Biuro may add staff after public staff
+  registration closes, but that accepted creation must respect the same staff
+  capacity. The Turnus editor and Biuro API now reject saving a definition where
+  total required staff exceeds staff capacity. The editor always shows the
+  defined-staff/capacity ratio and shows the agreed red message on invalid save.
+  Frontend tests/build and focused Biuro API tests pass. Acceptance capacity
+  enforcement remains a separate pending item. Also pending is
+  the recorded browser/deployed acceptance matrix for status history, account
+  permissions/sessions, notifications, forms and Turnus lists/exports. See the
+  [release plan](Registration-workflow-release-plan.md).
+- GCP TEST was previously reported reachable over HTTP, with basic Biuro use,
+  form submission and external SMTP confirmed. This WIP update does not verify
+  which commit is deployed. HTTPS is not configured; the controlled VM restart
+  and TEST backup/restore remain parked/unverified. Backup and restore remain
+  required for the production VPS before real registrations.
+- Documentation reconciliation remains: the development copy of
+  [Small fixes](Small-fixes-and-follow-ups.md) still lists failure-log
+  registration-code correlation as pending, although PR #64 completed it;
+  [Future backlog](Future-product-backlog.md) still lists Biuro staff creation as
+  future work, although PR #63 merged it.
 
 ## 2026-11-12 — Development PRs #59–#62
 
@@ -156,13 +192,19 @@
 - Public registration may continue to save valid submissions as NEW while the
   relevant type's registration switch is open, even when capacity is full.
   Registration opening remains a manual, separate decision.
-- Staff places and summed required role counts remain independent values. Show an
-  advisory warning if required roles exceed staff places; do not derive capacity,
-  mutate values or block saving the Turnus definition.
-- This is a requirement/documentation update only. The running code still allows
-  over-capacity acceptance and does not yet show the required-staffing warning.
-  Implementation, API/UI changes and regression tests remain pending. The design
-  must also avoid relying on a stale hourly catalogue snapshot and prevent two
+- Biuro may manually add staff after public staff registration closes. This path
+  creates an ACCEPTED registration, so it must use the same atomic staff-capacity
+  check as a status transition. It does not need to require the public
+  staff-registration switch to be open.
+- Staff places and summed required role counts are separate values and are never
+  auto-adjusted. Decision revised on 2026-11-14: require the total role count to
+  be less than or equal to staff capacity; show a red validation message on save
+  and block saving until the operator reduces requirements or increases capacity.
+- The Turnus editor and Biuro API implement this blocking validation. Frontend
+  validation/save tests and focused API tests for create, update, equality, and
+  rejected-write persistence pass. Registration API still allows over-capacity
+  acceptance; that separate capacity enforcement remains pending. Its design
+  must avoid relying on a stale hourly catalogue snapshot and prevent two
   concurrent acceptances from taking the final place.
 
 ## 2026-10-25 — Własny list data availability

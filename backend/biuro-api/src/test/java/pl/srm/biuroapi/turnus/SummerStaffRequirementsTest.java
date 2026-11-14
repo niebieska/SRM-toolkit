@@ -45,9 +45,12 @@ class SummerStaffRequirementsTest {
                 .findFirst().orElseThrow().selections();
     }
     private TurnusRequest request(Long version, List<StaffRequirement> staffing) {
+        return request(version, staffing, 10);
+    }
+    private TurnusRequest request(Long version, List<StaffRequirement> staffing, int staffCapacity) {
         return new TurnusRequest("SUMMERSTAFF1", "Summer", null, "Place", SeasonType.SUMMER,
                 2027, LocalDate.of(2027, 8, 1), LocalDate.of(2027, 8, 11), 14,
-                50, 10, true, false, true, version, staffing);
+                50, staffCapacity, true, false, true, version, staffing);
     }
     @Test void mapsSharedAnimatorAndSternikTargetsWithoutDoubleCountingPriests() {
         assertEquals(8, categories.get(SeasonType.SUMMER).size());
@@ -61,21 +64,43 @@ class SummerStaffRequirementsTest {
         var all = categories.get(SeasonType.SUMMER).stream().flatMap(c -> c.selections().stream()).toList();
         assertEquals(all.size(), all.stream().distinct().count());
     }
-    @Test void createsEditsAndClearsSummerTargetsWithoutCapacityCoupling() {
+    @Test void createsEditsAndClearsSummerTargetsWithinCapacity() {
         assertEquals(List.of(), catalogue.get("ZAGLE26T1").staffRequirements());
         var targets = List.of(new StaffRequirement("sternik", 5), new StaffRequirement("animator", 20),
                 new StaffRequirement("animator_wychowawca", 2));
-        var created = catalogue.create(request(null, targets));
+        var created = catalogue.create(request(null, targets, 27));
         assertEquals(targets, catalogue.get(created.turnusCode()).staffRequirements());
-        assertEquals(10, created.staffCapacity());
+        assertEquals(27, created.staffCapacity());
         assertTrue(created.staffRegistrationOpen());
         assertFalse(created.participantRegistrationOpen());
         var changed = List.of(new StaffRequirement("sternik", 0), new StaffRequirement("animator", 6),
                 new StaffRequirement("animator_wychowawca", 3));
-        var updated = catalogue.update(created.turnusCode(), request(0L, changed));
+        var updated = catalogue.update(created.turnusCode(), request(0L, changed, 27));
         assertEquals(changed.subList(1, 3), updated.staffRequirements());
         assertEquals(1, updated.version());
-        assertEquals(List.of(), catalogue.update(created.turnusCode(), request(1L, List.of())).staffRequirements());
+        assertEquals(List.of(), catalogue.update(created.turnusCode(), request(1L, List.of(), 27)).staffRequirements());
+    }
+    @Test void APIRejectsOverCapacityRequirementsOnCreateAndUpdate() throws Exception {
+        String body = """
+            {"turnusCode":"SUMMERSTAFFCAP","turnusName":"Summer","turnusLocation":"Place",
+             "seasonType":"SUMMER","seasonYear":2027,"startDate":"2027-08-01","endDate":"2027-08-11",
+             "minAge":14,"participantCapacity":50,"staffCapacity":10,"active":true,
+             "participantRegistrationOpen":false,"staffRegistrationOpen":true,"version":0,
+             "staffRequirements":[{"categoryCode":"animator","requiredCount":6},
+                                  {"categoryCode":"animator_wychowawca","requiredCount":5}]}
+            """;
+        mvc.perform(post("/api/turnuses").header("Authorization", token).contentType("application/json").content(body))
+                .andExpect(status().isBadRequest());
+        assertEquals(0, jdbc.queryForObject("SELECT COUNT(*) FROM turnus WHERE turnus_code = 'SUMMERSTAFFCAP'", Integer.class));
+
+        mvc.perform(post("/api/turnuses").header("Authorization", token).contentType("application/json")
+                .content(body.replace("\"staffCapacity\":10", "\"staffCapacity\":11")))
+                .andExpect(status().isCreated());
+        mvc.perform(patch("/api/turnuses/SUMMERSTAFFCAP").header("Authorization", token)
+                .contentType("application/json").content(body))
+                .andExpect(status().isBadRequest());
+        assertEquals(11, catalogue.get("SUMMERSTAFFCAP").staffCapacity());
+        assertEquals(0L, catalogue.get("SUMMERSTAFFCAP").version());
     }
     @Test void SummerApiPersistsRequirementsAndRejectsWinterOnlyCategory() throws Exception {
         String body = """

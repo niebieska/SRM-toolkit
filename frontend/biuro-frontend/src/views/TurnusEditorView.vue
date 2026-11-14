@@ -110,6 +110,7 @@ function validateField(name) {
 function onFieldInput(event) {
   const name = event.target.name
   if (name && fieldErrors.value[name]) validateField(name)
+  if (name === 'staffCapacity' && fieldErrors.value.staffRequirements) validateField('staffRequirements')
 }
 function descriptionId(name, help = false) {
   return fieldErrors.value[name] ? `${name}-error` : help ? `${name}-help` : undefined
@@ -182,7 +183,7 @@ async function save() {
         {{ success }}
         <span v-if="nextCacheRefreshAt" class="font-medium"> · Najbliższa synchronizacja danych o godzinie {{ nextCacheRefreshAt }}.</span>
       </p>
-      <form v-if="loaded && !loading" ref="formElement" novalidate class="space-y-5" :aria-busy="saving" @submit.prevent="save" @input="onFieldInput" @focusout="event => event.target.name && validateField(event.target.name)">
+      <form v-if="loaded && !loading" ref="formElement" novalidate class="space-y-5" :aria-busy="saving" @submit.prevent="save" @input="onFieldInput" @focusout="event => event.target.name && event.target.name !== 'staffRequirements' && validateField(event.target.name)">
         <fieldset :disabled="saving" class="grid min-w-0 grid-cols-1 items-start gap-5 lg:grid-cols-3">
           <legend class="sr-only">Szczegóły turnusu</legend>
           <div class="min-w-0 space-y-4 lg:col-span-2">
@@ -283,7 +284,7 @@ async function save() {
             </section>
             <section aria-labelledby="turnus-staffing-heading" class="turnus-card">
               <h3 id="turnus-staffing-heading" class="text-base font-semibold text-slate-900">Wymagana kadra</h3>
-              <p v-if="categories.length && !categoriesLoading && !categoriesError" class="mt-1 text-sm text-slate-600">Łącznie wymagana kadra: <output class="font-semibold text-slate-900" aria-live="polite">{{ plannedStaff }}</output></p>
+              <p class="mt-1 text-sm text-slate-600">Zdefiniowana kadra: <output class="font-semibold text-slate-900">{{ plannedStaff }}/{{ form.staffCapacity }}</output></p>
               <p v-if="categoriesLoading" role="status" class="mt-3 text-sm text-slate-600">Wczytywanie kategorii kadry…</p>
               <div v-else-if="categoriesError" role="alert" class="mt-3 text-sm text-red-700">{{ categoriesError }} <button type="button" class="mt-1 block rounded font-medium underline focus-visible:ring-2 focus-visible:ring-slate-500" @click="loadCategories">Spróbuj ponownie</button></div>
               <p v-else-if="!categories.length" class="mt-3 text-sm leading-relaxed text-slate-600">Brak zdefiniowanych kategorii kadry dla wybranego sezonu.</p>
@@ -291,11 +292,10 @@ async function save() {
                 <div class="mt-3 divide-y divide-slate-100">
                   <div v-for="category in categories" :key="category.code" class="flex items-center justify-between gap-3 py-2 first:pt-0 last:pb-0">
                     <label :for="`staff-count-${category.code}`" class="min-w-0 text-sm text-slate-700">{{ category.label }}</label>
-                    <input :id="`staff-count-${category.code}`" name="staffRequirements" :value="requirementCount(form.staffRequirements, category.code)" @input="setRequirement(category.code, $event.target.value)" type="number" min="0" max="2147483647" step="1" required class="turnus-number" :aria-invalid="!!fieldErrors.staffRequirements" :aria-describedby="fieldErrors.staffRequirements ? 'staffRequirements-error' : 'staffRequirements-help'" />
+                    <input :id="`staff-count-${category.code}`" name="staffRequirements" :value="requirementCount(form.staffRequirements, category.code)" @input="setRequirement(category.code, $event.target.value)" type="number" min="0" max="2147483647" step="1" required class="turnus-number" :aria-invalid="!!fieldErrors.staffRequirements" :aria-describedby="fieldErrors.staffRequirements ? 'staffRequirements-error' : undefined" />
                   </div>
                 </div>
                 <p v-if="fieldErrors.staffRequirements" id="staffRequirements-error" class="mt-2 text-sm text-red-700">{{ fieldErrors.staffRequirements }}</p>
-                <p id="staffRequirements-help" class="mt-3 text-xs text-slate-600">0 oznacza brak wymagania. To plan składu zespołu.</p>
               </template>
             </section>
 

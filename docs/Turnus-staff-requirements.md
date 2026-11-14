@@ -83,29 +83,32 @@ Turnus fields. Counts are nonnegative JSON integers within Java Integer range;
 unknown categories, duplicates, null entries, negative/fractional counts and
 numeric strings are rejected. Zero entries are removed before storage. An empty
 list means requirements are unconfigured/cleared; it does not deactivate a Turnus.
-Role targets are not automatically synchronized with total capacity. The agreed
-UI should show an advisory warning when the sum of required role counts exceeds
-**Miejsca dla kadry**; this does not rewrite either value or prevent saving the
-definition.
+Role targets are not automatically synchronized with total capacity. The sum of
+required role counts must not exceed **Miejsca dla kadry**. The editor shows the
+defined-staff/capacity ratio and blocks saving an invalid definition; the Biuro
+API enforces the same rule on create and update. The operator must adjust the
+role targets or staff capacity.
 
 ### Client verification: staff places versus required staffing
 
-These values remain independent, with an advisory comparison:
+These values remain independent, with a blocking validation on save:
 
 - **Miejsca dla kadry**: the configured total number of staff places.
 - **Łącznie wymagana kadra**: the sum of role-specific staffing targets.
 
-Neither value is the accepted staff count. Do not automatically synchronize them,
-change capacity, or block saving when requirements exceed capacity. Show a warning
-for that mismatch. Acceptance itself is subject to the separate hard capacity
-limit described in [capacity management](Turnus-capacity-management.md).
+Neither value is the accepted staff count. Do not automatically synchronize or
+change either value. Reject saving when requirements exceed capacity. Acceptance
+itself is subject to the separate hard capacity limit described in
+[capacity management](Turnus-capacity-management.md).
 
 - [x] Confirm that these remain separate concepts and staff places are not derived
   from role targets.
-- [x] Confirm that a warning is needed when required role totals exceed staff
-  capacity. The warning is advisory; it does not block saving.
+- [x] Require the total required role count to be less than or equal to staff
+  capacity; equality is allowed. The editor and Biuro API enforce this on save.
 
-These decisions are agreed; implementation and browser acceptance remain pending.
+These decisions are implemented and covered by frontend validation/save tests and
+focused Biuro API create/update tests. Browser acceptance remains part of release
+verification.
 
 For backwards compatibility, omitted/null requirements mean an empty list on
 create and preserve current requirements on update. Explicit `[]` clears them.
@@ -128,13 +131,14 @@ the sidebar. Cards stack below
 wizard or draft feature is introduced.
 
 Staffing rows preserve the configured labels/codes, including Kucharka, with a
-live total and optional zero targets. Animator includes candidates. All registration
+live total and zero values available for roles without a planned requirement.
+Animator includes candidates. All registration
 switch defaults and visibility rules remain unchanged. Staffing statistics still
 belong in Zgłoszenia, not this editor.
 
 Required fields have labels/markers, associated help/error text and visible focus.
-Client validation mirrors existing request bounds and date rules, without staffing
-capacity restrictions. The backend remains authoritative. A reusable
+Client validation mirrors request bounds, date rules, and the staff-capacity
+constraint. The backend enforces the same constraint. A reusable
 `TurnusFormField` component renders labels/help/errors; styles are scoped to the
 editor. Save uses the existing version/POST/PATCH flow, navigation guards and
 conflict handling. Submission stays locked until successful creation navigation

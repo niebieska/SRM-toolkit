@@ -35,10 +35,18 @@ replace the broader release plan.
   and staff. At capacity, reject a transition to ACCEPTED with a clear message;
   keep WAITLIST/REJECTED actions available. Registration submissions may still
   be saved as NEW while registration is open. Enforce the limit in Registration
-  API atomically, including concurrent attempts for the last place.
-- [ ] **Warn about required staffing exceeding staff places.** Compare the sum of
+  API atomically, including concurrent attempts for the last place. Manual staff
+  registration by Biuro may be used after public staff registration closes, but
+  because it creates an ACCEPTED registration, it must use the same capacity
+  check.
+- [x] **Require total staffing not to exceed staff places.** Compare the sum of
   required role counts with Miejsca dla kadry in the Turnus editor. Keep the two
-  values independent; the warning must not block saving or alter either value.
+  values independent; do not auto-adjust either value. A red validation message
+  appears on save and blocks it until the operator reduces requirements or
+  increases capacity. The editor always shows the defined-staff/capacity ratio.
+  Frontend and Biuro API both reject over-capacity definitions on save. Equality
+  is allowed. API tests cover create, update, and unchanged persistence after a
+  rejected update; frontend tests cover validation and save behavior.
 - [ ] Ensure acceptance uses current Turnus capacity without waiting for the
   hourly Registration catalogue refresh. Decide the capacity propagation/check
   design as part of the acceptance-limit implementation.

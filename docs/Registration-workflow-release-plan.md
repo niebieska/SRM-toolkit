@@ -101,9 +101,11 @@ Details: [catalogue](Turnus-catalogue-implementation.md),
   capacity, with a clear Biuro message. Keep registration-open switches manual;
   valid public submissions may remain NEW while full. The current implementation
   still permits over-capacity acceptance until this follow-up is delivered.
-- [ ] Show an advisory warning in Turnus definition when summed required staff
-  roles exceed staff capacity. Keep role targets and capacity independently editable;
-  the warning must not block saving. See [staff requirements](Turnus-staff-requirements.md).
+- [x] Require summed staff role targets to be less than or equal to staff
+  capacity when creating or updating a Turnus definition. The editor shows the
+  defined-staff/capacity ratio and blocks invalid saves; the Biuro API enforces
+  the same rule. This is separate from the still-pending acceptance limit. See
+  [staff requirements](Turnus-staff-requirements.md).
 - [x] Agree Turnus minimum age as rocznikowy: compare the Turnus start year with
   the birth year from PESEL, regardless of whether the birthday has occurred by
   the start date. This rule is implemented and covered by backend boundary tests.

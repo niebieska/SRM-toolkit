@@ -19,7 +19,7 @@ source = source.replace(/from '([^']+)'/g, (match, path) => {
   return path.startsWith('.') ? `from '${new URL(path + '.js', file).href}'` : match
 })
 source = source.replace('__expose();', '')
-source = source.replace('return __returned__', '__expose({ error, validationError, validateField, canLeave, reload, discardPrompt, decideDiscard, form, fieldErrors, plannedStaff, categories, categoriesLoading, categoriesError, dirty, success, nextCacheRefreshAt, save, setRequirement, loadCategories }); return __returned__')
+source = source.replace('return __returned__', '__expose({ error, validationError, validateField, onFieldInput, canLeave, reload, discardPrompt, decideDiscard, form, fieldErrors, plannedStaff, categories, categoriesLoading, categoriesError, dirty, success, nextCacheRefreshAt, save, setRequirement, loadCategories }); return __returned__')
 const { default: Editor } = await import(`data:text/javascript;base64,${Buffer.from(source).toString('base64')}`)
 Editor.render = () => null
 const renderer = createRenderer({ createComment: () => ({}), insert() {}, remove() {},
@@ -133,6 +133,30 @@ test('staffing total reacts independently of staff capacity', async t => {
   assert.equal(vm.form.staffCapacity, 10)
   vm.setRequirement('animator', '0')
   assert.equal(vm.plannedStaff, 5)
+})
+
+test('editor blocks saving over-capacity staffing until staff capacity is increased', async t => {
+  let writes = 0
+  const vm = await mount(t, async (url, options) => {
+    if (url.includes('staffing-categories')) return new Response(JSON.stringify([{ code: 'animator' }]))
+    if (options?.method === 'PATCH') {
+      writes++
+      return new Response(JSON.stringify({ ...definition, staffCapacity: 11,
+        staffRequirements: [{ categoryCode: 'animator', requiredCount: 11 }], version: 4 }))
+    }
+    return new Response(JSON.stringify(definition))
+  })
+  vm.setRequirement('animator', '11')
+  await vm.save()
+  assert.equal(writes, 0)
+  assert.match(vm.fieldErrors.staffRequirements, /przekracza liczbę miejsc/)
+  assert.ok(vm.validationError)
+
+  vm.form.staffCapacity = 11
+  vm.onFieldInput({ target: { name: 'staffCapacity' } })
+  assert.equal(vm.fieldErrors.staffRequirements, undefined)
+  await vm.save()
+  assert.equal(writes, 1)
 })
 
 test('creation preserves defaults, all fields and navigation, preventing duplicate writes', async t => {
@@ -273,7 +297,7 @@ test('correcting fields does not dismiss a genuine backend failure', async t => 
 })
 
 
-test('Summer editor saves shared and separate targets without limiting them to capacity', async t => {
+test('Summer editor requires staff capacity to cover shared and separate role targets', async t => {
   const summer = { ...definition, seasonType: 'SUMMER', turnusCode: 'ZAGLE2027T1', staffRequirements: [] }
   let payload
   const vm = await mount(t, async (url, options) => {
@@ -292,13 +316,14 @@ test('Summer editor saves shared and separate targets without limiting them to c
   vm.setRequirement('animator_wychowawca', '2')
   vm.setRequirement('sternik', '5')
   assert.equal(vm.plannedStaff, 13)
+  vm.form.staffCapacity = 13
   await vm.save()
   assert.deepEqual(payload.staffRequirements, [
     { categoryCode: 'animator', requiredCount: 6 },
     { categoryCode: 'animator_wychowawca', requiredCount: 2 },
     { categoryCode: 'sternik', requiredCount: 5 },
   ])
-  assert.equal(payload.staffCapacity, 10)
+  assert.equal(payload.staffCapacity, 13)
   assert.equal(payload.staffRegistrationOpen, true)
   assert.equal(vm.dirty, false)
 })
