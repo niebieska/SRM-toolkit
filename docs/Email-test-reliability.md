@@ -47,7 +47,7 @@ runs with the private SMTP configuration for a real-provider test. See
 | MAIL_READ_TIMEOUT_MS | email-service | 10000 | SMTP socket read wait, milliseconds |
 | MAIL_WRITE_TIMEOUT_MS | email-service | 10000 | SMTP socket write wait, milliseconds |
 | EMAIL_CONNECT_TIMEOUT | registration-api | PT5S | HTTP connection wait to email-service |
-| EMAIL_READ_TIMEOUT | registration-api | PT30S | HTTP response read wait from email-service |
+| EMAIL_READ_TIMEOUT | registration-api | PT20S | HTTP response read wait from email-service |
 
 Timeouts must be positive and bounded to integer milliseconds. SMTP settings use
 integer milliseconds; Registration HTTP settings use ISO-8601 durations. SMTP
@@ -57,15 +57,17 @@ bound individual operations, not a total workflow deadline. Multiple SMTP comman
 exchanges/two recipients can take longer than one timeout value. If HTTP times out,
 email-service may still complete SMTP sending; treat the outcome as unconfirmed.
 
-The default inner HTTP connection/read waits total 35 seconds, leaving 25 seconds
-inside Biuro's 60-second Registration read wait for database/template work
-and response transfer. If overriding these settings, review the enclosing Biuro/
-reverse-proxy/browser deadlines together. Biuro’s read wait is defined in
-`registration.api.read-timeout` in its `application.yml`; the budget regression
-loads that production file as a test resource, rather than repeating its value. This headroom addresses the stalled-email
-path, not a guarantee against arbitrary slow DB/DNS/request-write operations. Public
-minor-staff submissions can make two sequential notification calls; their total
-request duration is not limited to a single email wait.
+Each email-service HTTP attempt has a configured connection/read wait of at most
+25 seconds combined. Minor staff status notifications can make two sequential
+attempts; the maximum configured wait is therefore 50 seconds, leaving 10 seconds
+inside Biuro's 60-second Registration read wait for the saved-status response.
+Registration API rejects timeout overrides whose connection/read waits exceed
+25 seconds combined. If changing Biuro's timeout or this limit, update the budget
+regression and review the enclosing reverse-proxy/browser deadlines too. Biuro’s
+read wait is defined in `registration.api.read-timeout` in its `application.yml`;
+the regression loads that production file as a test resource rather than repeating
+its value. The remaining headroom does not guarantee against arbitrary slow
+database, DNS, request-write, or scheduler delays.
 
 For local MailHog, keep `MAIL_HOST=localhost`, `MAIL_PORT=1025`, blank SMTP
 credentials, `MAIL_SMTP_AUTH=false`, `MAIL_STARTTLS=false`, `MAIL_ENABLED=true`.

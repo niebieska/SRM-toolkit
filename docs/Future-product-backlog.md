@@ -63,6 +63,12 @@ explicitly promoted into Registration-workflow-release-plan.md and recorded in W
 
 ## Communication
 
+- **Next communication follow-up to revisit soon:** refine and plan the agreed
+  minimal notification-attempt audit before implementation. Current agreement is
+  to show each attempt per recipient and record only `SMTP_ACCEPTED`, `NOT_SENT`
+  or `UNCONFIRMED`; it does not claim recipient-server delivery. DSN/bounce
+  processing, automatic retries and an outbox remain excluded. See the detailed
+  resend and authorization scope below.
 - Manual notification resend from Biuro registration details: deferred on
   2026-10-17 while SMTP TEST prerequisites are completed. OPERATOR explicitly
   chooses registration confirmation or current-status notification; backend

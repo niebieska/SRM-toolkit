@@ -16,18 +16,22 @@ import java.util.Map;
 @Component
 public class EmailServiceClient {
     private static final Logger LOGGER = LoggerFactory.getLogger(EmailServiceClient.class);
+    // Two serial recipient attempts must leave time inside Biuro's 60-second read deadline.
+    private static final Duration MAX_PER_RECIPIENT_WAIT = Duration.ofSeconds(25);
     private final RestClient restClient;
 
     public EmailServiceClient(RestClient.Builder builder,
             @Value("${email.service.url:http://localhost:8082}") String url,
             @Value("${email.service.connect-timeout:PT5S}") Duration connectTimeout,
-            @Value("${email.service.read-timeout:PT30S}") Duration readTimeout,
+            @Value("${email.service.read-timeout:PT20S}") Duration readTimeout,
             @Value("${email.service.username}") String username,
             @Value("${email.service.password}") String password) {
         Assert.hasText(username, "Email service username must not be blank");
         Assert.hasText(password, "Email service password must not be blank");
         validateTimeout(connectTimeout);
         validateTimeout(readTimeout);
+        Assert.isTrue(connectTimeout.plus(readTimeout).compareTo(MAX_PER_RECIPIENT_WAIT) <= 0,
+                "Email service connect and read timeouts must total at most 25 seconds per recipient");
         var factory = new SimpleClientHttpRequestFactory();
         factory.setConnectTimeout(connectTimeout);
         factory.setReadTimeout(readTimeout);

@@ -48,6 +48,7 @@ class EmailControllerTest {
             var event = logs.list.getFirst();
             assertTrue(event.getFormattedMessage().contains(request.to()));
             assertTrue(event.getFormattedMessage().contains(request.templateName()));
+            assertTrue(event.getFormattedMessage().contains("registrationCode=REG-1"));
             assertNotNull(event.getThrowableProxy());
             assertEquals(MailSendException.class.getName(), event.getThrowableProxy().getClassName());
             var cause = event.getThrowableProxy().getCause();
@@ -55,6 +56,22 @@ class EmailControllerTest {
             assertEquals(UnknownHostException.class.getName(), cause.getClassName());
             assertEquals("smtp.example.test", cause.getMessage());
             assertFalse(response.getBody().message().contains("smtp.example.test"));
+        } finally { logger.detachAppender(logs); logs.stop(); }
+    }
+
+    @Test void smtpFailureDoesNotLogAnUntrustedRegistrationCode() {
+        String unsafeCode = "REG-1\nINJECTED";
+        var unsafeRequest = new SendEmailRequest(request.to(), request.templateName(),
+                Map.of("registrationCode", unsafeCode));
+        when(service.sendEmail(unsafeRequest.to(), unsafeRequest.templateName(), unsafeRequest.variables()))
+                .thenThrow(new MailSendException("SMTP connection failed"));
+        Logger logger = (Logger) LoggerFactory.getLogger(EmailController.class);
+        var logs = new ListAppender<ILoggingEvent>(); logs.start(); logger.addAppender(logs);
+        try {
+            var response = controller.sendEmail(unsafeRequest);
+            assertEquals(500, response.getStatusCode().value());
+            assertTrue(logs.list.getFirst().getFormattedMessage().contains("registrationCode=unknown"));
+            assertFalse(logs.list.getFirst().getFormattedMessage().contains(unsafeCode));
         } finally { logger.detachAppender(logs); logs.stop(); }
     }
     @Test void malformedOrUnsupportedRequestsNeverClaimSuccess() {

@@ -9,6 +9,7 @@ import pl.srm.registrationapi.email.client.EmailServiceClient;
 import pl.srm.registrationapi.registration.model.RegistrationStatus;
 import pl.srm.registrationapi.registration.model.RegistrationType;
 import pl.srm.registrationapi.registration.parser.RegistrationContext;
+import pl.srm.registrationapi.season.StaffCatalogue;
 import pl.srm.registrationapi.turnus.model.Turnus;
 
 import java.time.format.DateTimeFormatter;
@@ -67,7 +68,7 @@ public class RegistrationNotificationService {
             JsonNode root = objectMapper.readTree(payload);
             JsonNode staff = root.path("person");
 
-            String staffRole = getStaffRole(root);
+            String staffRole = getStaffRole(root, turnus.staffCatalogue());
             String staffName = fullName(staff, "Nieznana kadra");
 
             sendStaffConfirmation(
@@ -152,7 +153,7 @@ public class RegistrationNotificationService {
         return fullName.isBlank() ? fallback : fullName;
     }
 
-    private String getStaffRole(JsonNode root) {
+    private String getStaffRole(JsonNode root, StaffCatalogue catalogue) {
         String role = root.path("role").asText("").trim();
         String subrole = root.path("subrole").asText("").trim();
 
@@ -165,14 +166,61 @@ public class RegistrationNotificationService {
         }
 
         if (role.isBlank()) {
-            return "Kadra";
+            return subrole.isBlank() ? "Kadra" : labelForUnscopedSubrole(catalogue, subrole);
         }
 
-        if (!subrole.isBlank()) {
-            return role + " - " + subrole;
-        }
+        String roleLabel = roleLabel(catalogue, role);
+        if (subrole.isBlank()) return roleLabel;
 
-        return role;
+        String subroleLabel = subroleLabel(catalogue, role, subrole);
+        return roleLabel + " - " + subroleLabel;
+    }
+
+    private String roleLabel(StaffCatalogue catalogue, String code) {
+        if (catalogue != null) {
+            for (StaffCatalogue.Role role : catalogue.roles()) {
+                if (role.value().equals(code)) return role.label();
+            }
+        }
+        return humanizeCode(code);
+    }
+
+    private String subroleLabel(StaffCatalogue catalogue, String roleCode, String subroleCode) {
+        if (catalogue != null) {
+            for (StaffCatalogue.Role role : catalogue.roles()) {
+                if (role.value().equals(roleCode)) {
+                    for (StaffCatalogue.Function subrole : role.subroles()) {
+                        if (subrole.value().equals(subroleCode)) return subrole.label();
+                    }
+                    break;
+                }
+            }
+        }
+        return humanizeCode(subroleCode);
+    }
+
+    private String labelForUnscopedSubrole(StaffCatalogue catalogue, String code) {
+        if (catalogue != null) {
+            String matchingLabel = null;
+            for (StaffCatalogue.Role role : catalogue.roles()) {
+                for (StaffCatalogue.Function subrole : role.subroles()) {
+                    if (subrole.value().equals(code)) {
+                        if (matchingLabel != null && !matchingLabel.equals(subrole.label())) {
+                            return humanizeCode(code);
+                        }
+                        matchingLabel = subrole.label();
+                    }
+                }
+            }
+            if (matchingLabel != null) return matchingLabel;
+        }
+        return humanizeCode(code);
+    }
+
+    private String humanizeCode(String code) {
+        String label = code.replace('_', ' ');
+        if (label.isBlank()) return "Kadra";
+        return Character.toUpperCase(label.charAt(0)) + label.substring(1);
     }
 
     private Map<String, String> turnusVariables(Turnus turnus) {

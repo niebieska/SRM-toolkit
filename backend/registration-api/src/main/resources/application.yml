@@ -29,9 +29,9 @@ email:
     url: ${EMAIL_SERVICE_URL:http://localhost:8082}
     username: ${EMAIL_SERVICE_USERNAME:registration-email-sender}
     password: ${EMAIL_SERVICE_PASSWORD}
-    # Leave headroom inside Biuro's 60-second upstream wait for status updates.
+    # Two sequential minor-staff recipients must fit within Biuro's 60s upstream wait.
     connect-timeout: ${EMAIL_CONNECT_TIMEOUT:PT5S}
-    read-timeout: ${EMAIL_READ_TIMEOUT:PT30S}
+    read-timeout: ${EMAIL_READ_TIMEOUT:PT20S}
   organizer:
     email: ${ORGANIZER_EMAIL:}
 

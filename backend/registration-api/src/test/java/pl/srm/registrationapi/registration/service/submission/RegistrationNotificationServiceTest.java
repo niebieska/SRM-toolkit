@@ -7,9 +7,11 @@ import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
 import pl.srm.registrationapi.email.client.EmailServiceClient;
 import pl.srm.registrationapi.registration.parser.RegistrationContext;
+import pl.srm.registrationapi.season.StaffCatalogue;
 import pl.srm.registrationapi.turnus.model.SeasonType;
 import pl.srm.registrationapi.turnus.model.Turnus;
 import java.time.LocalDate;
+import java.util.List;
 import java.util.Map;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
@@ -25,9 +27,33 @@ class RegistrationNotificationServiceTest {
     final RegistrationNotificationService notifications = new RegistrationNotificationService(client, new ObjectMapper());
 
     Turnus turnus(String code, String description) {
+        return turnus(code, description, null);
+    }
+    Turnus turnus(String code, String description, StaffCatalogue staffCatalogue) {
         return new Turnus(code, "Narty z Jezusem — nowa nazwa", description, "Gliczarów Górny",
                 SeasonType.WINTER, 2027, LocalDate.of(2027, 1, 7), LocalDate.of(2027, 1, 14),
-                14, 50, 10, true, true, true);
+                14, 50, 10, true, true, true, staffCatalogue);
+    }
+    StaffCatalogue staffCatalogue() {
+        return new StaffCatalogue("WINTER", List.of(new StaffCatalogue.Role(
+                "animator", "Animator", true, false, false,
+                List.of(new StaffCatalogue.Function("kandydat_na_animatora", "Kandydat na animatora", false, false)))),
+                Map.of());
+    }
+    StaffCatalogue overlappingStaffCatalogue() {
+        return new StaffCatalogue("SUMMER", List.of(
+                new StaffCatalogue.Role("animator", "Animator", true, false, false,
+                        List.of(new StaffCatalogue.Function("kandydat_na_animatora", "Podrola kandydata", false, false))),
+                new StaffCatalogue.Role("kandydat_na_animatora", "Kandydat na animatora", false, true, false, List.of())),
+                Map.of());
+    }
+    StaffCatalogue duplicateSubroleCatalogue() {
+        return new StaffCatalogue("SUMMER", List.of(
+                new StaffCatalogue.Role("animator", "Animator", true, false, false,
+                        List.of(new StaffCatalogue.Function("pomoc", "Pomoc animatora", false, false))),
+                new StaffCatalogue.Role("ksiadz", "Ksiądz", true, false, false,
+                        List.of(new StaffCatalogue.Function("pomoc", "Pomoc duszpasterska", true, false)))),
+                Map.of());
     }
     RegistrationContext context(boolean minor) {
         return new RegistrationContext("NEW2027", "test", "hash", minor, true, true);
@@ -72,6 +98,57 @@ class RegistrationNotificationServiceTest {
         assertEquals("Jan Nowak", variables.getAllValues().getFirst().get("recipientName"));
         if (minor) assertEquals("Anna Nowak", variables.getAllValues().get(1).get("recipientName"));
         verifyNoMoreInteractions(client);
+    }
+
+    @Test void staffRoleAndSubroleUseHumanReadableTurnusCatalogueLabels() {
+        String payload = PAYLOAD.replace("\"WYCHOWAWCA\"", "\"animator\"")
+                .replace("\"ZASTEPOWY\"", "\"kandydat_na_animatora\"");
+
+        assertEquals("Animator - Kandydat na animatora", staffRoleFor(payload, turnus("NEW2027", "Opis", staffCatalogue())));
+    }
+
+    @Test void subroleUsesCatalogueLabelWhenRoleIsMissing() {
+        String payload = PAYLOAD.replace("\"role\":\"WYCHOWAWCA\",", "")
+                .replace("\"ZASTEPOWY\"", "\"kandydat_na_animatora\"");
+
+        assertEquals("Kandydat na animatora", staffRoleFor(payload, turnus("NEW2027", "Opis", staffCatalogue())));
+    }
+
+    @Test void unknownRoleCodeFallsBackToReadableTextWithoutCatalogueMatch() {
+        String payload = PAYLOAD.replace("\"WYCHOWAWCA\"", "\"kandydat_na_animatora\"")
+                .replace("\"ZASTEPOWY\"", "\"\"");
+
+        assertEquals("Kandydat na animatora", staffRoleFor(payload, turnus("NEW2027", "Opis")));
+    }
+
+    @Test void topLevelRoleLabelWinsWhenCodeAlsoExistsAsSubrole() {
+        String payload = PAYLOAD.replace("\"WYCHOWAWCA\"", "\"kandydat_na_animatora\"")
+                .replace("\"ZASTEPOWY\"", "\"\"");
+
+        assertEquals("Kandydat na animatora", staffRoleFor(payload,
+                turnus("NEW2027", "Opis", overlappingStaffCatalogue())));
+    }
+
+    @Test void subroleLabelIsResolvedWithinItsSelectedRole() {
+        String payload = PAYLOAD.replace("\"WYCHOWAWCA\"", "\"animator\"")
+                .replace("\"ZASTEPOWY\"", "\"pomoc\"");
+
+        assertEquals("Animator - Pomoc animatora", staffRoleFor(payload,
+                turnus("NEW2027", "Opis", duplicateSubroleCatalogue())));
+    }
+
+    @Test void ambiguousSubroleWithoutRoleFallsBackToReadableCode() {
+        String payload = PAYLOAD.replace("\"role\":\"WYCHOWAWCA\",", "")
+                .replace("\"ZASTEPOWY\"", "\"pomoc\"");
+
+        assertEquals("Pomoc", staffRoleFor(payload, turnus("NEW2027", "Opis", duplicateSubroleCatalogue())));
+    }
+
+    private String staffRoleFor(String payload, Turnus selectedTurnus) {
+        notifications.sendStaffRegistrationConfirmation(payload, context(false), "REG-1", selectedTurnus);
+        @SuppressWarnings("unchecked") ArgumentCaptor<Map<String, String>> variables = ArgumentCaptor.forClass(Map.class);
+        verify(client).sendEmail(anyString(), eq("registration-confirmation-staff"), variables.capture());
+        return variables.getValue().get("staffRole");
     }
 
     @Test void nullDescriptionIsEmptyAndKnownCodeDoesNotUseFormerHardcodedValues() {

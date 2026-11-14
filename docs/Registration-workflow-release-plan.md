@@ -26,8 +26,8 @@ acceptance and verification tasks are tracked separately.
 |---|---|---|
 | Submit participant/staff registration | Forms, APIs, persistence, independent counters and duplicate constraint exist. Integrity suite verified previously. | Valid adult/minor submissions survive restart; invalid mandatory data is rejected by backend; no duplicate on repeated click; useful errors preserve input. |
 | Find and inspect | Biuro filters status/type/Turnus; local search and sorting; details with payload fields. | Operators can find each scenario, read required person/guardian/contact/role details, and clearly distinguish status and Turnus. |
-| Decide | Table and details actions support ACCEPTED/WAITLIST/REJECTED; modal offers preset rejection reasons plus free text; Biuro enforces rejection reason. Status history is audit-only; existing workflow permits normal status changes, including returning to a previous status. | Finish deployed checks for all outcomes, reasons, refresh and history. Repeated status selection is not a resend mechanism; notifications remain a separate best-effort action. Capacity policy is agreed and implemented. |
-| Notify | Confirmation and status templates exist with guardian/self routing; GCP TEST external SMTP send is operator-confirmed. | Verify recipients/content for adult/minor and participant/staff; correct dates/payment instructions; confirm SMTP failure does not lose registration or falsely claim delivery. Manual resend is deferred; same-status selection does not resend. |
+| Decide | Table and details actions support ACCEPTED/WAITLIST/REJECTED; modal offers preset rejection reasons plus free text; Biuro enforces rejection reason. Status history is audit-only; existing workflow permits normal status changes, including returning to a previous status. | Finish deployed checks for all outcomes, reasons, refresh and history. Notifications remain a separate best-effort action. Capacity policy is agreed and implemented. |
+| Notify | Confirmation and status templates exist with guardian/self routing; GCP TEST external SMTP send is operator-confirmed. | Verify recipients/content for adult/minor and participant/staff; correct dates/payment instructions; confirm SMTP failure does not lose registration or falsely claim delivery. The backend attempts a notification after each successful status-update request, including a same-status request; the UI does not provide a controlled resend action. Manual resend and notification-attempt audit are tracked in the future backlog. |
 | Assemble Turnus roster | Dedicated accepted-only participant/staff tables, search, type filter, sorting, presets and custom columns are implemented. Staff roles remain visible; qualifications are staff-only. | Accepted participants and staff selectable for the correct Turnus; NEW/WAITLIST/REJECTED excluded from accepted lists. Empty lists supported. |
 | Generate lists | XLSX/CSV/PDF exports use current filters, columns and ordering. XLSX sheets/PDF sections separate groups; CSV includes person type. Binary and browser checks passed; intended application/print acceptance remains pending. | Insurance export and printable on-site registration list use agreed columns, correct selection and current data. Staff inclusion is explicit. Print/export verified using synthetic records. |
 
@@ -112,7 +112,9 @@ Details: [catalogue](Turnus-catalogue-implementation.md),
   this decision.
 - Status history is audit-only. Keep the existing status workflow and permissions;
   do not add transition restrictions. Returning to an earlier status uses the
-  same existing action flow. A same-status request is not a notification resend.
+  same existing action flow. A same-status request does not create a history row,
+  but the backend still attempts the status notification; this is not a controlled
+  resend feature.
 - [ ] Verify status persistence, rejection reasons, table/details refresh and audit timeline in deployed Biuro.
 - [ ] Agree participant/staff fees and recipient rules; remove placeholder bank data.
 - [x] Verify that the GCP TEST email-service sends through the configured external

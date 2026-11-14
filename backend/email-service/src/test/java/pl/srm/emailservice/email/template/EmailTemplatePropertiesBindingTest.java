@@ -7,10 +7,18 @@ import org.springframework.boot.test.context.SpringBootTest;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 
 @SpringBootTest(properties = {
-        "EMAIL_REGULATIONS_URL=https://test.example/rules",
         "EMAIL_INFO_URL=https://test.example/info",
         "EMAIL_CONTACT_EMAIL=test@example.test",
-        "EMAIL_CONTACT_PHONE=+48 111 222 333",
+        "BIURO_NAME=Test Biuro",
+        "BIURO_CONTACT_PHONE=+48 111 222 333",
+        "PRIEST_NAME=Test Priest",
+        "EMAIL_PRIEST_PHONE=+48 222 333 444",
+        "EMAIL_WEBSITE_URL=https://test.example/website",
+        "EMAIL_WEBSITE_LABEL=Test website",
+        "EMAIL_FACEBOOK_URL=https://test.example/facebook",
+        "EMAIL_FACEBOOK_LABEL=Test Facebook",
+        "EMAIL_INSTAGRAM_URL=https://test.example/instagram",
+        "EMAIL_INSTAGRAM_LABEL=Test Instagram",
         "PARTICIPANT_CARD_ADULT_URL=https://test.example/adult-card.pdf",
         "PARTICIPANT_CARD_ADULT_ENABLED=false",
         "EMAIL_SERVICE_PASSWORD=test-only-email-service-password",
@@ -23,10 +31,18 @@ class EmailTemplatePropertiesBindingTest {
 
     @Test
     void bindsTemplateSettingsAndParticipantCardDefaultsFromApplicationConfiguration() {
-        assertEquals("https://test.example/rules", properties.regulationsUrl());
         assertEquals("https://test.example/info", properties.infoUrl());
         assertEquals("test@example.test", properties.contactEmail());
+        assertEquals("Test Biuro", properties.biuroName());
         assertEquals("+48 111 222 333", properties.contactPhone());
+        assertEquals("Test Priest", properties.priestName());
+        assertEquals("+48 222 333 444", properties.priestPhone());
+        assertEquals("https://test.example/website", properties.websiteUrl());
+        assertEquals("Test website", properties.websiteLabel());
+        assertEquals("https://test.example/facebook", properties.facebookUrl());
+        assertEquals("Test Facebook", properties.facebookLabel());
+        assertEquals("https://test.example/instagram", properties.instagramUrl());
+        assertEquals("Test Instagram", properties.instagramLabel());
         assertEquals("https://test.example/adult-card.pdf", properties.participantCardAdultUrl());
         assertEquals(false, properties.participantCardAdultEnabled());
         assertEquals("https://rekolekcje.scj.pl/beta/wp-content/uploads/karta2020.pdf",

@@ -1,6 +1,7 @@
 package pl.srm.emailservice.email.infrastructure;
 
 import jakarta.mail.Session;
+import jakarta.mail.internet.InternetAddress;
 import jakarta.mail.internet.MimeMessage;
 import org.junit.jupiter.api.Test;
 import org.springframework.mail.MailAuthenticationException;
@@ -20,8 +21,11 @@ class SmtpEmailSenderTest {
     private static final EmailMessage MESSAGE = new EmailMessage("user@example.test", "Subject", "<p>body</p>");
     private final JavaMailSenderImpl mailSender = mock(JavaMailSenderImpl.class);
     private SmtpEmailSender sender(boolean enabled) {
+        return sender(enabled, "", "");
+    }
+    private SmtpEmailSender sender(boolean enabled, String fromName, String replyTo) {
         when(mailSender.getSession()).thenReturn(Session.getInstance(boundedProperties()));
-        var sender = new SmtpEmailSender(mailSender, "sender@example.test", enabled);
+        var sender = new SmtpEmailSender(mailSender, "sender@example.test", fromName, replyTo, enabled);
         clearInvocations(mailSender);
         return sender;
     }
@@ -58,6 +62,26 @@ class SmtpEmailSenderTest {
         assertEquals("Żagle — potwierdzenie", mime.getSubject());
         assertEquals("sender@example.test", mime.getFrom()[0].toString());
     }
+    @Test void appliesConfiguredFriendlyFromNameAndReplyTo() throws Exception {
+        MimeMessage mime = message();
+        assertTrue(sender(true, "Sercańskie Rekolekcje Młodzieżowe", "rekolekcje@scj.pl").send(MESSAGE));
+
+        InternetAddress from = (InternetAddress) mime.getFrom()[0];
+        assertEquals("sender@example.test", from.getAddress());
+        assertEquals("Sercańskie Rekolekcje Młodzieżowe", from.getPersonal());
+        InternetAddress replyTo = (InternetAddress) mime.getReplyTo()[0];
+        assertEquals("rekolekcje@scj.pl", replyTo.getAddress());
+    }
+    @Test void omitsOptionalFriendlyFromNameAndReplyToWhenUnset() throws Exception {
+        MimeMessage mime = message();
+        assertTrue(sender(true).send(MESSAGE));
+
+        InternetAddress from = (InternetAddress) mime.getFrom()[0];
+        assertEquals("sender@example.test", from.getAddress());
+        assertNull(from.getPersonal());
+        assertNull(mime.getHeader("Reply-To"));
+        assertEquals("sender@example.test", ((InternetAddress) mime.getReplyTo()[0]).getAddress());
+    }
     @Test void logsDeliveryContextAndMessageIdOnlyAfterSmtpAcceptance() throws Exception {
         MimeMessage mime = message();
         doAnswer(invocation -> {
@@ -90,7 +114,7 @@ class SmtpEmailSenderTest {
                 var properties = boundedProperties();
                 properties.setProperty("mail.smtp." + property, value);
                 var mail = new JavaMailSenderImpl(); mail.setJavaMailProperties(properties);
-                assertThrows(IllegalArgumentException.class, () -> new SmtpEmailSender(mail, "s@example.test", true));
+                assertThrows(IllegalArgumentException.class, () -> new SmtpEmailSender(mail, "s@example.test", "", "", true));
             }
         }
     }
@@ -105,6 +129,6 @@ class SmtpEmailSenderTest {
         var mail = new JavaMailSenderImpl(); mail.setJavaMailProperties(boundedProperties());
         var sessionProperties = boundedProperties(); sessionProperties.setProperty("mail.smtp.timeout", "0");
         mail.setSession(Session.getInstance(sessionProperties));
-        assertThrows(IllegalArgumentException.class, () -> new SmtpEmailSender(mail, "s@example.test", true));
+        assertThrows(IllegalArgumentException.class, () -> new SmtpEmailSender(mail, "s@example.test", "", "", true));
     }
 }

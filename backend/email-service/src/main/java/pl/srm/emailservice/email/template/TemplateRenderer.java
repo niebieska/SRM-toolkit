@@ -38,12 +38,20 @@ public class TemplateRenderer {
             templateVariables.putAll(variables);
         }
 
-        // Configuration-owned links and contact details must not be replaceable by
+        // Configuration-owned links, labels and contact details must not be replaceable by
         // values supplied with an email request.
-        templateVariables.put("regulationsUrl", properties.regulationsUrl());
         templateVariables.put("infoUrl", properties.infoUrl());
         templateVariables.put("contactEmail", properties.contactEmail());
+        templateVariables.put("biuroName", properties.biuroName());
         templateVariables.put("contactPhone", properties.contactPhone());
+        templateVariables.put("priestName", properties.priestName());
+        templateVariables.put("priestPhone", properties.priestPhone());
+        templateVariables.put("websiteUrl", properties.websiteUrl());
+        templateVariables.put("websiteLabel", properties.websiteLabel());
+        templateVariables.put("facebookUrl", properties.facebookUrl());
+        templateVariables.put("facebookLabel", properties.facebookLabel());
+        templateVariables.put("instagramUrl", properties.instagramUrl());
+        templateVariables.put("instagramLabel", properties.instagramLabel());
         templateVariables.put("participantCardAdultUrl", properties.participantCardAdultUrl());
         templateVariables.put("participantCardAdultEnabled", properties.participantCardAdultEnabled());
         templateVariables.put("participantCardMinorUrl", properties.participantCardMinorUrl());

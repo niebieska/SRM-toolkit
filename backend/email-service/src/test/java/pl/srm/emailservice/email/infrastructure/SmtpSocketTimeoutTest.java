@@ -31,7 +31,7 @@ class SmtpSocketTimeoutTest {
                 mail.getJavaMailProperties().setProperty("mail.smtp.connectiontimeout", "300");
                 mail.getJavaMailProperties().setProperty("mail.smtp.timeout", "150");
                 mail.getJavaMailProperties().setProperty("mail.smtp.writetimeout", "150");
-                var sender = new SmtpEmailSender(mail, "sender@example.test", true);
+                var sender = new SmtpEmailSender(mail, "sender@example.test", "", "", true);
                 assertTimeoutPreemptively(Duration.ofSeconds(2), () -> assertThrows(MailSendException.class,
                         () -> sender.send(new EmailMessage("recipient@example.test", "Synthetic", "<p>Test</p>"))));
                 assertTrue(connected.await(1, TimeUnit.SECONDS));

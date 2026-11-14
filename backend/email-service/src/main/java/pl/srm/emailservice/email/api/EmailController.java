@@ -10,6 +10,8 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import pl.srm.emailservice.email.service.EmailDispatchService;
 
+import java.util.Map;
+
 @RestController
 @RequestMapping("/api/email")
 public class EmailController {
@@ -39,10 +41,15 @@ public class EmailController {
             return ResponseEntity.badRequest().body(new SendEmailResponse(false, "Invalid email request or template."));
         } catch (Exception exception) {
             // Provider details belong in restricted server logs, never in the API response.
-            LOGGER.error("Email request failed; SMTP delivery may be uncertain (to={}, template={})",
-                    request.to(), request.templateName(), exception);
+            LOGGER.error("Email request failed; SMTP delivery may be uncertain (to={}, template={}, registrationCode={})",
+                    request.to(), request.templateName(), safeRegistrationCode(request.variables()), exception);
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
                     .body(new SendEmailResponse(false, "Email sending failed; delivery may be uncertain."));
         }
+    }
+
+    private String safeRegistrationCode(Map<String, String> variables) {
+        String code = variables == null ? null : variables.get("registrationCode");
+        return code != null && code.matches("[A-Za-z0-9_-]{1,150}") ? code : "unknown";
     }
 }
