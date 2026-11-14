@@ -16,8 +16,10 @@ class TemplateRendererTest {
     private static final String MINOR_URL = "https://cards.example.test/minor.pdf";
 
     private final TemplateRenderer renderer = new TemplateRenderer(templateEngine(), new DefaultResourceLoader(),
-            new EmailTemplateProperties("https://example.test/rules", "https://example.test/info",
-                    "contact@example.test", "+48 123 456 789", ADULT_URL, false, MINOR_URL,
+            new EmailTemplateProperties("https://example.test/info", "contact@example.test",
+                    "Example Office", "+48 123 456 789", "Example Priest", "+48 987 654 321",
+                    "https://example.test/", "example.test", "https://facebook.example.test/", "facebook.example.test",
+                    "https://instagram.example.test/", "instagram.example.test", ADULT_URL, false, MINOR_URL,
                     "11 1111 1111 1111 1111 1111 1111", "500 zł"));
 
     @Test
@@ -62,6 +64,26 @@ class TemplateRendererTest {
     }
 
     @Test
+    void allTemplatesRenderConfiguredFooterBrandingAndLinks() {
+        for (String template : new String[]{"registration-confirmation-participant", "registration-confirmation-staff", "status-update"}) {
+            String html = renderer.render(template, Map.of());
+
+            assertTrue(html.contains("Example Office"));
+            assertTrue(html.contains("Example Priest"));
+            assertTrue(html.contains("contact@example.test"));
+            assertTrue(html.contains("+48 123 456 789"));
+            assertTrue(html.contains("+48 987 654 321"));
+            assertTrue(html.contains("href=\"https://example.test/\""));
+            assertTrue(html.contains("example.test</span>"));
+            assertTrue(html.contains("href=\"https://facebook.example.test/\""));
+            assertTrue(html.contains("facebook.example.test</span>"));
+            assertTrue(html.contains("white-space: nowrap;"));
+            assertTrue(html.contains("href=\"https://instagram.example.test/\""));
+            assertTrue(html.contains("instagram.example.test</span>"));
+        }
+    }
+
+    @Test
     void acceptedMinorStaffGetsCardButNoParticipantTransferInstructions() {
         String html = renderer.render("status-update", Map.of(
                 "status", "ACCEPTED", "registrationType", "STAFF",
@@ -74,8 +96,11 @@ class TemplateRendererTest {
     @Test
     void acceptedParticipantWithoutPaymentConfigurationDoesNotShowPlaceholderDetails() {
         TemplateRenderer rendererWithoutPayment = new TemplateRenderer(templateEngine(), new DefaultResourceLoader(),
-                new EmailTemplateProperties("https://example.test/rules", "https://example.test/info",
-                        "contact@example.test", "+48 123 456 789", ADULT_URL, false, MINOR_URL, "", ""));
+                new EmailTemplateProperties("https://example.test/info", "contact@example.test",
+                        "Example Office", "+48 123 456 789", "Example Priest", "+48 987 654 321",
+                        "https://example.test/", "example.test", "https://facebook.example.test/", "facebook.example.test",
+                        "https://instagram.example.test/", "instagram.example.test", ADULT_URL, false, MINOR_URL,
+                        "", ""));
 
         String html = rendererWithoutPayment.render("status-update", Map.of(
                 "status", "ACCEPTED", "registrationType", "PARTICIPANT",

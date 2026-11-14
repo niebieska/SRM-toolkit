@@ -88,15 +88,27 @@
 
     <table width="100%" cellspacing="0" cellpadding="0" style="font-size: 13px; color: #6b6b6b; line-height: 1.6;">
         <tr>
-            <td width="100%" style="vertical-align: top;">
-                <p style="margin: 0 0 6px 0; font-weight: bold; color: #1d1d1d;">Biuro Rekolekcji</p>
+            <td width="60%" style="vertical-align: top; padding-right: 12px;">
+                <p style="margin: 0 0 6px 0; font-weight: bold; color: #1d1d1d;" th:text="${biuroName}">Biuro Rekolekcji</p>
                 <p style="margin: 0 0 12px 0;">
                     📧
-                    <a th:href="|mailto:${contactEmail}|" th:text="${contactEmail}" style="color: #2a5bd7; text-decoration: none;"></a><br/>
-                    📞 <span>+48 602 439 696</span>
+                    <a th:href="|mailto:${contactEmail}|" th:text="${contactEmail}" style="color: #2a5bd7; text-decoration: none;">rekolekcje@scj.pl</a><br/>
+                    📞 <span th:text="${contactPhone}">+48 602 439 696</span>
                 </p>
-                <p style="margin: 0 0 6px 0; font-weight: bold; color: #1d1d1d;">ks. Franciszek Wielgut SCJ</p>
-                <p style="margin: 0;">📞 +48 510 797 569</p>
+                <p style="margin: 0 0 6px 0; font-weight: bold; color: #1d1d1d;" th:text="${priestName}">ks. Franciszek Wielgut SCJ</p>
+                <p style="margin: 0;">📞 <span th:text="${priestPhone}">+48 510 797 569</span></p>
+            </td>
+
+            <td width="40%" style="vertical-align: middle; text-align: left; padding-left: 24px;">
+                <p style="margin: 0 0 6px 0;">
+                    <a th:href="${websiteUrl}" style="color: #2a5bd7; text-decoration: none;">🌍 <span th:text="${websiteLabel}">rekolekcje.scj.pl</span></a>
+                </p>
+                <p style="margin: 0 0 6px 0;">
+                    <a th:href="${facebookUrl}" style="color: #2a5bd7; text-decoration: none; white-space: nowrap;">👍 <span th:text="${facebookLabel}">facebook.com/RekolekcjeSercanskie</span></a>
+                </p>
+                <p style="margin: 0;">
+                    <a th:href="${instagramUrl}" style="color: #2a5bd7; text-decoration: none;">❤️ <span th:text="${instagramLabel}">instagram.com/rekolekcje_scj</span></a>
+                </p>
             </td>
         </tr>
     </table>

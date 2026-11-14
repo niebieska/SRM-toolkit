@@ -77,6 +77,17 @@ services:
       MAIL_ENABLED: 'true'
       MAIL_FROM: noreply@srm.test
       EMAIL_CONTACT_EMAIL: ${EMAIL_CONTACT_EMAIL:-rekolekcje@scj.pl}
+      EMAIL_INFO_URL: ${EMAIL_INFO_URL:-https://rekolekcje.scj.pl/informacje-organizacyjne/}
+      BIURO_NAME: ${BIURO_NAME:-Biuro Rekolekcji}
+      BIURO_CONTACT_PHONE: ${BIURO_CONTACT_PHONE:-${EMAIL_CONTACT_PHONE:-+48 602 439 696}}
+      PRIEST_NAME: ${PRIEST_NAME:-ks. Franciszek Wielgut SCJ}
+      EMAIL_PRIEST_PHONE: ${EMAIL_PRIEST_PHONE:-+48 510 797 569}
+      EMAIL_WEBSITE_URL: ${EMAIL_WEBSITE_URL:-https://rekolekcje.scj.pl/}
+      EMAIL_WEBSITE_LABEL: ${EMAIL_WEBSITE_LABEL:-rekolekcje.scj.pl}
+      EMAIL_FACEBOOK_URL: ${EMAIL_FACEBOOK_URL:-https://facebook.com/RekolekcjeSercanskie}
+      EMAIL_FACEBOOK_LABEL: ${EMAIL_FACEBOOK_LABEL:-facebook.com/RekolekcjeSercanskie}
+      EMAIL_INSTAGRAM_URL: ${EMAIL_INSTAGRAM_URL:-https://instagram.com/rekolekcje_scj}
+      EMAIL_INSTAGRAM_LABEL: ${EMAIL_INSTAGRAM_LABEL:-instagram.com/rekolekcje_scj}
       PARTICIPANT_CARD_ADULT_URL: ${PARTICIPANT_CARD_ADULT_URL:-https://rekolekcje.scj.pl/beta/wp-content/uploads/karta2020.pdf}
       PARTICIPANT_CARD_ADULT_ENABLED: ${PARTICIPANT_CARD_ADULT_ENABLED:-false}
       PARTICIPANT_CARD_MINOR_URL: ${PARTICIPANT_CARD_MINOR_URL:-https://rekolekcje.scj.pl/beta/wp-content/uploads/karta2020.pdf}
