@@ -4,10 +4,16 @@ import { validateTurnusForm } from './turnusFormValidation.js'
 const form = { turnusCode: 'NARTY2027T1', turnusName: 'Narty z Jezusem', turnusLocation: 'Gliczarów Górny',
   seasonType: 'WINTER', seasonYear: 2027, minAge: 14, participantCapacity: 50, staffCapacity: 10,
   startDate: '2027-01-17', endDate: '2027-01-24', turnusDescription: null, staffRequirements: [] }
-test('existing limits and dates validate without adding staffing capacity restrictions', () => {
+test('staffing requirements may equal but cannot exceed staff capacity', () => {
   assert.deepEqual(validateTurnusForm(form, []), {})
+  const categories = [{ code: 'animator' }, { code: 'kucharka' }]
   assert.deepEqual(validateTurnusForm({ ...form, endDate: form.startDate, minAge: 0,
-    staffRequirements: [{ categoryCode: 'animator', requiredCount: 20 }] }, [{ code: 'animator' }]), {})
+    staffRequirements: [{ categoryCode: 'animator', requiredCount: 6 }, { categoryCode: 'kucharka', requiredCount: 4 }] }, categories), {})
+  assert.match(validateTurnusForm({ ...form,
+    staffRequirements: [{ categoryCode: 'animator', requiredCount: 6 }, { categoryCode: 'kucharka', requiredCount: 5 }] }, categories).staffRequirements,
+  /Suma ról przekracza liczbę miejsc dla kadry \(11\/10\)/)
+  assert.deepEqual(validateTurnusForm({ ...form, staffCapacity: 11,
+    staffRequirements: [{ categoryCode: 'animator', requiredCount: 6 }, { categoryCode: 'kucharka', requiredCount: 5 }] }, categories), {})
 })
 test('required fields, codes, date range and impossible dates have specific errors', () => {
   const errors = validateTurnusForm({ ...form, turnusName: ' ', turnusCode: 'bad code',

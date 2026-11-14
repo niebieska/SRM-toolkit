@@ -6,7 +6,7 @@ function validDate(value) {
   return !Number.isNaN(date.getTime()) && date.toISOString().slice(0, 10) === value
 }
 
-/** Mirrors existing Turnus request bounds; does not add capacity/staffing restrictions. */
+/** Mirrors existing Turnus request bounds and validates staffing requirements against staff capacity. */
 export function validateTurnusForm(form, categories) {
   const errors = {}
   for (const [key, label, max] of [
@@ -34,5 +34,11 @@ export function validateTurnusForm(form, categories) {
   if (String(form.turnusDescription ?? '').length > 4000) errors.turnusDescription = 'Opis może mieć maksymalnie 4000 znaków.'
   const staffing = requirementsError(form.staffRequirements, categories)
   if (staffing) errors.staffRequirements = staffing
+  else {
+    const requiredStaff = (form.staffRequirements || []).reduce((total, item) => total + item.requiredCount, 0)
+    if (Number.isInteger(form.staffCapacity) && form.staffCapacity >= 1 && requiredStaff > form.staffCapacity) {
+      errors.staffRequirements = `Suma ról przekracza liczbę miejsc dla kadry (${requiredStaff}/${form.staffCapacity}). Zwiększ liczbę miejsc albo zmniejsz wymagania.`
+    }
+  }
   return errors
 }
