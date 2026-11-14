@@ -31,16 +31,9 @@ public class StatusNotificationService {
         try {
             JsonNode root = objectMapper.readTree(registration.getPayload());
             JsonNode person = root.path("person");
-            JsonNode recipient = registration.isMinor()
-                    ? root.path("guardian")
-                    : person;
-
-            String recipientName = fullName(recipient, "Uczestniku");
             String registeredName = fullName(person, "Uczestnik");
-            String email = recipient.path("contact").path("email").asText("").trim();
 
             Map<String, String> variables = new HashMap<>();
-            variables.put("recipientName", recipientName);
             variables.put("registeredName", registeredName);
             variables.put("registrationCode", registration.getRegistrationCode());
             variables.put("status", registration.getStatus());
@@ -56,7 +49,17 @@ public class StatusNotificationService {
                     : registration.getRejectionReason());
             variables.put("transferTitle", registration.getRegistrationCode() + " - " + registeredName);
 
-            emailServiceClient.sendEmail(email, STATUS_UPDATE_TEMPLATE, variables);
+            if ("STAFF".equals(registration.getRegistrationType()) && registration.isMinor()) {
+                String personEmail = email(person);
+                String guardianEmail = email(root.path("guardian"));
+                sendStatusUpdate(personEmail, variables);
+                if (!guardianEmail.equalsIgnoreCase(personEmail)) {
+                    sendStatusUpdate(guardianEmail, variables);
+                }
+            } else {
+                JsonNode recipient = registration.isMinor() ? root.path("guardian") : person;
+                sendStatusUpdate(email(recipient), variables);
+            }
         } catch (Exception exception) {
             LOGGER.error(
                     "Email preparation failed code={} template=status-update error={}",
@@ -64,6 +67,14 @@ public class StatusNotificationService {
                     exception.getClass().getSimpleName()
             );
         }
+    }
+
+    private void sendStatusUpdate(String email, Map<String, String> variables) {
+        emailServiceClient.sendEmail(email, STATUS_UPDATE_TEMPLATE, variables);
+    }
+
+    private String email(JsonNode recipient) {
+        return recipient.path("contact").path("email").asText("").trim();
     }
 
     private String fullName(JsonNode node, String fallback) {
