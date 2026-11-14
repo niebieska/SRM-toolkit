@@ -25,7 +25,7 @@ const props = defineProps({
   },
 })
 
-const emit = defineEmits(['status-updated'])
+const emit = defineEmits(['status-updated', 'auto-refresh'])
 
 const authStore = useAuthStore()
 const registrations = ref([])
@@ -145,7 +145,10 @@ async function handleStatusUpdated() {
 }
 
 onMounted(() => {
-  stopAutoRefresh = setupRegistrationListAutoRefresh(loadRegistrations)
+  stopAutoRefresh = setupRegistrationListAutoRefresh(() => {
+    loadRegistrations()
+    emit('auto-refresh')
+  })
 })
 
 onUnmounted(() => {

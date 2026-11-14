@@ -66,7 +66,7 @@ async function handleManualStaffCreated(code) {
 async function loadTurnusStats() {
   const turnusCode = filters.turnusCode
   const request = ++statsRequest
-  stats.value = null
+  if (!turnusCode || stats.value?.turnusCode !== turnusCode) stats.value = null
   statsError.value = ''
   statsLoading.value = Boolean(turnusCode)
   if (!turnusCode) return
@@ -74,7 +74,10 @@ async function loadTurnusStats() {
     const value = await fetchTurnusStats(authStore.token, turnusCode)
     if (request === statsRequest) stats.value = value
   } catch (e) {
-    if (request === statsRequest) statsError.value = e.message
+    if (request === statsRequest) {
+      stats.value = null
+      statsError.value = e.message
+    }
   } finally {
     if (request === statsRequest) statsLoading.value = false
   }
@@ -180,7 +183,8 @@ watch(
       <RegistrationTable ref="registrationTable" :filters="filters"
         :turnus-stats="stats?.turnusCode === filters.turnusCode ? stats : null"
         :turnus-options="turnusOptions"
-        @status-updated="loadTurnusStats">
+        @status-updated="loadTurnusStats"
+        @auto-refresh="loadTurnusStats">
         <template #header-actions>
           <button type="button" class="-translate-y-0.5 whitespace-nowrap rounded-lg bg-slate-800 px-4 py-2 text-sm font-semibold text-white hover:bg-slate-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-500 focus-visible:ring-offset-2" @click="showManualStaffForm = true">+ Dodaj kadrę</button>
         </template>
