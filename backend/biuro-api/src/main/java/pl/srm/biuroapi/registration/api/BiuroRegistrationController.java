@@ -13,6 +13,7 @@ import pl.srm.biuroapi.registration.model.TurnusRegistrationStats;
 import pl.srm.biuroapi.registration.service.RegistrationStatisticsService;
 import pl.srm.biuroapi.turnus.TurnusCatalogue;
 import pl.srm.biuroapi.turnus.TurnusDefinition;
+import tools.jackson.databind.JsonNode;
 
 import java.util.List;
 import java.util.Locale;
@@ -70,6 +71,18 @@ public class BiuroRegistrationController {
                                             @Valid @RequestBody StatusUpdateRequest request,
                                             @AuthenticationPrincipal AccountPrincipal actor) {
         validateRequest(request);
+        if ("ACCEPTED".equalsIgnoreCase(request.status().trim())) {
+            RegistrationDetail registration = registrationApiClient.fetchRegistration(code);
+            TurnusDefinition turnus = turnusCatalogue.get(registration.turnusCode());
+            if (!"ACCEPTED".equalsIgnoreCase(registration.status())) {
+                RegistrationApiClient.AcceptedCounts accepted = registrationApiClient.fetchAcceptedCounts(registration.turnusCode());
+                long current = "STAFF".equalsIgnoreCase(registration.registrationType())
+                        ? accepted.staff() : accepted.participants();
+                int capacity = "STAFF".equalsIgnoreCase(registration.registrationType())
+                        ? turnus.staffCapacity() : turnus.participantCapacity();
+                requireAvailablePlace(registration.registrationType(), current, capacity, true);
+            }
+        }
         return registrationApiClient.updateStatus(code, request, actor.id(), actor.username());
     }
 
@@ -82,12 +95,28 @@ public class BiuroRegistrationController {
 
     @PostMapping("/staff/manual")
     public RegistrationApiClient.RegistrationCreated createManualStaffRegistration(
-            @RequestBody String payload,
+            @RequestBody JsonNode payload,
             @AuthenticationPrincipal AccountPrincipal actor) {
-        return registrationApiClient.createManualStaffRegistration(payload, actor.id(), actor.username());
+        String turnusCode = payload.path("turnusCode").asText("");
+        TurnusDefinition turnus = turnusCatalogue.get(turnusCode);
+        RegistrationApiClient.AcceptedCounts accepted = registrationApiClient.fetchAcceptedCounts(turnusCode);
+        requireAvailablePlace("STAFF", accepted.staff(), turnus.staffCapacity(), false);
+        return registrationApiClient.createManualStaffRegistration(payload.toString(), actor.id(), actor.username());
     }
 
 
+
+    private void requireAvailablePlace(String registrationType, long accepted, int capacity,
+                                       boolean acceptance) {
+        if (accepted < capacity) return;
+        if (acceptance) {
+            throw new ResponseStatusException(HttpStatus.UNPROCESSABLE_ENTITY, "Turnus zapełniony.");
+        }
+        String label = "STAFF".equalsIgnoreCase(registrationType) ? "kadry" : "uczestników";
+        throw new ResponseStatusException(HttpStatus.UNPROCESSABLE_ENTITY,
+                "Brak wolnych miejsc dla " + label + " (" + accepted + "/" + capacity
+                        + "). Nie można dodać kolejnej osoby do turnusu.");
+    }
 
     private void validateRequest(StatusUpdateRequest request) {
         String status = request.status() == null ? "" : request.status().trim().toUpperCase(Locale.ROOT);

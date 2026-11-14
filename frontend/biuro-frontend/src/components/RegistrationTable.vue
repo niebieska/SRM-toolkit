@@ -14,6 +14,14 @@ const props = defineProps({
     type: Object,
     required: true,
   },
+  turnusStats: {
+    type: Object,
+    default: null,
+  },
+  turnusOptions: {
+    type: Array,
+    default: () => [],
+  },
 })
 
 const emit = defineEmits(['status-updated'])
@@ -30,6 +38,17 @@ const sortKey = ref(null)
 const sortDirection = ref('asc')
 const userHasSelectedSort = ref(false)
 let stopAutoRefresh
+function capacityInfoFor(registration) {
+  if (!props.turnusStats || props.turnusStats.turnusCode !== registration.turnusCode) return null
+  const stats = registration.registrationType === 'STAFF'
+    ? props.turnusStats.staff
+    : props.turnusStats.participants
+  return stats ? { accepted: stats.accepted, capacity: stats.capacity } : null
+}
+function turnusNameFor(registration) {
+  return props.turnusOptions.find(turnus => turnus.turnusCode === registration.turnusCode)?.turnusName
+    || registration.turnusCode
+}
 const columns = [
   { key: 'registrationCode', label: 'Kod zgłoszenia' },
   { key: 'registrationType', label: 'Typ' },
@@ -223,6 +242,8 @@ watch(
         v-if="selectedRegistration"
         :registration="selectedRegistration"
         :action="modalAction"
+        :capacity-info="capacityInfoFor(selectedRegistration)"
+        :turnus-name="turnusNameFor(selectedRegistration)"
         @close="closeModal"
         @updated="handleStatusUpdated"
     />

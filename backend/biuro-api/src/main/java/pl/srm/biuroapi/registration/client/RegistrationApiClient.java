@@ -59,7 +59,7 @@ public class RegistrationApiClient {
             return counts;
         } catch (Exception exception) {
             throw new ResponseStatusException(HttpStatus.BAD_GATEWAY,
-                    "Nie można sprawdzić liczby przyjętych zgłoszeń. Pojemność turnusu nie została zmniejszona.");
+                    "Nie można sprawdzić liczby przyjętych zgłoszeń. Spróbuj ponownie.");
         }
     }
 

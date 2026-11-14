@@ -177,7 +177,10 @@ watch(
           :unmapped="stats?.unmappedAcceptedStaff || 0"
         />
       </section>
-      <RegistrationTable ref="registrationTable" :filters="filters" @status-updated="loadTurnusStats">
+      <RegistrationTable ref="registrationTable" :filters="filters"
+        :turnus-stats="stats?.turnusCode === filters.turnusCode ? stats : null"
+        :turnus-options="turnusOptions"
+        @status-updated="loadTurnusStats">
         <template #header-actions>
           <button type="button" class="-translate-y-0.5 whitespace-nowrap rounded-lg bg-slate-800 px-4 py-2 text-sm font-semibold text-white hover:bg-slate-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-500 focus-visible:ring-offset-2" @click="showManualStaffForm = true">+ Dodaj kadrę</button>
         </template>

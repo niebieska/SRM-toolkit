@@ -12,6 +12,14 @@ const props = defineProps({
     type: String,
     required: true,
   },
+  capacityInfo: {
+    type: Object,
+    default: null,
+  },
+  turnusName: {
+    type: String,
+    default: '',
+  },
 })
 
 const emit = defineEmits(['close', 'updated'])
@@ -21,6 +29,7 @@ const rejectionReason = ref('')
 const selectedReasons = ref([])
 const loading = ref(false)
 const errorMessage = ref('')
+const capacityBlocked = ref(false)
 const personName = computed(() => {
   const person = props.registration.payload?.person || props.registration
   return [person.firstName, person.lastName].filter(Boolean).join(' ') || 'Brak imienia i nazwiska'
@@ -36,7 +45,13 @@ const predefinedRejectionReasons = computed(() => [
   otherReason,
 ])
 const hasOtherReason = computed(() => selectedReasons.value.includes(otherReason))
-
+const capacityIsFull = computed(() => props.capacityInfo
+  && props.capacityInfo.accepted >= props.capacityInfo.capacity)
+const fullTurnusNotice = computed(() => {
+  const name = props.turnusName || props.registration.turnusCode || 'Turnus'
+  return `Turnus „${name}” jest zapełniony.`
+})
+const fullTurnusMessage = computed(() => `${fullTurnusNotice.value} Dodaj zgłoszenie na listę rezerwową.`)
 const actionConfig = computed(() => {
   if (props.action === 'ACCEPT') {
     return {
@@ -87,7 +102,26 @@ async function confirm() {
     emit('updated')
     emit('close')
   } catch (error) {
-    errorMessage.value = error.message || 'Nie udało się zaktualizować statusu zgłoszenia'
+    if (props.action === 'ACCEPT' && error.status === 422) {
+      capacityBlocked.value = true
+      errorMessage.value = fullTurnusMessage.value
+    } else {
+      errorMessage.value = error.message || 'Nie udało się zaktualizować statusu zgłoszenia'
+    }
+  } finally {
+    loading.value = false
+  }
+}
+
+async function addToWaitlist() {
+  errorMessage.value = ''
+  loading.value = true
+  try {
+    await updateRegistrationStatus(authStore.token, props.registration.registrationCode, { status: 'WAITLIST' })
+    emit('updated')
+    emit('close')
+  } catch (error) {
+    errorMessage.value = error.message || 'Nie udało się wpisać zgłoszenia na listę rezerwową'
   } finally {
     loading.value = false
   }
@@ -97,7 +131,9 @@ async function confirm() {
 <template>
   <div class="fixed inset-0 bg-black/40 flex items-center justify-center p-4">
     <div class="w-full max-w-lg bg-white rounded-xl p-5 space-y-4">
-      <h2 class="text-lg font-semibold text-slate-900">{{ actionConfig.title }}</h2>
+      <h2 class="text-lg font-semibold text-slate-900">
+        {{ capacityBlocked ? 'Potwierdź wpisanie na listę rezerwową' : actionConfig.title }}
+      </h2>
       <div class="space-y-1">
         <div class="flex flex-wrap items-center gap-2">
           <p class="min-w-0 break-words font-semibold text-slate-900">{{ personName }}</p>
@@ -105,6 +141,11 @@ async function confirm() {
         </div>
         <p class="break-all text-sm text-slate-500">Zgłoszenie: {{ registration.registrationCode }}</p>
       </div>
+
+      <p v-if="action === 'ACCEPT' && capacityIsFull && !capacityBlocked" role="status"
+         class="rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-900">
+        {{ fullTurnusNotice }}
+      </p>
 
       <div v-if="action === 'REJECT'" class="space-y-3">
         <div class="space-y-2">
@@ -136,15 +177,27 @@ async function confirm() {
         </div>
       </div>
 
-      <p class="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-700">
-        Zmiana statusu spowoduje wysłanie powiadomienia e-mail.
+      <p v-if="!capacityBlocked" class="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-700">
+        Po zapisaniu zmiany statusu system podejmie próbę wysłania e-maila.
       </p>
 
-      <p v-if="errorMessage" class="text-sm text-red-600">{{ errorMessage }}</p>
+      <p v-if="errorMessage" :role="capacityBlocked ? 'status' : 'alert'"
+         :class="capacityBlocked
+           ? 'rounded-lg border border-amber-200 bg-amber-50 px-3 py-2 text-sm text-amber-900'
+           : 'text-sm text-red-600'">
+        {{ errorMessage }}
+      </p>
 
       <div class="flex justify-end gap-2">
         <button class="rounded border border-slate-300 px-4 py-2" @click="emit('close')">Anuluj</button>
-        <button
+        <button v-if="capacityBlocked"
+          class="rounded bg-amber-600 px-4 py-2 text-white hover:bg-amber-700"
+          :disabled="loading"
+          @click="addToWaitlist"
+        >
+          {{ loading ? 'Zapisywanie...' : 'Rezerwa' }}
+        </button>
+        <button v-else
           class="rounded text-white px-4 py-2"
           :class="actionConfig.buttonClasses"
           :disabled="loading"
