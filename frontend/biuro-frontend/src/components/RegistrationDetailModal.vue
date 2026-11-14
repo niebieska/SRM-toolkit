@@ -8,11 +8,16 @@ import DiscardChangesDialog from './DiscardChangesDialog.vue'
 import { formatDateTime } from '../utils/dateUtils'
 import { registrationSections, combineQualificationSections, formatFieldValue } from '../utils/registrationDetails'
 import { createDiscardConfirmation } from '../utils/discardConfirmation.js'
+import { canAcceptRegistration } from '../utils/registrationCapacity.js'
 
 const props = defineProps({
   code: {
     type: String,
     required: true,
+  },
+  capacityInfo: {
+    type: Object,
+    default: null,
   },
 })
 
@@ -425,7 +430,7 @@ function visibleRegistrationSections(registration) {
         </button>
         <div class="flex flex-wrap justify-end gap-2">
         <button
-          v-if="detail && detail.status !== 'ACCEPTED'"
+          v-if="canAcceptRegistration(detail, capacityInfo)"
           class="rounded bg-green-600 text-white px-4 py-2 hover:bg-green-700"
           @click="requestStatusAction('ACCEPT')"
         >

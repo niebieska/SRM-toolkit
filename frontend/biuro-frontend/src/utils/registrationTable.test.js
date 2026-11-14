@@ -6,6 +6,8 @@ import { parse, compileScript } from '@vue/compiler-sfc'
 
 const file = new URL('../components/RegistrationTable.vue', import.meta.url)
 const { descriptor } = parse(await readFile(file, 'utf8'))
+const detailFile = new URL('../components/RegistrationDetailModal.vue', import.meta.url)
+const { descriptor: detailDescriptor } = parse(await readFile(detailFile, 'utf8'))
 let source = compileScript(descriptor, { id: 'registration-table-test' }).content
 source = source.replace("import {useAuthStore} from '../stores/auth'", "const useAuthStore = () => ({ token: 'test-token' })")
 source = source.replace("import {fetchRegistrations} from '../api/registrationApi'", "const fetchRegistrations = (...args) => globalThis.__registrationTableTest.fetchRegistrations(...args)")
@@ -57,6 +59,14 @@ test('default queue has no false date sort indication until a header is selected
   assert.equal(vm.ariaSort('createdAt'), 'none')
   vm.toggleSort('createdAt')
   assert.equal(vm.ariaSort('createdAt'), 'ascending')
+})
+
+test('capacity eligibility controls accept buttons in the table and detail modal', () => {
+  assert.match(descriptor.template.content,
+    /v-if="canAcceptRegistration\(registration, capacityInfoFor\(registration\)\)"/)
+  assert.match(descriptor.template.content, /:capacity-info="detailCapacityInfo"/)
+  assert.match(detailDescriptor.template.content,
+    /v-if="canAcceptRegistration\(detail, capacityInfo\)"/)
 })
 
 test('filter changes hide old rows until matching data loads and keep them hidden on failure', async t => {
