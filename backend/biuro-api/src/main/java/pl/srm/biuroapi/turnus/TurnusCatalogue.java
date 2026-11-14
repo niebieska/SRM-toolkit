@@ -43,6 +43,7 @@ public class TurnusCatalogue {
     @Transactional
     public TurnusDefinition create(TurnusRequest request) {
         var staffing = requirements.validate(request.staffRequirements(), request.seasonType());
+        requirements.validateCapacity(staffing, request.staffCapacity());
         try {
             jdbc.update("""
                     INSERT INTO turnus (turnus_code, turnus_name, turnus_description, turnus_location,
@@ -67,6 +68,7 @@ public class TurnusCatalogue {
             throw new ResponseStatusException(HttpStatus.CONFLICT, "Turnus został zmieniony. Odśwież dane przed zapisem.");
         var staffing = requirements.validate(request.staffRequirements() == null
                 ? current.staffRequirements() : request.staffRequirements(), request.seasonType());
+        requirements.validateCapacity(staffing, request.staffCapacity());
         boolean reducingParticipants = request.participantCapacity() < current.participantCapacity();
         boolean reducingStaff = request.staffCapacity() < current.staffCapacity();
         if (reducingParticipants || reducingStaff) {

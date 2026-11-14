@@ -29,6 +29,13 @@ public class StaffRequirements {
         }
         return requirements.stream().filter(r -> r.requiredCount() > 0).toList();
     }
+    public void validateCapacity(List<StaffRequirement> requirements, int staffCapacity) {
+        long requiredStaff = requirements.stream().mapToLong(StaffRequirement::requiredCount).sum();
+        if (requiredStaff > staffCapacity) {
+            throw invalid("Suma ról przekracza liczbę miejsc dla kadry (" + requiredStaff + "/" + staffCapacity
+                    + "). Zwiększ liczbę miejsc albo zmniejsz wymagania.");
+        }
+    }
     public String write(List<StaffRequirement> requirements) {
         return mapper.writeValueAsString(requirements);
     }
