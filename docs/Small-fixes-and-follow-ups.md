@@ -46,6 +46,10 @@ replace the broader release plan.
 
 ## Cosmetic / operational refinements to consider later
 
+- [ ] Include a validated registration code in email-service failure logs so
+  they can be correlated with SMTP acceptance logs. The Registration API already
+  logs the code and notification outcome; do not log email content or arbitrary
+  unvalidated request variables.
 - [ ] Keep the “Najbliższa synchronizacja” hint aligned with the backend if the
   configured refresh cron or time zone changes. It currently assumes the default
   hourly schedule in `Europe/Warsaw`; no change is needed while those defaults

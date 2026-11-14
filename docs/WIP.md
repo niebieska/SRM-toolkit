@@ -1,5 +1,49 @@
 # Work in progress
 
+## 2026-11-14 — Email-service extensions
+
+- Completed on `feature/email-service-extensions` through commit `49a6240`:
+  configurable SMTP `Reply-To` and friendly sender name; role-aware acceptance
+  content and candidate-animator deposit instructions; configurable email footer
+  names, contact details, information/social URLs and displayed labels. Compose and
+  `.env.example` forward/document the settings. Notification behavior is described
+  in the Polish and English email-notification docs.
+- The footer link layout was reviewed in the local Docker stack. Social links stay
+  left-aligned, shifted slightly inward; the Facebook URL is kept on one line.
+- Verification: full email-service suite passed (54 tests, zero failures/errors);
+  Compose configuration validation passed, and the local email-service container
+  rebuilt and reported healthy. Branch-wide `git diff --check` flags extra blank
+  lines at EOF in the two email-notification docs; this is cosmetic.
+- The sender records SMTP acceptance, not recipient-mailbox delivery. Adding a
+  validated registration code to email-service failure logs is tracked separately
+  as a small operational follow-up; notification-attempt audit history remains a
+  separate future feature.
+
+## 2026-11-12 — Development PRs #59–#62
+
+- PR #59 reconciled the release, deployment, and feature-planning documents with
+  the then-current `development` state. It recorded settled status-history and
+  payment decisions, separated functional and deployment gates, and added the
+  current small-fixes checklist. The docs describe implementation separately
+  from pending operator acceptance.
+- PR #60 implemented the agreed rocznikowy minimum-age rule in the Registration
+  API and public participant/staff forms: compare the Turnus start year with the
+  birth year from PESEL. Backend and frontend boundary tests were added. The
+  saved minor/adult classification remains based on age at submission.
+- PR #61 filters Biuro registration-list results to registrations whose Turnusy
+  are currently active in the Biuro catalogue. Reactivating a Turnus makes its
+  registrations visible again; no records are deleted or archived.
+- PR #62 defaults new Turnusy to the Winter season. The suggested year is the
+  current year in January and February, and the next year from March through
+  December. Existing Turnus definitions are unchanged.
+
+## 2026-11-07 — Minor participant email requirement (PR #56)
+
+- Personal email is optional for minor participants; guardian email remains
+  required and receives the confirmation. Registration API submission/edit
+  validation was aligned with the form. The change was verified on GCP TEST after
+  rebuilding the registration frontend and hard-refreshing the browser.
+
 ## 2026-11-03 — Biuro MFA and session duration: discussion pending
 
 - Discussed possible MFA for Biuro accounts. No implementation or policy change
@@ -25,10 +69,11 @@
   forms is rocznikowy: compare the Turnus start year with the birth year derived
   from PESEL, without waiting for the birthday. Thus someone born in 2012 qualifies
   for a 14+ Turnus starting in 2026, even if still 13 on its start date.
-- Current `RegistrationValidationService` still calculates exact age at Turnus
-  start, so implementation and boundary tests remain outstanding. This decision
-  does not alter the saved minor/adult classification, which is based on the
-  registration date, or the provisional exact age displayed/sorted in Turnus lists.
+- Implemented and merged in PR #60 with Registration API and public-form boundary
+  tests. The saved minor/adult classification remains based on the registration
+  date. Staff role eligibility still evaluates adulthood on the Turnus start date;
+  this exact-date check is separate from the rocznikowy minimum-age rule. The
+  provisional exact age displayed/sorted in Turnus lists is also unchanged.
 - Recorded in [validation contract](Registration-validation-contract.md),
   [release plan](Registration-workflow-release-plan.md) and
   [manual scenarios](Registration-validation-test-scenarios.md).
