@@ -100,7 +100,7 @@ public class RegistrationPaymentService {
         }
         requireAccepted(registration);
         validateNet(registration.id(), null, "PAYMENT", request.amount(), BigDecimal.ZERO);
-        return insertEntry(registration, idempotencyKey, request, "PAYMENT", BigDecimal.ZERO);
+        return insertEntry(registration, idempotencyKey, request, "PAYMENT");
     }
 
     @Transactional
@@ -123,25 +123,22 @@ public class RegistrationPaymentService {
         }
         if (!registration.status().equals(refundRequest.expectedStatus()))
             throw new ResponseStatusException(HttpStatus.CONFLICT, "Status zgłoszenia zmienił się. Odśwież dane i spróbuj ponownie.");
-        BigDecimal minimumNetRetained = refundRequest.minimumNetRetained();
-        if ("ACCEPTED".equals(registration.status())) {
-        } else if ("REJECTED".equals(registration.status())) {
-            if (minimumNetRetained.signum() != 0)
-                throw badRequest("Odrzucone zgłoszenie należy rozliczyć bez wymaganego salda wpłat.");
-        } else {
+        if (!"ACCEPTED".equals(registration.status()) && !"REJECTED".equals(registration.status()))
             throw new ResponseStatusException(HttpStatus.CONFLICT, "Zwrot jest dostępny dla nadpłaty zaakceptowanego zgłoszenia lub rozliczenia zgłoszenia odrzuconego.");
-        }
+        BigDecimal minimumNetRetained = refundRequest.minimumNetRetained();
+        if ("REJECTED".equals(registration.status()) && minimumNetRetained.signum() != 0)
+            throw badRequest("Odrzucone zgłoszenie należy rozliczyć bez wymaganego salda wpłat.");
         validateNet(registration.id(), null, "REFUND", request.amount(), minimumNetRetained);
-        return insertEntry(registration, idempotencyKey, request, "REFUND", minimumNetRetained);
+        return insertEntry(registration, idempotencyKey, request, "REFUND");
     }
 
     private PaymentLedgerEntryResponse insertEntry(RegistrationState registration, String idempotencyKey,
-                                                    PaymentRecordRequest request, String entryType, BigDecimal minimumNetRetained) {
+                                                    PaymentRecordRequest request, String entryType) {
         LocalDateTime now = LocalDateTime.now();
         jdbc.update("""
-                INSERT INTO registration_payment (registration_id, entry_type, minimum_net_retained, payment_date, amount, method, label, note,
-                  idempotency_key, created_at, actor_account_id, actor_username) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
-                """, registration.id(), entryType, minimumNetRetained, request.date(), request.amount(), request.method(), request.label().trim(),
+                INSERT INTO registration_payment (registration_id, entry_type, payment_date, amount, method, label, note,
+                  idempotency_key, created_at, actor_account_id, actor_username) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                """, registration.id(), entryType, request.date(), request.amount(), request.method(), request.label().trim(),
                 trimToNull(request.note()), idempotencyKey, Timestamp.valueOf(now), request.actorAccountId(), request.actorUsername().trim());
         reopenSettlement(registration.id(), request.actorAccountId(), request.actorUsername());
         return getLedgerEntry(registration.id(), registration.code());
@@ -158,9 +155,9 @@ public class RegistrationPaymentService {
         String reason = trimToNull(request.correctionReason());
         if (reason == null) throw badRequest("Podaj powód korekty wpłaty.");
         var previous = jdbc.query("""
-                SELECT entry_type, minimum_net_retained, payment_date, amount, method, label, note FROM registration_payment
+                SELECT entry_type, payment_date, amount, method, label, note FROM registration_payment
                 WHERE id = ? AND registration_id = ? FOR UPDATE
-                """, (rs, row) -> new PaymentValues(rs.getString("entry_type"), rs.getBigDecimal("minimum_net_retained"), rs.getDate("payment_date").toLocalDate(),
+                """, (rs, row) -> new PaymentValues(rs.getString("entry_type"), rs.getDate("payment_date").toLocalDate(),
                 rs.getBigDecimal("amount"), rs.getString("method"), rs.getString("label"), rs.getString("note")),
                 paymentId, registration.id()).stream().findFirst()
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Nie znaleziono wpłaty."));
@@ -178,8 +175,8 @@ public class RegistrationPaymentService {
                 """, paymentId, Timestamp.valueOf(now), request.actorAccountId(), request.actorUsername().trim(), reason,
                 previous.date(), previous.amount(), previous.method(), previous.label(), previous.note(), request.date(),
                 request.amount(), request.method(), request.label().trim(), trimToNull(request.note()));
-        jdbc.update("UPDATE registration_payment SET payment_date = ?, amount = ?, method = ?, label = ?, note = ?, minimum_net_retained = ? WHERE id = ?",
-                request.date(), request.amount(), request.method(), request.label().trim(), trimToNull(request.note()), floor, paymentId);
+        jdbc.update("UPDATE registration_payment SET payment_date = ?, amount = ?, method = ?, label = ?, note = ? WHERE id = ?",
+                request.date(), request.amount(), request.method(), request.label().trim(), trimToNull(request.note()), paymentId);
         reopenSettlement(registration.id(), request.actorAccountId(), request.actorUsername());
         return getLedgerEntry(registration.id(), registration.code());
     }
@@ -375,7 +372,7 @@ public class RegistrationPaymentService {
 
     private record PaymentRow(long id, long registrationId, String entryType, LocalDate date, BigDecimal amount, String method,
                               String label, String note, LocalDateTime createdAt, String actorUsername) {}
-    private record PaymentValues(String entryType, BigDecimal minimumNetRetained, LocalDate date, BigDecimal amount,
+    private record PaymentValues(String entryType, LocalDate date, BigDecimal amount,
                                  String method, String label, String note) {}
     private record NetTotals(BigDecimal incoming, BigDecimal refunds) {}
     private record RegistrationCode(long id, String code) {}

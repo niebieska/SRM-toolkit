@@ -179,6 +179,40 @@ class RegistrationIntegrityTest {
     }
 
     @Test
+    void editingAcceptedRefundUsesCurrentMinimumBalance() {
+        String code = service.saveParticipant(context("PAYMENT-REFUND-EDIT-CURRENT", "refund-edit-person"), "{}");
+        jdbc.update("UPDATE registration SET status = 'ACCEPTED' WHERE registration_code = ?", code);
+        paymentService.addPayment(code, "refund-edit-current-payment", new PaymentRecordRequest(
+                java.time.LocalDate.of(2026, 11, 1), new java.math.BigDecimal("1200.00"),
+                "Przelew", "Wpłata", null, "test-account", "operator.test", null));
+        var refund = paymentService.addRefund(code, "refund-edit-current-original", new RefundRecordRequest(
+                java.time.LocalDate.of(2026, 11, 2), new java.math.BigDecimal("200.00"),
+                "Przelew", "Zwrot wpłaty", null, "test-account", "operator.test",
+                "ACCEPTED", new java.math.BigDecimal("1000.00")));
+        long refundId = refund.payments().stream().filter(item -> "REFUND".equals(item.entryType()))
+                .findFirst().orElseThrow().id();
+
+        var corrected = new PaymentRecordRequest(java.time.LocalDate.of(2026, 11, 3),
+                new java.math.BigDecimal("400.00"), "Przelew", "Zwrot wpłaty", null,
+                "test-account", "operator.test", "Kwota zgodna z potwierdzeniem.",
+                "ACCEPTED", new java.math.BigDecimal("800.00"));
+        var updated = paymentService.editPayment(code, refundId, corrected);
+
+        assertEquals(new java.math.BigDecimal("400.00"), updated.payments().stream()
+                .filter(item -> item.id() == refundId).findFirst().orElseThrow().amount());
+        assertEquals(1, updated.payments().stream().filter(item -> item.id() == refundId)
+                .findFirst().orElseThrow().history().size());
+
+        var overCurrentLimit = new PaymentRecordRequest(java.time.LocalDate.of(2026, 11, 3),
+                new java.math.BigDecimal("401.00"), "Przelew", "Zwrot wpłaty", null,
+                "test-account", "operator.test", "Kolejna korekta.",
+                "ACCEPTED", new java.math.BigDecimal("800.00"));
+        assertEquals(org.springframework.http.HttpStatus.CONFLICT,
+                assertThrows(org.springframework.web.server.ResponseStatusException.class,
+                        () -> paymentService.editPayment(code, refundId, overCurrentLimit)).getStatusCode());
+    }
+
+    @Test
     void rejectedSettlementAndReacceptanceDoNotCarryOldRefundFloorIntoNewPayments() {
         String code = service.saveParticipant(context("PAYMENT-REFUND-REACCEPT", "refund-reaccept-person"), "{}");
         jdbc.update("UPDATE registration SET status = 'ACCEPTED' WHERE registration_code = ?", code);
