@@ -42,26 +42,14 @@ public class PaymentRegisterService {
     }
 
     public PaymentLedgerEntry add(String code, PaymentChangeRequest request, String idempotencyKey, AccountPrincipal actor) {
-        requireEligibleFee(code, true);
-        return registrations.addPayment(code, request, idempotencyKey, actor.id(), actor.username());
+        BigDecimal fee = requireEligibleFee(code, false);
+        return registrations.addPayment(code, request, idempotencyKey, fee, actor.id(), actor.username());
     }
 
     public PaymentLedgerEntry refund(String code, PaymentChangeRequest request, String idempotencyKey, AccountPrincipal actor) {
-        RegistrationSummary summary = registrations.fetchRegistrations().stream()
-                .filter(item -> item.registrationCode().equals(code)).findFirst()
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Nie znaleziono zgłoszenia."));
-        if (!"ACCEPTED".equals(summary.status()) && !"REJECTED".equals(summary.status()))
-            throw new ResponseStatusException(HttpStatus.CONFLICT, "Zwrot jest dostępny tylko przy nadpłacie zaakceptowanego zgłoszenia lub rozliczeniu zgłoszenia odrzuconego.");
+        RegistrationSummary summary = findRegistration(code);
         BigDecimal fee = requireEligibleFee(code, false);
-        BigDecimal minimumNetRetained = BigDecimal.ZERO;
-        if ("ACCEPTED".equals(summary.status())) {
-            var ledger = registrations.fetchPaymentLedger().stream()
-                    .filter(item -> item.registrationId().equals(summary.registrationId())).findFirst()
-                    .orElseThrow(() -> new ResponseStatusException(HttpStatus.BAD_GATEWAY, "Nie można odczytać wpłat zgłoszenia."));
-            BigDecimal discount = ledger.discount() == null ? BigDecimal.ZERO : ledger.discount().amount();
-            minimumNetRetained = fee.subtract(discount).max(BigDecimal.ZERO);
-        }
-        return registrations.addRefund(code, request, idempotencyKey, summary.status(), minimumNetRetained,
+        return registrations.addRefund(code, request, idempotencyKey, summary.status(), fee,
                 actor.id(), actor.username());
     }
 
@@ -74,18 +62,8 @@ public class PaymentRegisterService {
         if (!"ACCEPTED".equals(summary.status()) && !"REJECTED".equals(summary.status()))
             throw new ResponseStatusException(HttpStatus.CONFLICT,
                     "Korekty wpłat są dostępne dla zaakceptowanych lub odrzuconych zgłoszeń.");
-        BigDecimal minimumNetRetained = BigDecimal.ZERO;
-        if ("ACCEPTED".equals(summary.status())) {
-            BigDecimal fee = feeFor(summary);
-            var ledger = registrations.fetchPaymentLedger().stream()
-                    .filter(item -> item.registrationId().equals(summary.registrationId())).findFirst()
-                    .orElseThrow(() -> new ResponseStatusException(HttpStatus.BAD_GATEWAY, "Nie można odczytać wpłat zgłoszenia."));
-            BigDecimal discount = ledger.discount() == null ? BigDecimal.ZERO : ledger.discount().amount();
-            minimumNetRetained = fee.subtract(discount).max(BigDecimal.ZERO);
-        } else {
-            requireEligibleFee(code, false);
-        }
-        return registrations.editPayment(code, paymentId, request, summary.status(), minimumNetRetained,
+        BigDecimal fee = requireEligibleFee(code, false);
+        return registrations.editPayment(code, paymentId, request, summary.status(), fee,
                 actor.id(), actor.username());
     }
 

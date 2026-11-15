@@ -87,12 +87,7 @@ public class RegistrationPaymentService {
         validatePayment(request.date(), request.amount(), request.method(), request.label(), request.note());
         if (request.correctionReason() != null && !request.correctionReason().isBlank())
             throw badRequest("Powód korekty można podać wyłącznie przy edycji wpłaty.");
-        var existing = jdbc.query("""
-                SELECT id, entry_type, payment_date, amount, method, label, note FROM registration_payment
-                WHERE registration_id = ? AND idempotency_key = ?
-                """, (rs, row) -> new ExistingPayment(rs.getLong("id"), rs.getString("entry_type"), rs.getDate("payment_date").toLocalDate(),
-                rs.getBigDecimal("amount"), rs.getString("method"), rs.getString("label"), rs.getString("note")),
-                registration.id(), idempotencyKey).stream().findFirst().orElse(null);
+        var existing = findExistingPayment(registration.id(), idempotencyKey);
         if (existing != null) {
             if (!"PAYMENT".equals(existing.entryType()) || !existing.matches(request))
                 throw new ResponseStatusException(HttpStatus.CONFLICT, "Klucz wpłaty został już użyty dla innych danych.");
@@ -110,12 +105,7 @@ public class RegistrationPaymentService {
         var registration = lockRegistration(code);
         PaymentRecordRequest request = refundRequest.asPaymentRequest();
         validatePayment(request.date(), request.amount(), request.method(), request.label(), request.note());
-        var existing = jdbc.query("""
-                SELECT id, entry_type, payment_date, amount, method, label, note FROM registration_payment
-                WHERE registration_id = ? AND idempotency_key = ?
-                """, (rs, row) -> new ExistingPayment(rs.getLong("id"), rs.getString("entry_type"), rs.getDate("payment_date").toLocalDate(),
-                rs.getBigDecimal("amount"), rs.getString("method"), rs.getString("label"), rs.getString("note")),
-                registration.id(), idempotencyKey).stream().findFirst().orElse(null);
+        var existing = findExistingPayment(registration.id(), idempotencyKey);
         if (existing != null) {
             if (!"REFUND".equals(existing.entryType()) || !existing.matches(request))
                 throw new ResponseStatusException(HttpStatus.CONFLICT, "Klucz zwrotu został już użyty dla innych danych.");
@@ -125,9 +115,7 @@ public class RegistrationPaymentService {
             throw new ResponseStatusException(HttpStatus.CONFLICT, "Status zgłoszenia zmienił się. Odśwież dane i spróbuj ponownie.");
         if (!"ACCEPTED".equals(registration.status()) && !"REJECTED".equals(registration.status()))
             throw new ResponseStatusException(HttpStatus.CONFLICT, "Zwrot jest dostępny dla nadpłaty zaakceptowanego zgłoszenia lub rozliczenia zgłoszenia odrzuconego.");
-        BigDecimal minimumNetRetained = refundRequest.minimumNetRetained();
-        if ("REJECTED".equals(registration.status()) && minimumNetRetained.signum() != 0)
-            throw badRequest("Odrzucone zgłoszenie należy rozliczyć bez wymaganego salda wpłat.");
+        BigDecimal minimumNetRetained = minimumNetRetained(registration.id(), registration.status(), refundRequest.feeAmount());
         validateNet(registration.id(), null, "REFUND", request.amount(), minimumNetRetained);
         return insertEntry(registration, idempotencyKey, request, "REFUND");
     }
@@ -161,10 +149,9 @@ public class RegistrationPaymentService {
                 rs.getBigDecimal("amount"), rs.getString("method"), rs.getString("label"), rs.getString("note")),
                 paymentId, registration.id()).stream().findFirst()
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Nie znaleziono wpłaty."));
-        BigDecimal floor = "ACCEPTED".equals(registration.status()) && "REFUND".equals(previous.entryType())
-                ? request.minimumNetRetained() : BigDecimal.ZERO;
-        if ("REJECTED".equals(registration.status()) && request.minimumNetRetained().signum() != 0)
-            throw badRequest("Odrzucone zgłoszenie należy rozliczyć bez wymaganego salda wpłat.");
+        BigDecimal floor = "REFUND".equals(previous.entryType())
+                ? minimumNetRetained(registration.id(), registration.status(), request.feeAmount())
+                : BigDecimal.ZERO;
         validateNet(registration.id(), paymentId, previous.entryType(), request.amount(), floor);
         LocalDateTime now = LocalDateTime.now();
         jdbc.update("""
@@ -252,6 +239,39 @@ public class RegistrationPaymentService {
         var registration = rows.stream().findFirst()
                 .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Nie znaleziono zgłoszenia."));
         return registration;
+    }
+
+    private ExistingPayment findExistingPayment(long registrationId, String idempotencyKey) {
+        var current = jdbc.query("""
+                SELECT id, entry_type, payment_date, amount, method, label, note
+                FROM registration_payment
+                WHERE registration_id = ? AND idempotency_key = ?
+                """, (rs, row) -> new ExistingPayment(rs.getLong("id"), rs.getString("entry_type"),
+                rs.getDate("payment_date").toLocalDate(), rs.getBigDecimal("amount"), rs.getString("method"),
+                rs.getString("label"), rs.getString("note")), registrationId, idempotencyKey)
+                .stream().findFirst().orElse(null);
+        if (current == null) return null;
+
+        // The first audit row captures the values that were present when the
+        // entry was created, before any later corrections changed the ledger row.
+        return jdbc.query("""
+                SELECT previous_payment_date, previous_amount, previous_method, previous_label, previous_note
+                FROM registration_payment_audit
+                WHERE payment_id = ?
+                ORDER BY id
+                LIMIT 1
+                """, (rs, row) -> new ExistingPayment(current.id(), current.entryType(),
+                rs.getDate("previous_payment_date").toLocalDate(), rs.getBigDecimal("previous_amount"),
+                rs.getString("previous_method"), rs.getString("previous_label"), rs.getString("previous_note")),
+                current.id()).stream().findFirst().orElse(current);
+    }
+
+    private BigDecimal minimumNetRetained(long registrationId, String status, BigDecimal feeAmount) {
+        if (!"ACCEPTED".equals(status)) return BigDecimal.ZERO;
+        BigDecimal discount = jdbc.query("SELECT amount FROM registration_discount WHERE registration_id = ?",
+                (rs, row) -> rs.getBigDecimal("amount"), registrationId).stream()
+                .findFirst().orElse(BigDecimal.ZERO);
+        return feeAmount.subtract(discount).max(BigDecimal.ZERO);
     }
 
     private void requireAccepted(RegistrationState registration) {

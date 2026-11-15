@@ -39,10 +39,10 @@ public class RegistrationApiClient {
     public record RegistrationCreated(String registrationCode) {}
     private record PaymentPayload(LocalDate date, BigDecimal amount, String method, String label, String note,
                                   String correctionReason, String actorAccountId, String actorUsername,
-                                  String expectedStatus, BigDecimal minimumNetRetained) {}
+                                  String expectedStatus, BigDecimal feeAmount) {}
     private record RefundPayload(LocalDate date, BigDecimal amount, String method, String label, String note,
                                  String actorAccountId, String actorUsername, String expectedStatus,
-                                 BigDecimal minimumNetRetained) {}
+                                 BigDecimal feeAmount) {}
     private record SettlementPayload(String note, String actorAccountId, String actorUsername) {}
     private record DiscountPayload(BigDecimal amount, String description, BigDecimal feeAmount,
                                    String actorAccountId, String actorUsername) {}
@@ -105,22 +105,23 @@ public class RegistrationApiClient {
     }
 
     public PaymentLedgerEntry addPayment(String code, PaymentChangeRequest request, String idempotencyKey,
+                                         BigDecimal feeAmount,
                                          String accountId, String username) {
-        return paymentWrite(code, request, idempotencyKey, null, "ACCEPTED", BigDecimal.ZERO, accountId, username);
+        return paymentWrite(code, request, idempotencyKey, null, "ACCEPTED", feeAmount, accountId, username);
     }
 
     public PaymentLedgerEntry editPayment(String code, long paymentId, PaymentChangeRequest request,
-                                          String expectedStatus, BigDecimal minimumNetRetained,
+                                          String expectedStatus, BigDecimal feeAmount,
                                           String accountId, String username) {
-        return paymentWrite(code, request, null, paymentId, expectedStatus, minimumNetRetained, accountId, username);
+        return paymentWrite(code, request, null, paymentId, expectedStatus, feeAmount, accountId, username);
     }
 
     public PaymentLedgerEntry addRefund(String code, PaymentChangeRequest request, String idempotencyKey,
-                                        String expectedStatus, BigDecimal minimumNetRetained,
+                                        String expectedStatus, BigDecimal feeAmount,
                                         String accountId, String username) {
         try {
             RefundPayload payload = new RefundPayload(request.date(), request.amount(), request.method(),
-                    request.label(), request.note(), accountId, username, expectedStatus, minimumNetRetained);
+                    request.label(), request.note(), accountId, username, expectedStatus, feeAmount);
             PaymentLedgerEntry body = restClient.post()
                     .uri(registrationApiUrl + "/api/registrations/{code}/refunds", code)
                     .header("Idempotency-Key", idempotencyKey).body(payload).retrieve().body(PaymentLedgerEntry.class);
@@ -150,11 +151,11 @@ public class RegistrationApiClient {
     }
 
     private PaymentLedgerEntry paymentWrite(String code, PaymentChangeRequest request, String idempotencyKey, Long paymentId,
-                                             String expectedStatus, BigDecimal minimumNetRetained,
+                                             String expectedStatus, BigDecimal feeAmount,
                                              String accountId, String username) {
         try {
             PaymentPayload payload = new PaymentPayload(request.date(), request.amount(), request.method(),
-                    request.label(), request.note(), request.reason(), accountId, username, expectedStatus, minimumNetRetained);
+                    request.label(), request.note(), request.reason(), accountId, username, expectedStatus, feeAmount);
             var spec = restClient.post();
             var uri = paymentId == null
                     ? registrationApiUrl + "/api/registrations/{code}/payments"

@@ -20,7 +20,7 @@ public record PaymentRecordRequest(
         @NotBlank @Size(max = 64) String actorUsername,
         @Size(max = 300) String correctionReason,
         @NotBlank @Pattern(regexp = "ACCEPTED|REJECTED") String expectedStatus,
-        @NotNull @DecimalMin("0.00") @Digits(integer = 8, fraction = 2) BigDecimal minimumNetRetained
+        @NotNull @DecimalMin("0.00") @Digits(integer = 8, fraction = 2) BigDecimal feeAmount
 ) {
     public PaymentRecordRequest(LocalDate date, BigDecimal amount, String method, String label, String note,
                                 String actorAccountId, String actorUsername, String correctionReason) {

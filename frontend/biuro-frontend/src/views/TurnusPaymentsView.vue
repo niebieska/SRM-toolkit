@@ -158,9 +158,9 @@ function closeDialog() {
   formMode.value = ''
   formError.value = ''
 }
-function openPaymentForm(payment = null) {
+function openPaymentForm(payment = null, addMode = 'add-payment') {
   const type = payment?.entryType === 'REFUND' ? 'refund' : 'payment'
-  formMode.value = payment ? `edit-${type}` : formMode.value === 'add-refund' ? 'add-refund' : 'add-payment'
+  formMode.value = payment ? `edit-${type}` : addMode
   editingPaymentId.value = payment?.id || ''
   addPaymentIdempotencyKey.value = payment ? '' : createIdempotencyKey()
   const savedLabel = payment?.label || ''
@@ -172,8 +172,7 @@ function openPaymentForm(payment = null) {
   formError.value = ''
 }
 function openRefundForm() {
-  formMode.value = 'add-refund'
-  openPaymentForm()
+  openPaymentForm(null, 'add-refund')
 }
 function createIdempotencyKey() {
   if (globalThis.crypto?.randomUUID) return globalThis.crypto.randomUUID()

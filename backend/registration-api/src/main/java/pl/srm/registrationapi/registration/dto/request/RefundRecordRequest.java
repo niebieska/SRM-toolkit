@@ -19,10 +19,10 @@ public record RefundRecordRequest(
         @NotBlank @Size(max = 36) String actorAccountId,
         @NotBlank @Size(max = 64) String actorUsername,
         @NotBlank @Pattern(regexp = "ACCEPTED|REJECTED") String expectedStatus,
-        @NotNull @DecimalMin("0.00") @Digits(integer = 8, fraction = 2) BigDecimal minimumNetRetained
+        @NotNull @DecimalMin("0.00") @Digits(integer = 8, fraction = 2) BigDecimal feeAmount
 ) {
     public PaymentRecordRequest asPaymentRequest() {
         return new PaymentRecordRequest(date, amount, method, label, note, actorAccountId, actorUsername, null,
-                expectedStatus, minimumNetRetained);
+                expectedStatus, feeAmount);
     }
 }

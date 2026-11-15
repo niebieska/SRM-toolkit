@@ -160,7 +160,12 @@ class RegistrationIntegrityTest {
         paymentService.addRefund(code, "refund-current-1", firstRefund);
         var increasedDiscountRefund = new RefundRecordRequest(java.time.LocalDate.of(2026, 11, 3),
                 new java.math.BigDecimal("300.00"), "Przelew", "Zwrot wpłaty", null,
-                "test-account", "operator.test", "ACCEPTED", new java.math.BigDecimal("700.00"));
+                "test-account", "operator.test", "ACCEPTED", new java.math.BigDecimal("1000.00"));
+        jdbc.update("""
+                INSERT INTO registration_discount (registration_id, amount, description, changed_at, actor_account_id, actor_username)
+                SELECT id, 300.00, 'Rabat', CURRENT_TIMESTAMP(6), 'test-account', 'operator.test'
+                FROM registration WHERE registration_code = ?
+                """, code);
 
         var result = paymentService.addRefund(code, "refund-current-2", increasedDiscountRefund);
 
@@ -174,7 +179,7 @@ class RegistrationIntegrityTest {
                         () -> paymentService.addRefund(code, "refund-current-3",
                                 new RefundRecordRequest(java.time.LocalDate.of(2026, 11, 4),
                                         new java.math.BigDecimal("1.00"), "Przelew", "Zwrot wpłaty", null,
-                                        "test-account", "operator.test", "ACCEPTED", new java.math.BigDecimal("700.00"))))
+                                        "test-account", "operator.test", "ACCEPTED", new java.math.BigDecimal("1000.00"))))
                         .getStatusCode());
     }
 
@@ -189,13 +194,18 @@ class RegistrationIntegrityTest {
                 java.time.LocalDate.of(2026, 11, 2), new java.math.BigDecimal("200.00"),
                 "Przelew", "Zwrot wpłaty", null, "test-account", "operator.test",
                 "ACCEPTED", new java.math.BigDecimal("1000.00")));
+        jdbc.update("""
+                INSERT INTO registration_discount (registration_id, amount, description, changed_at, actor_account_id, actor_username)
+                SELECT id, 200.00, 'Rabat', CURRENT_TIMESTAMP(6), 'test-account', 'operator.test'
+                FROM registration WHERE registration_code = ?
+                """, code);
         long refundId = refund.payments().stream().filter(item -> "REFUND".equals(item.entryType()))
                 .findFirst().orElseThrow().id();
 
         var corrected = new PaymentRecordRequest(java.time.LocalDate.of(2026, 11, 3),
                 new java.math.BigDecimal("400.00"), "Przelew", "Zwrot wpłaty", null,
                 "test-account", "operator.test", "Kwota zgodna z potwierdzeniem.",
-                "ACCEPTED", new java.math.BigDecimal("800.00"));
+                "ACCEPTED", new java.math.BigDecimal("1000.00"));
         var updated = paymentService.editPayment(code, refundId, corrected);
 
         assertEquals(new java.math.BigDecimal("400.00"), updated.payments().stream()
@@ -206,7 +216,7 @@ class RegistrationIntegrityTest {
         var overCurrentLimit = new PaymentRecordRequest(java.time.LocalDate.of(2026, 11, 3),
                 new java.math.BigDecimal("401.00"), "Przelew", "Zwrot wpłaty", null,
                 "test-account", "operator.test", "Kolejna korekta.",
-                "ACCEPTED", new java.math.BigDecimal("800.00"));
+                "ACCEPTED", new java.math.BigDecimal("1000.00"));
         assertEquals(org.springframework.http.HttpStatus.CONFLICT,
                 assertThrows(org.springframework.web.server.ResponseStatusException.class,
                         () -> paymentService.editPayment(code, refundId, overCurrentLimit)).getStatusCode());

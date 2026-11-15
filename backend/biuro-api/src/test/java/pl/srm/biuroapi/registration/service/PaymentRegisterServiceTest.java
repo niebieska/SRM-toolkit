@@ -9,7 +9,6 @@ import pl.srm.biuroapi.auth.account.AccountPrincipal;
 import pl.srm.biuroapi.auth.account.AccountRole;
 import pl.srm.biuroapi.registration.api.PaymentChangeRequest;
 import pl.srm.biuroapi.registration.client.RegistrationApiClient;
-import pl.srm.biuroapi.registration.model.DiscountRecord;
 import pl.srm.biuroapi.registration.model.PaymentLedgerEntry;
 import pl.srm.biuroapi.registration.model.RegistrationSummary;
 import pl.srm.biuroapi.turnus.StaffFee;
@@ -75,50 +74,44 @@ class PaymentRegisterServiceTest {
         assertEquals(new BigDecimal("750.00"), rows.get(1).fee());
     }
 
-    @Test void acceptedRefundUsesCurrentFeeAfterCurrentDiscount() {
+    @Test void acceptedRefundPassesBaseFeeForTransactionalDiscountCheck() {
         var registrations = mock(RegistrationApiClient.class);
         var turnuses = mock(TurnusCatalogue.class);
         var service = new PaymentRegisterService(registrations, turnuses);
         var accepted = new RegistrationSummary(1L, "REG-1", "PARTICIPANT", "T1", true,
                 "ACCEPTED", null, null, "Anna", "Nowak", 15, null, null, null);
         var turnus = participantFeeTurnus(new BigDecimal("1000.00"));
-        var ledger = new PaymentLedgerEntry(1L, "REG-1", List.of(),
-                new DiscountRecord(new BigDecimal("200.00"), "Rabat", null, "operator"));
         var request = new PaymentChangeRequest(LocalDate.of(2026, 11, 3), new BigDecimal("300.00"),
                 "Przelew", "Zwrot wpłaty", null, null);
         var actor = new AccountPrincipal("actor-id", "operator", "Operator", false, Set.of(AccountRole.OPERATOR), "session");
 
         when(registrations.fetchRegistrations()).thenReturn(List.of(accepted));
-        when(registrations.fetchPaymentLedger()).thenReturn(List.of(ledger));
         when(turnuses.get("T1")).thenReturn(turnus);
 
         service.refund("REG-1", request, "refund-key", actor);
 
         verify(registrations).addRefund("REG-1", request, "refund-key", "ACCEPTED",
-                new BigDecimal("800.00"), "actor-id", "operator");
+                new BigDecimal("1000.00"), "actor-id", "operator");
     }
 
-    @Test void editingAcceptedRefundAlsoUsesCurrentFeeAfterDiscount() {
+    @Test void editingAcceptedRefundPassesBaseFeeForTransactionalDiscountCheck() {
         var registrations = mock(RegistrationApiClient.class);
         var turnuses = mock(TurnusCatalogue.class);
         var service = new PaymentRegisterService(registrations, turnuses);
         var accepted = new RegistrationSummary(1L, "REG-1", "PARTICIPANT", "T1", true,
                 "ACCEPTED", null, null, "Anna", "Nowak", 15, null, null, null);
         var turnus = participantFeeTurnus(new BigDecimal("1000.00"));
-        var ledger = new PaymentLedgerEntry(1L, "REG-1", List.of(),
-                new DiscountRecord(new BigDecimal("300.00"), "Zmieniony rabat", null, "operator"));
         var request = new PaymentChangeRequest(LocalDate.of(2026, 11, 4), new BigDecimal("500.00"),
                 "Przelew", "Zwrot wpłaty", null, "Korekta");
         var actor = new AccountPrincipal("actor-id", "operator", "Operator", false, Set.of(AccountRole.OPERATOR), "session");
 
         when(registrations.fetchRegistrations()).thenReturn(List.of(accepted));
-        when(registrations.fetchPaymentLedger()).thenReturn(List.of(ledger));
         when(turnuses.get("T1")).thenReturn(turnus);
 
         service.edit("REG-1", 7L, request, actor);
 
         verify(registrations).editPayment("REG-1", 7L, request, "ACCEPTED",
-                new BigDecimal("700.00"), "actor-id", "operator");
+                new BigDecimal("1000.00"), "actor-id", "operator");
     }
 
     private TurnusDefinition participantFeeTurnus(BigDecimal fee) {
