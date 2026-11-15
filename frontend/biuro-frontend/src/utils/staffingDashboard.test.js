@@ -27,6 +27,11 @@ function stats(code, accepted = 3) {
     staffRoles: [{ categoryCode: 'animator', label: 'Animator', accepted, required: 6,
       subroles: [{ code: 'kandydat_na_animatora', label: 'Kandydat', accepted: 2 }] }] }
 }
+function deferred() {
+  let resolve
+  const promise = new Promise(resolvePromise => { resolve = resolvePromise })
+  return { promise, resolve }
+}
 async function mount(t, handler) {
   const previous = globalThis.fetch
   globalThis.fetch = (url, options) => {
@@ -71,6 +76,33 @@ test('Turnus races and deselection cannot show stale counts; status refresh upda
   assert.equal(vm.stats, null)
   assert.deepEqual(vm.staffingRoles, [])
 })
+
+test('same-turnus refresh keeps the current stats until the refreshed response arrives', async t => {
+  const refreshRequest = deferred()
+  let requestCount = 0
+  const { vm } = await mount(t, async () => {
+    requestCount += 1
+    return requestCount === 1
+      ? new Response(JSON.stringify(stats('T1', 3)))
+      : refreshRequest.promise
+  })
+  vm.filters.turnusCode = 'T1'; await settle()
+  assert.equal(vm.stats.staffRoles[0].accepted, 3)
+
+  const refresh = vm.loadTurnusStats()
+  assert.equal(vm.stats.staffRoles[0].accepted, 3)
+  assert.equal(vm.statsLoading, true)
+
+  refreshRequest.resolve(new Response(JSON.stringify(stats('T1', 2))))
+  await refresh
+  assert.equal(vm.stats.staffRoles[0].accepted, 2)
+  assert.equal(vm.statsLoading, false)
+})
+
+test('registration list auto-refresh is wired to reload selected-turnus statistics', () => {
+  assert.match(descriptor.template.content, /@auto-refresh="loadTurnusStats"/)
+})
+
 test('an upstream error clears role counts rather than keeping misleading old data', async t => {
   let failing = false
   const { vm } = await mount(t, async () => failing

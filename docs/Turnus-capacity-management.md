@@ -1,6 +1,6 @@
 # Separate participant and staff capacities
 
-Branch: `feature/turnus-capacity-management`.
+Branch: `feature/registration-capacity-enforcement`.
 
 ## Agreed behavior
 
@@ -9,28 +9,34 @@ Branch: `feature/turnus-capacity-management`.
   at 10 and can be edited individually. New editor defaults are 50 / 10.
 - Shared `active` controls archival; registration opening is manual and separate
   for participants and staff. Both new switches initially inherit the old switch.
-- **Agreed follow-up (2026-11-09, not yet implemented):** acceptance must not
-  move a registration to ACCEPTED when the accepted count for its type has reached
-  that Turnus's capacity. Enforce this in Registration API within the status-change
-  transaction so concurrent requests cannot overbook; return a capacity-specific
-  business error and show a clear message in Biuro. WAITLIST/REJECTED decisions
-  remain available. Increasing capacity or freeing a place allows later acceptance.
+- Acceptance must not move a registration to ACCEPTED when the accepted count for
+  its type has reached that Turnus's capacity. Return a capacity-specific business
+  error and show a clear message in Biuro. WAITLIST/REJECTED decisions remain
+  available. Increasing capacity or freeing a place allows later acceptance.
 - This rule applies separately to participants and staff. Public submissions may
   still be saved as NEW while a Turnus is full; registration-open switches remain
   manual and independent of capacity.
-- Existing implementation still permits acceptance at and beyond capacity until
-  this follow-up is delivered. The old behavior is superseded by the decision above.
-- Implementation must enforce the limit against the current Turnus capacity, not
-  an outdated hourly Registration cache. Decide how Biuro capacity changes become
-  visible to the acceptance path, and serialize final-place allocation per Turnus
-  and registration type so concurrent acceptances cannot overbook.
+- The current `feature/registration-capacity-enforcement` implementation checks
+  persisted accepted counts in Biuro before accepting or manually creating staff.
+  A shared in-memory lock serializes those check-and-write paths within one Biuro
+  API process. It does not use a database lock in Registration API.
+- This is sufficient for the current single-instance, single-operator setup only
+  while all capacity-changing requests pass through that Biuro API process. A
+  second Biuro instance or another caller with Registration API management access
+  can still race and overbook. The lock also does not coordinate capacity reduction
+  with a concurrent acceptance; that reduction check is a separate Biuro operation.
+- Before running multiple Biuro instances or relying on a cross-client hard
+  invariant, move the count-and-write check into Registration API's transaction
+  and serialize it by Turnus and registration type. Capacity checks must use the
+  current Turnus limit, not the hourly Registration catalogue cache.
 - A reduction below the accepted count of that type is rejected with 422. Equality
   is allowed. Only reduced capacities are checked: increasing capacity, unchanged
   limits and editing other fields do not require an accepted-count lookup.
 - A failed or invalid count response prevents the reduction and preserves all
   fields/version. Optimistic edit-conflict protection remains in place.
-- This check assumes the agreed single-operator workflow. It is not a distributed
-  lock against simultaneous acceptance and capacity editing in separate databases.
+- Capacity-reduction validation assumes the agreed single-operator workflow. It is
+  not a distributed lock against simultaneous acceptance and capacity editing in
+  separate databases.
 
 ## API and migration
 
@@ -71,6 +77,8 @@ The dashboard's Turnus filter now uses the complete Biuro catalogue.
 - Both frontend builds and Node test commands passed (five Biuro / three Registration files).
 - Vue runtime checks verified type-filtered statistics, clearing selection and ignoring
   late responses from previously selected Turnusy. These do not replace browser checks.
+- On `feature/registration-capacity-enforcement`, all 150 Biuro API tests passed,
+  including concurrent acceptance and manual staff creation through one API process.
 
 ## Manual verification
 
@@ -89,7 +97,8 @@ Use synthetic registrations and record results before release:
    Verify that freeing a place or increasing capacity permits acceptance. Confirm
    submissions can still be saved as NEW while capacity is full and registration is open.
    Verify a capacity change is respected without waiting for the hourly catalogue
-   refresh, and concurrent attempts for the final place cannot both succeed.
+   refresh, and concurrent attempts through the same Biuro API process cannot both
+   use the final place. This does not verify coordination across multiple processes.
 5. Reduce each capacity below accepted count: expect 422, useful Polish message,
    preserved inputs and unchanged database version. Reduce to accepted count:
    expect success. Increase capacity and verify the statistics.

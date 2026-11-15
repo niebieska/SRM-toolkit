@@ -6,6 +6,8 @@ import { parse, compileScript } from '@vue/compiler-sfc'
 
 const file = new URL('../components/RegistrationTable.vue', import.meta.url)
 const { descriptor } = parse(await readFile(file, 'utf8'))
+const detailFile = new URL('../components/RegistrationDetailModal.vue', import.meta.url)
+const { descriptor: detailDescriptor } = parse(await readFile(detailFile, 'utf8'))
 let source = compileScript(descriptor, { id: 'registration-table-test' }).content
 source = source.replace("import {useAuthStore} from '../stores/auth'", "const useAuthStore = () => ({ token: 'test-token' })")
 source = source.replace("import {fetchRegistrations} from '../api/registrationApi'", "const fetchRegistrations = (...args) => globalThis.__registrationTableTest.fetchRegistrations(...args)")
@@ -26,13 +28,24 @@ async function settle() {
   for (let i = 0; i < 5; i++) { await new Promise(resolve => setImmediate(resolve)); await nextTick() }
 }
 
-async function mount(t, fetchRegistrations) {
+async function mount(t, fetchRegistrations, onAutoRefresh = () => {}) {
   const previous = { window: globalThis.window, document: globalThis.document, shell: globalThis.__registrationTableTest }
-  globalThis.window = { setInterval() { return 1 }, clearInterval() {} }
-  globalThis.document = { visibilityState: 'hidden', addEventListener() {}, removeEventListener() {} }
+  const listeners = new Map()
+  const intervals = new Map()
+  let nextTimerId = 0
+  globalThis.window = {
+    setInterval(callback) { const id = ++nextTimerId; intervals.set(id, callback); return id },
+    clearInterval(id) { intervals.delete(id) },
+  }
+  globalThis.document = {
+    visibilityState: 'hidden',
+    addEventListener(name, callback) { listeners.set(name, callback) },
+    removeEventListener(name, callback) { listeners.delete(name) },
+    dispatchVisibilityChange() { listeners.get('visibilitychange')?.() },
+  }
   globalThis.__registrationTableTest = { fetchRegistrations }
   const filters = reactive({ status: '', registrationType: '', turnusCode: '', search: '' })
-  const app = renderer.createApp(RegistrationTable, { filters })
+  const app = renderer.createApp(RegistrationTable, { filters, onAutoRefresh })
   const vm = app.mount({})
   t.after(() => {
     app.unmount()
@@ -41,7 +54,7 @@ async function mount(t, fetchRegistrations) {
     globalThis.__registrationTableTest = previous.shell
   })
   await settle()
-  return { vm, filters }
+  return { vm, filters, browser: { listeners, intervals, tick: () => [...intervals.values()].forEach(callback => callback()) } }
 }
 
 function deferred() {
@@ -57,6 +70,28 @@ test('default queue has no false date sort indication until a header is selected
   assert.equal(vm.ariaSort('createdAt'), 'none')
   vm.toggleSort('createdAt')
   assert.equal(vm.ariaSort('createdAt'), 'ascending')
+})
+
+test('capacity eligibility controls accept buttons in the table and detail modal', () => {
+  assert.match(descriptor.template.content,
+    /v-if="canAcceptRegistration\(registration, capacityInfoFor\(registration\)\)"/)
+  assert.match(descriptor.template.content, /:capacity-info="detailCapacityInfo"/)
+  assert.match(detailDescriptor.template.content,
+    /v-if="canAcceptRegistration\(detail, capacityInfo\)"/)
+})
+
+test('automatic registration refresh requests a stats refresh on tab return and polling', async t => {
+  let statsRefreshes = 0
+  const { browser } = await mount(t, async () => [], () => { statsRefreshes += 1 })
+
+  globalThis.document.visibilityState = 'visible'
+  globalThis.document.dispatchVisibilityChange()
+  await settle()
+  assert.equal(statsRefreshes, 1)
+
+  browser.tick()
+  await settle()
+  assert.equal(statsRefreshes, 2)
 })
 
 test('filter changes hide old rows until matching data loads and keep them hidden on failure', async t => {

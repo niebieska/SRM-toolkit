@@ -6,6 +6,7 @@ import StatusBadge from './StatusBadge.vue'
 import AcceptRejectModal from './AcceptRejectModal.vue'
 import RegistrationDetailModal from './RegistrationDetailModal.vue'
 import { formatDateTime } from '../utils/dateUtils'
+import { canAcceptRegistration } from '../utils/registrationCapacity.js'
 import { sortRegistrations, sortRegistrationsByDefaultQueue } from '../utils/registrationSorting'
 import { setupRegistrationListAutoRefresh } from '../utils/registrationListAutoRefresh'
 import { createQueuedRefresh } from '../utils/queuedRefresh'
@@ -14,9 +15,17 @@ const props = defineProps({
     type: Object,
     required: true,
   },
+  turnusStats: {
+    type: Object,
+    default: null,
+  },
+  turnusOptions: {
+    type: Array,
+    default: () => [],
+  },
 })
 
-const emit = defineEmits(['status-updated'])
+const emit = defineEmits(['status-updated', 'auto-refresh'])
 
 const authStore = useAuthStore()
 const registrations = ref([])
@@ -30,6 +39,21 @@ const sortKey = ref(null)
 const sortDirection = ref('asc')
 const userHasSelectedSort = ref(false)
 let stopAutoRefresh
+function capacityInfoFor(registration) {
+  if (!props.turnusStats || props.turnusStats.turnusCode !== registration.turnusCode) return null
+  const stats = registration.registrationType === 'STAFF'
+    ? props.turnusStats.staff
+    : props.turnusStats.participants
+  return stats ? { accepted: stats.accepted, capacity: stats.capacity } : null
+}
+const detailCapacityInfo = computed(() => {
+  const registration = registrations.value.find(item => item.registrationCode === detailCode.value)
+  return registration ? capacityInfoFor(registration) : null
+})
+function turnusNameFor(registration) {
+  return props.turnusOptions.find(turnus => turnus.turnusCode === registration.turnusCode)?.turnusName
+    || registration.turnusCode
+}
 const columns = [
   { key: 'registrationCode', label: 'Kod zgłoszenia' },
   { key: 'registrationType', label: 'Typ' },
@@ -121,7 +145,10 @@ async function handleStatusUpdated() {
 }
 
 onMounted(() => {
-  stopAutoRefresh = setupRegistrationListAutoRefresh(loadRegistrations)
+  stopAutoRefresh = setupRegistrationListAutoRefresh(() => {
+    loadRegistrations()
+    emit('auto-refresh')
+  })
 })
 
 onUnmounted(() => {
@@ -192,7 +219,7 @@ watch(
             Szczegóły
           </button>
           <button
-              v-if="registration.status !== 'ACCEPTED'"
+              v-if="canAcceptRegistration(registration, capacityInfoFor(registration))"
               class="rounded bg-green-600 text-white px-3 py-1 hover:bg-green-700"
               @click="openModal(registration, 'ACCEPT')"
           >
@@ -223,6 +250,8 @@ watch(
         v-if="selectedRegistration"
         :registration="selectedRegistration"
         :action="modalAction"
+        :capacity-info="capacityInfoFor(selectedRegistration)"
+        :turnus-name="turnusNameFor(selectedRegistration)"
         @close="closeModal"
         @updated="handleStatusUpdated"
     />
@@ -230,6 +259,7 @@ watch(
     <RegistrationDetailModal
         v-if="detailCode"
         :code="detailCode"
+        :capacity-info="detailCapacityInfo"
         @close="closeDetail"
         @status-action="handleDetailStatusAction"
     />
