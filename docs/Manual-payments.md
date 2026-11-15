@@ -16,6 +16,11 @@ remains a confirmed MVP requirement.
 - Add a fixed participant fee and fees for selected seasonal staff roles/subroles
   to the Turnus definition. Use the existing Summer/Winter role catalogue.
   Staff roles without an assigned fee pay 0 PLN. Staff fees depend on role, not age.
+  For new Summer and Winter fee configurations, only **Kandydat na animatora**
+  is configurable as paid; other staff roles are free and omitted from the fee
+  editor. The Summer catalogue represents this candidate as a standalone role
+  for minors and as an Animator function for adults; both variants share one
+  fee. Existing saved fee configurations remain unchanged.
   A role and its subrole will not have conflicting fee amounts; applicable amounts
   are not added together.
 - The base fee for a participant or staff role/subrole is fixed in the Turnus
