@@ -1,10 +1,48 @@
 import test from 'node:test'
 import assert from 'node:assert/strict'
-import { hasStaffFee, staffFeeAmount, staffFeesError, withStaffFee, withoutStaffFee } from './staffFees.js'
+import { hasStaffFee, staffFeeAmount, staffFeesError, visibleStaffFeeOptions, withStaffFee, withoutStaffFee } from './staffFees.js'
 
 const animator = { role: 'animator', roleLabel: 'Animator', subrole: null, subroleLabel: null }
 const candidate = { role: 'animator', roleLabel: 'Animator', subrole: 'candidate', subroleLabel: 'Kandydat' }
 const options = [animator, candidate]
+
+test('winter and summer editors show one candidate fee option', () => {
+  const winterOptions = [
+    { role: 'kucharka', subrole: null },
+    { role: 'animator', subrole: null },
+    { role: 'animator', subrole: 'kandydat_na_animatora' },
+  ]
+  assert.deepEqual(visibleStaffFeeOptions(winterOptions, 'WINTER'), [winterOptions[2]])
+  assert.deepEqual(visibleStaffFeeOptions(winterOptions, 'WINTER', [{ role: 'kucharka', subrole: null }]),
+    [winterOptions[0], winterOptions[2]])
+  const summerOptions = [
+    { role: 'kucharka', subrole: null },
+    { role: 'kandydat_na_animatora', subrole: null },
+    { role: 'animator', subrole: 'kandydat_na_animatora' },
+    { role: 'animator', subrole: 'animator_wychowawca' },
+  ]
+  const summerCandidate = summerOptions[2]
+  const summerMinorCandidate = summerOptions[1]
+  assert.deepEqual(visibleStaffFeeOptions(summerOptions, 'SUMMER'), [summerCandidate])
+  assert.deepEqual(visibleStaffFeeOptions(summerOptions, 'SUMMER', [
+    { role: 'kandydat_na_animatora', subrole: null, amount: 750 },
+  ]), [summerCandidate])
+  assert.deepEqual(visibleStaffFeeOptions(summerOptions, 'SUMMER', [
+    { role: 'kandydat_na_animatora', subrole: null, amount: 750 },
+    { role: 'animator', subrole: 'kandydat_na_animatora', amount: 750 },
+  ]), [summerCandidate])
+  assert.deepEqual(visibleStaffFeeOptions(summerOptions, 'SUMMER', [
+    { role: 'kandydat_na_animatora', subrole: null, amount: 750 },
+    { role: 'animator', subrole: 'kandydat_na_animatora', amount: 800 },
+  ]), [summerMinorCandidate, summerCandidate])
+
+  const selected = withStaffFee([], summerCandidate, '750')
+  assert.equal(hasStaffFee(selected, summerMinorCandidate), true)
+  assert.equal(staffFeeAmount(selected, summerMinorCandidate), '750')
+  assert.deepEqual(withStaffFee(selected, summerCandidate, '800'), [
+    { role: 'animator', subrole: 'kandydat_na_animatora', amount: '800' },
+  ])
+})
 
 test('staff fee selection helpers add, update and remove exact role/subrole fees', () => {
   const selected = withStaffFee([], animator, '250')

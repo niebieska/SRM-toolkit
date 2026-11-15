@@ -47,6 +47,36 @@ public class StaffFees {
         return fees.stream().filter(fee -> fee.amount().signum() > 0).toList();
     }
 
+    /** Validates a new fee configuration against the current staff billing rule. */
+    public List<StaffFee> validateNewConfiguration(List<StaffFee> fees, TurnusDefinition.SeasonType season) {
+        var validated = validate(fees, season);
+        if (validated.stream().anyMatch(fee -> !isCandidateAnimator(fee, season)))
+            throw invalid("Opłatę kadry można przypisać tylko kandydatowi na animatora.");
+        if (season == TurnusDefinition.SeasonType.SUMMER) return normalizeSummerCandidateFee(validated);
+        return validated;
+    }
+
+    private List<StaffFee> normalizeSummerCandidateFee(List<StaffFee> fees) {
+        var minorRole = fees.stream().filter(fee -> "kandydat_na_animatora".equals(fee.role())
+                && fee.subrole() == null).findFirst().orElse(null);
+        var adultFunction = fees.stream().filter(fee -> "animator".equals(fee.role())
+                && "kandydat_na_animatora".equals(fee.subrole())).findFirst().orElse(null);
+        if (minorRole == null && adultFunction == null) return fees;
+        if (minorRole != null && adultFunction != null && minorRole.amount().compareTo(adultFunction.amount()) != 0)
+            throw invalid("Kandydat na animatora musi mieć tę samą opłatę niezależnie od wariantu roli.");
+        var amount = minorRole != null ? minorRole.amount() : adultFunction.amount();
+        var normalized = new ArrayList<>(fees);
+        if (minorRole == null) normalized.add(new StaffFee("kandydat_na_animatora", null, amount));
+        if (adultFunction == null) normalized.add(new StaffFee("animator", "kandydat_na_animatora", amount));
+        return List.copyOf(normalized);
+    }
+
+    private boolean isCandidateAnimator(StaffFee fee, TurnusDefinition.SeasonType season) {
+        if ("animator".equals(fee.role()) && "kandydat_na_animatora".equals(fee.subrole())) return true;
+        return season == TurnusDefinition.SeasonType.SUMMER
+                && "kandydat_na_animatora".equals(fee.role()) && fee.subrole() == null;
+    }
+
     public List<StaffFeeOption> options(TurnusDefinition.SeasonType season) {
         var options = new ArrayList<StaffFeeOption>();
         for (var role : seasons.get(season).roles()) {

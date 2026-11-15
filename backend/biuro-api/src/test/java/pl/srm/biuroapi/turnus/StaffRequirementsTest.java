@@ -148,15 +148,82 @@ class StaffRequirementsTest {
              "participantRegistrationOpen":false,"staffRegistrationOpen":false,
              "participantFee":%s,"staffFees":%s}
             """;
+        mvc.perform(post("/api/turnuses").header("Authorization", token).contentType("application/json")
+                .content(body.replace("STAFFTEST-FEE", "STAFFTEST-FEE-OK").formatted("0",
+                        "[{\"role\":\"animator\",\"subrole\":\"kandydat_na_animatora\",\"amount\":750}]")))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.staffFees[0].role").value("animator"))
+                .andExpect(jsonPath("$.staffFees[0].subrole").value("kandydat_na_animatora"));
         for (String[] invalid : List.of(
                 new String[]{"-1", "[]"},
                 new String[]{"10.001", "[]"},
                 new String[]{"1200", "[{\"role\":\"unknown\",\"subrole\":null,\"amount\":100}]"},
+                new String[]{"1200", "[{\"role\":\"kucharka\",\"subrole\":null,\"amount\":100}]"},
+                new String[]{"1200", "[{\"role\":\"animator\",\"subrole\":null,\"amount\":100}]"},
                 new String[]{"1200", "[{\"role\":\"kucharka\",\"subrole\":null,\"amount\":100},{\"role\":\"kucharka\",\"subrole\":null,\"amount\":200}]"},
                 new String[]{"1200", "[{\"role\":\"animator\",\"subrole\":null,\"amount\":100},{\"role\":\"animator\",\"subrole\":\"kandydat_na_animatora\",\"amount\":50}]"})) {
             mvc.perform(post("/api/turnuses").header("Authorization", token).contentType("application/json")
                     .content(body.formatted(invalid[0], invalid[1]))).andExpect(status().isBadRequest());
         }
         assertEquals(0, jdbc.queryForObject("SELECT COUNT(*) FROM turnus WHERE turnus_code = 'STAFFTEST-FEE'", Integer.class));
+    }
+
+    @Test void summerCandidateFeeUsesOneRateForBothCatalogRepresentations() {
+        var base = new TurnusRequest("STAFFTEST-SUMMER-FEE", "Summer", null, "Place", SeasonType.SUMMER,
+                2027, LocalDate.of(2027, 7, 1), LocalDate.of(2027, 7, 8), 14, 50, 10,
+                false, false, false, null, List.of(), java.math.BigDecimal.ZERO,
+                List.of(new StaffFee("kandydat_na_animatora", null, new java.math.BigDecimal("750"))));
+        var configured = catalogue.create(base);
+        assertEquals(2, configured.staffFees().size());
+        assertEquals(0, configured.staffFees().get(0).amount().compareTo(configured.staffFees().get(1).amount()));
+
+        var otherRepresentation = new TurnusRequest("STAFFTEST-SUMMER-FEE-ADULT", "Summer", null, "Place",
+                SeasonType.SUMMER, 2027, LocalDate.of(2027, 7, 1), LocalDate.of(2027, 7, 8), 14, 50, 10,
+                false, false, false, null, List.of(), java.math.BigDecimal.ZERO,
+                List.of(new StaffFee("animator", "kandydat_na_animatora", new java.math.BigDecimal("750"))));
+        assertEquals(2, catalogue.create(otherRepresentation).staffFees().size());
+
+        var ineligibleRole = new TurnusRequest("STAFFTEST-SUMMER-FEE-OTHER", "Summer", null, "Place",
+                SeasonType.SUMMER, 2027, LocalDate.of(2027, 7, 1), LocalDate.of(2027, 7, 8), 14, 50, 10,
+                false, false, false, null, List.of(), java.math.BigDecimal.ZERO,
+                List.of(new StaffFee("kucharka", null, new java.math.BigDecimal("750"))));
+        assertEquals(400, assertThrows(ResponseStatusException.class, () -> catalogue.create(ineligibleRole))
+                .getStatusCode().value());
+
+        var mismatchedVariants = new TurnusRequest("STAFFTEST-SUMMER-FEE-MISMATCH", "Summer", null, "Place",
+                SeasonType.SUMMER, 2027, LocalDate.of(2027, 7, 1), LocalDate.of(2027, 7, 8), 14, 50, 10,
+                false, false, false, null, List.of(), java.math.BigDecimal.ZERO, List.of(
+                        new StaffFee("kandydat_na_animatora", null, new java.math.BigDecimal("750")),
+                        new StaffFee("animator", "kandydat_na_animatora", new java.math.BigDecimal("800"))));
+        assertEquals(400, assertThrows(ResponseStatusException.class, () -> catalogue.create(mismatchedVariants))
+                .getStatusCode().value());
+    }
+
+    @Test void firstFeeConfigurationOfAnExistingTurnusUsesCandidateOnlyRule() {
+        var created = catalogue.create(new TurnusRequest("STAFFTEST-FIRST-FEE", "Winter", null, "Place",
+                SeasonType.WINTER, 2027, LocalDate.of(2027, 1, 1), LocalDate.of(2027, 1, 8), 14, 50, 10,
+                false, false, false, null, List.of(), java.math.BigDecimal.ZERO, List.of()));
+        jdbc.update("UPDATE turnus SET fees_configured = FALSE WHERE turnus_code = ?", created.turnusCode());
+        var current = catalogue.get(created.turnusCode());
+
+        var invalid = requestWithFees(current, List.of(new StaffFee("kucharka", null,
+                new java.math.BigDecimal("200"))));
+        var failure = assertThrows(ResponseStatusException.class,
+                () -> catalogue.update(current.turnusCode(), invalid));
+        assertEquals(400, failure.getStatusCode().value());
+
+        var valid = requestWithFees(current, List.of(new StaffFee("animator", "kandydat_na_animatora",
+                new java.math.BigDecimal("750"))));
+        var configured = catalogue.update(current.turnusCode(), valid);
+        assertTrue(configured.feesConfigured());
+        assertEquals(1, configured.staffFees().size());
+    }
+
+    private TurnusRequest requestWithFees(TurnusDefinition current, List<StaffFee> fees) {
+        return new TurnusRequest(current.turnusCode(), current.turnusName(), current.turnusDescription(),
+                current.turnusLocation(), current.seasonType(), current.seasonYear(), current.startDate(),
+                current.endDate(), current.minAge(), current.participantCapacity(), current.staffCapacity(),
+                current.active(), current.participantRegistrationOpen(), current.staffRegistrationOpen(),
+                current.version(), current.staffRequirements(), current.participantFee(), fees);
     }
 }

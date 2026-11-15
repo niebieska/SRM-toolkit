@@ -11,7 +11,7 @@ import { createTurnus, fetchTurnus, updateTurnus, fetchStaffingCategories, fetch
 import { requirementCount, withRequirement } from '../utils/staffRequirements'
 import { nextTurnusCacheRefreshTime } from '../utils/turnusCacheSchedule'
 import { defaultWinterSeasonYear } from '../utils/turnusDefaults'
-import { hasStaffFee, staffFeeAmount, withStaffFee, withoutStaffFee } from '../utils/staffFees'
+import { hasStaffFee, staffFeeAmount, visibleStaffFeeOptions, withStaffFee, withoutStaffFee } from '../utils/staffFees'
 const { prompt: discardPrompt, confirm: confirmDiscard, decide: decideDiscard } = createDiscardConfirmation()
 const formElement = ref(null), fieldErrors = ref({})
 const categories = ref([]), categoriesLoading = ref(false), categoriesError = ref('')
@@ -27,6 +27,7 @@ let loadSequence = 0
 let createdTurnusCode = null
 const dirty = computed(() => loaded.value && JSON.stringify(form) !== original.value)
 const feesReadOnly = computed(() => !isNew.value && form.feesConfigured)
+const visibleFeeOptions = computed(() => visibleStaffFeeOptions(feeOptions.value, form.seasonType, form.staffFees))
 const plannedStaff = computed(() => (form.staffRequirements || []).reduce((total, item) =>
   total + (Number.isInteger(item.requiredCount) && item.requiredCount > 0 ? item.requiredCount : 0), 0))
 const status = computed(() => !form.active ? 'Nieaktywny' : 'Aktywny')
@@ -112,7 +113,10 @@ async function loadFeeOptions() {
   } catch (e) { if (sequence === feeOptionSequence) feeOptionsError.value = e.message }
   finally { if (sequence === feeOptionSequence) feeOptionsLoading.value = false }
 }
-watch(() => form.seasonType, loadFeeOptions, { immediate: true })
+watch(() => form.seasonType, (season, previousSeason) => {
+  if (previousSeason && season !== previousSeason && dirty.value && !form.feesConfigured) form.staffFees = []
+  loadFeeOptions()
+}, { immediate: true })
 function setRequirement(code, value) {
   form.staffRequirements = withRequirement(form.staffRequirements, code, value)
   if (fieldErrors.value.staffRequirements) validateField('staffRequirements')
@@ -252,7 +256,7 @@ async function save() {
                   <TurnusFormField id="turnusLocation" label="Miejsce" required :error="fieldErrors.turnusLocation" class="sm:col-span-2">
                     <input id="turnusLocation" name="turnusLocation" v-model="form.turnusLocation" type="text" maxlength="500" placeholder="Miejscowość i ośrodek" class="turnus-control" required :aria-invalid="!!fieldErrors.turnusLocation" :aria-describedby="descriptionId('turnusLocation', false)" />
                   </TurnusFormField>
-                  <TurnusFormField id="seasonType" label="Sezon" required :error="fieldErrors.seasonType" :help="feesReadOnly ? 'Sezonu nie można zmienić po ustaleniu opłat.' : undefined">
+                  <TurnusFormField id="seasonType" label="Sezon" required :error="fieldErrors.seasonType">
                     <select id="seasonType" name="seasonType" v-model="form.seasonType" class="turnus-control" required :disabled="feesReadOnly" :aria-invalid="!!fieldErrors.seasonType" :aria-describedby="descriptionId('seasonType', feesReadOnly)"><option value="SUMMER">Lato</option><option value="WINTER">Zima</option></select>
                   </TurnusFormField>
                   <TurnusFormField id="seasonYear" label="Rok sezonu" required :error="fieldErrors.seasonYear">
@@ -294,6 +298,40 @@ async function save() {
                   </span>
                 </label>
               </div>
+            </section>
+            <section aria-labelledby="turnus-fees-heading" class="turnus-card">
+              <h3 id="turnus-fees-heading" class="text-base font-semibold text-slate-900">Opłaty turnusu</h3>
+              <p class="mt-1 text-xs leading-relaxed text-slate-600">Opłaty ustala się przy tworzeniu turnusu lub przy pierwszym uzupełnieniu. Późniejszą obniżkę rozlicz rabatem dla zgłoszenia.</p>
+              <div class="mt-4 grid grid-cols-1 items-start gap-6 sm:grid-cols-2">
+                <div>
+                  <label for="participantFee" class="block text-sm font-medium text-slate-700">Opłata uczestnika (zł)</label>
+                  <input id="participantFee" name="participantFee" v-model.number="form.participantFee" type="number" min="0" max="99999999.99" step="50" :disabled="feesReadOnly" class="turnus-number mt-1 w-20" required :aria-invalid="!!fieldErrors.participantFee" :aria-describedby="descriptionId('participantFee', true)" />
+                  <p v-if="!fieldErrors.participantFee && !feesReadOnly" id="participantFee-help" class="mt-1 text-xs text-slate-600">Wpisz kwotę lub 0 zł, jeśli uczestnik nie wnosi opłaty. Po utworzeniu turnusu stawki będą zablokowane.</p>
+                  <p v-if="fieldErrors.participantFee" id="participantFee-error" class="mt-1.5 text-sm text-red-700">{{ fieldErrors.participantFee }}</p>
+                </div>
+                <div>
+                  <h4 class="text-sm font-medium text-slate-700">Opłata kadry</h4>
+                  <p v-if="feeOptionsLoading" role="status" class="mt-2 text-sm text-slate-600">Wczytywanie ról i funkcji…</p>
+                  <div v-else-if="feeOptionsError" role="alert" class="mt-2 text-sm text-red-700">{{ feeOptionsError }} <button type="button" class="rounded font-medium underline focus-visible:ring-2 focus-visible:ring-slate-500" @click="loadFeeOptions">Spróbuj ponownie</button></div>
+                  <template v-else>
+                    <div class="mt-2 divide-y divide-slate-100">
+                      <div v-for="option in visibleFeeOptions" :key="`${option.role}:${option.subrole || ''}`" class="flex min-w-0 items-center gap-2 py-2 first:pt-1">
+                        <label class="flex min-w-0 flex-1 cursor-pointer items-center gap-2 text-sm text-slate-700">
+                          <input type="checkbox" class="h-4 w-4 shrink-0 accent-slate-800" :disabled="feesReadOnly" :checked="hasStaffFee(form.staffFees, option)" :aria-label="`Przypisz opłatę: ${staffFeeLabel(option)}`" @change="setStaffFeeEnabled(option, $event.target.checked)" />
+                          <span class="min-w-0">{{ staffFeeLabel(option) }}</span>
+                        </label>
+                        <label v-if="hasStaffFee(form.staffFees, option)" class="flex shrink-0 items-center gap-1.5 text-xs text-slate-600">
+                          <span class="sr-only">Opłata dla {{ staffFeeLabel(option) }}</span>
+                          <input :value="staffFeeAmount(form.staffFees, option)" type="number" min="0" max="99999999.99" step="50" inputmode="decimal" :disabled="feesReadOnly" class="turnus-number w-20" :aria-invalid="!!fieldErrors.staffFees" :aria-describedby="fieldErrors.staffFees ? 'staffFees-error' : undefined" @input="updateStaffFee(option, $event.target.value)" />
+                          <span>zł</span>
+                        </label>
+                      </div>
+                    </div>
+                    <p v-if="fieldErrors.staffFees" id="staffFees-error" class="mt-2 text-sm text-red-700">{{ fieldErrors.staffFees }}</p>
+                  </template>
+                </div>
+              </div>
+              <p v-if="feesReadOnly" role="status" class="mt-3 inline-block w-fit max-w-full rounded-lg border border-slate-200 bg-slate-50 px-2 py-1 text-xs text-slate-700">Opłaty zostały ustalone i nie można ich zmienić.</p>
             </section>
           </div>
           <div class="min-w-0 space-y-4">
@@ -348,37 +386,6 @@ async function save() {
                 <p v-if="fieldErrors.staffRequirements" id="staffRequirements-error" class="mt-2 text-sm text-red-700">{{ fieldErrors.staffRequirements }}</p>
               </template>
             </section>
-            <section aria-labelledby="turnus-fees-heading" class="turnus-card">
-              <h3 id="turnus-fees-heading" class="text-base font-semibold text-slate-900">Opłaty turnusu</h3>
-              <p class="mt-1 text-xs leading-relaxed text-slate-600">Opłaty ustala się przy tworzeniu turnusu lub przy pierwszym uzupełnieniu stawek. Opłata kadry dotyczy wybranej roli lub funkcji — kwoty nie sumują się. Późniejszą obniżkę rozlicz rabatem dla zgłoszenia.</p>
-              <div class="mt-3">
-                <label for="participantFee" class="text-sm font-medium text-slate-700">Opłata uczestnika (zł)</label>
-                <input id="participantFee" name="participantFee" v-model.number="form.participantFee" type="number" min="0" max="99999999.99" step="0.01" :disabled="feesReadOnly" class="turnus-control mt-1" required :aria-invalid="!!fieldErrors.participantFee" :aria-describedby="descriptionId('participantFee', true)" />
-                <p v-if="!fieldErrors.participantFee" id="participantFee-help" class="mt-1 text-xs text-slate-600">{{ feesReadOnly ? 'Opłata została ustalona i nie można jej zmienić.' : 'Wpisz kwotę lub 0 zł, jeśli uczestnik nie wnosi opłaty. Po utworzeniu turnusu stawki będą zablokowane.' }}</p>
-                <p v-if="fieldErrors.participantFee" id="participantFee-error" class="mt-1.5 text-sm text-red-700">{{ fieldErrors.participantFee }}</p>
-              </div>
-              <p v-if="feeOptionsLoading" role="status" class="mt-4 text-sm text-slate-600">Wczytywanie ról i funkcji…</p>
-              <div v-else-if="feeOptionsError" role="alert" class="mt-4 text-sm text-red-700">{{ feeOptionsError }} <button type="button" class="rounded font-medium underline focus-visible:ring-2 focus-visible:ring-slate-500" @click="loadFeeOptions">Spróbuj ponownie</button></div>
-              <template v-else>
-                <h4 class="mb-1 mt-4 text-sm font-semibold text-slate-800">Opłaty kadry</h4>
-                <div class="divide-y divide-slate-100">
-                  <div v-for="option in feeOptions" :key="`${option.role}:${option.subrole || ''}`" class="flex min-w-0 items-center gap-2 py-2 first:pt-1">
-                    <label class="flex min-w-0 flex-1 cursor-pointer items-center gap-2 text-sm text-slate-700">
-                      <input type="checkbox" class="h-4 w-4 shrink-0 accent-slate-800" :disabled="feesReadOnly" :checked="hasStaffFee(form.staffFees, option)" :aria-label="`Przypisz opłatę: ${staffFeeLabel(option)}`" @change="setStaffFeeEnabled(option, $event.target.checked)" />
-                      <span class="min-w-0">{{ staffFeeLabel(option) }}</span>
-                    </label>
-                    <label v-if="hasStaffFee(form.staffFees, option)" class="flex shrink-0 items-center gap-1.5 text-xs text-slate-600">
-                      <span class="sr-only">Opłata dla {{ staffFeeLabel(option) }}</span>
-                      <input :value="staffFeeAmount(form.staffFees, option)" type="number" min="0.01" max="99999999.99" step="0.01" inputmode="decimal" :disabled="feesReadOnly" class="turnus-number w-24" :aria-invalid="!!fieldErrors.staffFees" :aria-describedby="fieldErrors.staffFees ? 'staffFees-error' : 'staffFees-help'" @input="updateStaffFee(option, $event.target.value)" />
-                      <span>zł</span>
-                    </label>
-                  </div>
-                </div>
-                <p v-if="fieldErrors.staffFees" id="staffFees-error" class="mt-2 text-sm text-red-700">{{ fieldErrors.staffFees }}</p>
-                <p id="staffFees-help" class="mt-2 text-xs text-slate-600">{{ feesReadOnly ? 'Opłaty zostały ustalone i nie można ich zmienić.' : 'Niezaznaczona rola oznacza brak opłaty. Ustaw opłatę dla roli albo jej funkcji.' }}</p>
-              </template>
-            </section>
-
           </div>
         </fieldset>
         <div class="turnus-card flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">

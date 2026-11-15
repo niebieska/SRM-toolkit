@@ -141,7 +141,7 @@ class BiuroRegistrationControllerTest {
             when(registrationApiClient.updateStatus(eq(code), eq(request), eq("account-id"), eq("operator")))
                     .thenAnswer(invocation -> {
                         accepted.incrementAndGet();
-                        return new RegistrationSummary(code, "PARTICIPANT", "T1", false, "ACCEPTED", null,
+                        return new RegistrationSummary(1L, code, "PARTICIPANT", "T1", false, "ACCEPTED", null,
                                 "2026-11-01T12:00:00", "Test", "Osoba", 18, "female", null, null);
                     });
         }
@@ -300,7 +300,7 @@ class BiuroRegistrationControllerTest {
     private void assertAcceptanceAllowed(String type, long participants, long staff,
                                          int participantCapacity, int staffCapacity) {
         StatusUpdateRequest request = new StatusUpdateRequest("ACCEPTED", null);
-        RegistrationSummary accepted = new RegistrationSummary("REG-1", type, "T1", false, "ACCEPTED", null,
+        RegistrationSummary accepted = new RegistrationSummary(1L, "REG-1", type, "T1", false, "ACCEPTED", null,
                 "2026-11-01T12:00:00", "Test", "Osoba", 18, "female", null, null);
         mockAcceptanceCapacity(type, participants, staff, participantCapacity, staffCapacity);
         when(registrationApiClient.updateStatus("REG-1", request, "account-id", "operator")).thenReturn(accepted);
@@ -311,7 +311,7 @@ class BiuroRegistrationControllerTest {
     }
 
     private RegistrationSummary registration(String code, String turnusCode, String type) {
-        return new RegistrationSummary(code, type, turnusCode, false, "NEW", null,
+        return new RegistrationSummary(1L, code, type, turnusCode, false, "NEW", null,
                 "2026-11-01T12:00:00", "Test", "Osoba", 14, "female", null, null);
     }
 }

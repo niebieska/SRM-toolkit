@@ -101,7 +101,7 @@ class TurnusCatalogueTest {
             java.math.BigDecimal staffFee) {
         return new TurnusRequest(code, "Turnus testowy", "Opis", "Miejsce", TurnusDefinition.SeasonType.SUMMER,
                 2026, LocalDate.of(2026, 8, 1), LocalDate.of(2026, 8, 11), 14, 60, 10, true, true, true,
-                version, List.of(), participantFee, List.of(new StaffFee("kucharka", null, staffFee)));
+                version, List.of(), participantFee, List.of(new StaffFee("animator", "kandydat_na_animatora", staffFee)));
     }
     @Test void refusesCodeChangesMissingVersionAndStaleEdits() {
         catalogue.create(request("TEST1", null, 60));

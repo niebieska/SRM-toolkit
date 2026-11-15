@@ -50,7 +50,7 @@ public class TurnusCatalogue {
     public TurnusDefinition create(TurnusRequest request) {
         var staffing = requirements.validate(request.staffRequirements(), request.seasonType());
         requirements.validateCapacity(staffing, request.staffCapacity());
-        var staffFees = fees.validate(request.staffFees(), request.seasonType());
+        var staffFees = fees.validateNewConfiguration(request.staffFees(), request.seasonType());
         var participantFee = request.participantFee() == null ? java.math.BigDecimal.ZERO : request.participantFee();
         validateParticipantFee(participantFee);
         try {
@@ -84,7 +84,10 @@ public class TurnusCatalogue {
         requirements.validateCapacity(staffing, request.staffCapacity());
         var participantFee = request.participantFee() == null ? current.participantFee() : request.participantFee();
         validateParticipantFee(participantFee);
-        var staffFees = fees.validate(request.staffFees() == null ? current.staffFees() : request.staffFees(), request.seasonType());
+        var requestedStaffFees = request.staffFees() == null ? current.staffFees() : request.staffFees();
+        var staffFees = current.feesConfigured()
+                ? fees.validate(requestedStaffFees, request.seasonType())
+                : fees.validateNewConfiguration(requestedStaffFees, request.seasonType());
         if (current.feesConfigured() && (participantFee.compareTo(current.participantFee()) != 0
                 || !sameStaffFees(staffFees, current.staffFees())))
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST,

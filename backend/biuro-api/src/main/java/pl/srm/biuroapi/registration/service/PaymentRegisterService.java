@@ -71,10 +71,7 @@ public class PaymentRegisterService {
         if ("PARTICIPANT".equals(summary.registrationType())) {
             fee = turnus.participantFee();
         } else if ("STAFF".equals(summary.registrationType())) {
-            fee = turnus.staffFees().stream()
-                    .filter(item -> item.role().equals(summary.role()))
-                    .filter(item -> item.subrole() == null || Objects.equals(item.subrole(), summary.subrole()))
-                    .map(StaffFee::amount).findFirst().orElse(BigDecimal.ZERO);
+            fee = staffFee(turnus, summary.role(), summary.subrole());
         } else {
             fee = BigDecimal.ZERO;
         }
@@ -90,10 +87,7 @@ public class PaymentRegisterService {
         if (turnus == null) return null;
         BigDecimal fee;
         if ("PARTICIPANT".equals(summary.registrationType())) fee = turnus.participantFee();
-        else if ("STAFF".equals(summary.registrationType())) fee = turnus.staffFees().stream()
-                .filter(item -> item.role().equals(summary.role()))
-                .filter(item -> item.subrole() == null || Objects.equals(item.subrole(), summary.subrole()))
-                .map(StaffFee::amount).findFirst().orElse(BigDecimal.ZERO);
+        else if ("STAFF".equals(summary.registrationType())) fee = staffFee(turnus, summary.role(), summary.subrole());
         else return null;
         if (fee == null || fee.signum() <= 0) return null;
         if (!"ACCEPTED".equals(summary.status()) && ledger.payments().isEmpty() && ledger.discount() == null) return null;
@@ -103,5 +97,24 @@ public class PaymentRegisterService {
                 summary.role(), summary.subrole(), fee, discount == null ? BigDecimal.ZERO : discount.amount(),
                 discount == null ? null : discount.description(), discount == null ? null : discount.changedAt().toString(),
                 discount == null ? null : discount.actorUsername(), ledger.payments());
+    }
+
+    private BigDecimal staffFee(TurnusDefinition turnus, String role, String subrole) {
+        var exactOrRoleFee = turnus.staffFees().stream()
+                .filter(item -> item.role().equals(role))
+                .filter(item -> item.subrole() == null || Objects.equals(item.subrole(), subrole))
+                .map(StaffFee::amount).findFirst();
+        if (exactOrRoleFee.isPresent()) return exactOrRoleFee.get();
+        if (turnus.seasonType() != TurnusDefinition.SeasonType.SUMMER) return BigDecimal.ZERO;
+
+        boolean minorCandidate = "kandydat_na_animatora".equals(role) && subrole == null;
+        boolean adultCandidate = "animator".equals(role) && "kandydat_na_animatora".equals(subrole);
+        if (!minorCandidate && !adultCandidate) return BigDecimal.ZERO;
+        String alternateRole = minorCandidate ? "animator" : "kandydat_na_animatora";
+        String alternateSubrole = minorCandidate ? "kandydat_na_animatora" : null;
+        return turnus.staffFees().stream()
+                .filter(item -> item.role().equals(alternateRole))
+                .filter(item -> Objects.equals(item.subrole(), alternateSubrole))
+                .map(StaffFee::amount).findFirst().orElse(BigDecimal.ZERO);
     }
 }
