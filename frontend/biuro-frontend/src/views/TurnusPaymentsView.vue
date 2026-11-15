@@ -2,7 +2,6 @@
 import { computed, onBeforeUnmount, reactive, ref, watch } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import BiuroHeader from '../components/BiuroHeader.vue'
-import PolishDatePicker from '../components/PolishDatePicker.vue'
 import { useAuthStore } from '../stores/auth'
 import { fetchTurnuses } from '../api/turnusApi'
 import { fetchPaymentRegister, addRegistrationPayment, addRegistrationRefund, editRegistrationPayment, setRegistrationDiscount, settleRegistrationPayments } from '../api/registrationApi'
@@ -560,7 +559,7 @@ onBeforeUnmount(() => { requestSequence++ })
               </div>
               <div v-else class="grid gap-3 sm:grid-cols-2">
                 <label class="text-sm font-medium text-slate-700">Data {{ formMode.includes('refund') ? 'zwrotu' : 'wpłaty' }}
-                  <PolishDatePicker v-model="paymentForm.date" required />
+                  <input v-model="paymentForm.date" type="date" required class="mt-1 h-10 w-full rounded-lg border border-slate-300 px-3 text-sm focus:ring-2 focus:ring-slate-500" />
                 </label>
                 <label class="text-sm font-medium text-slate-700">Kwota (zł)
                   <input v-model.number="paymentForm.amount" type="number" min="0" step="50" required class="mt-1 h-10 w-full rounded-lg border border-slate-300 px-3 text-sm focus:ring-2 focus:ring-slate-500" />
