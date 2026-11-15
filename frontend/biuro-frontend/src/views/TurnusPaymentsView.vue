@@ -5,8 +5,8 @@ import BiuroHeader from '../components/BiuroHeader.vue'
 import PolishDatePicker from '../components/PolishDatePicker.vue'
 import { useAuthStore } from '../stores/auth'
 import { fetchTurnuses } from '../api/turnusApi'
-import { fetchPaymentRegister, addRegistrationPayment, editRegistrationPayment, setRegistrationDiscount } from '../api/registrationApi'
-import { hasPaymentHistory, isPaymentEligible, paymentBalance, paymentStatus, paymentTotal } from '../utils/demoPayments'
+import { fetchPaymentRegister, addRegistrationPayment, addRegistrationRefund, editRegistrationPayment, setRegistrationDiscount, settleRegistrationPayments } from '../api/registrationApi'
+import { hasPaymentHistory, isPaymentEligible, paymentBalance, paymentStatus, paymentTotal, refundableTotal } from '../utils/demoPayments'
 
 const route = useRoute()
 const router = useRouter()
@@ -58,6 +58,7 @@ const editingPayment = computed(() => selectedRegistration.value?.payments.find(
 const paymentForm = reactive({ date: today(), amount: '', method: 'Przelew', label: '', customLabel: '', note: '', reason: '' })
 const discountForm = reactive({ amount: '', description: '' })
 const predefinedPaymentLabels = ['Zaliczka', 'Dopłata', 'Wpłata całej kwoty']
+const predefinedRefundLabels = ['Zwrot wpłaty', 'Zwrot części wpłaty']
 
 function clearFilters() {
   statusFilter.value = ''
@@ -85,6 +86,8 @@ function formatTimestamp(value) {
 }
 function statusLabel(registration) {
   return ({
+    SETTLEMENT_PENDING: 'Do rozliczenia',
+    SETTLED: 'Rozliczono',
     NO_PAYMENT: 'Brak wpłaty',
     OWED: 'Do dopłaty',
     PAID: 'Opłacone',
@@ -94,6 +97,8 @@ function statusLabel(registration) {
 }
 function paymentStatusSummary(registration) {
   const status = paymentStatus(registration)
+  if (status === 'SETTLEMENT_PENDING') return 'Do rozliczenia'
+  if (status === 'SETTLED') return 'Rozliczono'
   if (status === 'NO_PAYMENT') return `Brak wpłaty: ${formatMoney(paymentBalance(registration))}`
   if (status === 'OWED') return `Do dopłaty: ${formatMoney(paymentBalance(registration))}`
   if (status === 'OVERPAID') return `Nadpłata: ${formatMoney(Math.abs(paymentBalance(registration)))}`
@@ -102,6 +107,8 @@ function paymentStatusSummary(registration) {
 }
 function statusClass(registration) {
   return ({
+    SETTLEMENT_PENDING: 'border-amber-200 bg-amber-50 text-amber-900',
+    SETTLED: 'border-emerald-200 bg-emerald-50 text-emerald-800',
     NO_PAYMENT: 'border-red-200 bg-red-50 text-red-800',
     OWED: 'border-amber-200 bg-amber-50 text-amber-900',
     PAID: 'border-emerald-200 bg-emerald-50 text-emerald-800',
@@ -153,15 +160,21 @@ function closeDialog() {
   formError.value = ''
 }
 function openPaymentForm(payment = null) {
-  formMode.value = payment ? 'edit-payment' : 'add-payment'
+  const type = payment?.entryType === 'REFUND' ? 'refund' : 'payment'
+  formMode.value = payment ? `edit-${type}` : formMode.value === 'add-refund' ? 'add-refund' : 'add-payment'
   editingPaymentId.value = payment?.id || ''
   addPaymentIdempotencyKey.value = payment ? '' : createIdempotencyKey()
   const savedLabel = payment?.label || ''
-  const isPredefinedLabel = predefinedPaymentLabels.includes(savedLabel)
+  const labels = type === 'refund' || formMode.value === 'add-refund' ? predefinedRefundLabels : predefinedPaymentLabels
+  const isPredefinedLabel = labels.includes(savedLabel)
   Object.assign(paymentForm, payment
     ? { date: payment.date, amount: payment.amount, method: payment.method, label: isPredefinedLabel ? savedLabel : savedLabel ? 'CUSTOM' : '', customLabel: isPredefinedLabel ? '' : savedLabel, note: payment.note || '', reason: '' }
-    : { date: today(), amount: '', method: 'Przelew', label: '', customLabel: '', note: '', reason: '' })
+    : { date: today(), amount: '', method: 'Przelew', label: formMode.value === 'add-refund' ? 'Zwrot wpłaty' : '', customLabel: '', note: '', reason: '' })
   formError.value = ''
+}
+function openRefundForm() {
+  formMode.value = 'add-refund'
+  openPaymentForm()
 }
 function createIdempotencyKey() {
   if (globalThis.crypto?.randomUUID) return globalThis.crypto.randomUUID()
@@ -188,24 +201,44 @@ async function savePayment() {
     formError.value = 'Wybierz opis wpłaty lub wpisz własny opis.'
     return
   }
-  if (formMode.value === 'edit-payment' && !paymentForm.reason.trim()) {
-    formError.value = 'Podaj powód korekty wpłaty.'
+  if (formMode.value.startsWith('edit-') && !paymentForm.reason.trim()) {
+    formError.value = 'Podaj powód korekty.'
     return
   }
   saving.value = true
   try {
+    if (formMode.value === 'add-refund' && amount > refundableTotal(selectedRegistration.value)) {
+      formError.value = `Kwota zwrotu nie może przekroczyć dostępnych ${formatMoney(refundableTotal(selectedRegistration.value))}.`
+      return
+    }
     const payload = { date: paymentForm.date, amount, method: paymentForm.method, label: paymentLabel,
-      note: paymentForm.note.trim() || null, reason: formMode.value === 'edit-payment' ? paymentForm.reason.trim() : null }
+      note: paymentForm.note.trim() || null, reason: formMode.value.startsWith('edit-') ? paymentForm.reason.trim() : null }
     const result = editingPayment.value
       ? await editRegistrationPayment(auth.token, selectedRegistration.value.registrationCode, editingPayment.value.id, payload)
-      : await addRegistrationPayment(auth.token, selectedRegistration.value.registrationCode, payload, addPaymentIdempotencyKey.value)
+      : formMode.value === 'add-refund'
+        ? await addRegistrationRefund(auth.token, selectedRegistration.value.registrationCode, payload, addPaymentIdempotencyKey.value)
+        : await addRegistrationPayment(auth.token, selectedRegistration.value.registrationCode, payload, addPaymentIdempotencyKey.value)
     applyLedgerEntry(result)
-    demoMessage.value = editingPayment.value ? 'Zapisano korektę wpłaty.' : 'Dodano wpłatę.'
+    demoMessage.value = editingPayment.value ? 'Zapisano korektę.' : formMode.value === 'add-refund' ? 'Dodano zwrot.' : 'Dodano wpłatę.'
     formMode.value = ''
     formError.value = ''
     addPaymentIdempotencyKey.value = ''
   } catch (exception) {
     formError.value = exception.message || 'Nie udało się zapisać wpłaty.'
+  } finally {
+    saving.value = false
+  }
+}
+async function settleSelectedRegistration() {
+  if (saving.value || !selectedRegistration.value) return
+  saving.value = true
+  formError.value = ''
+  try {
+    const result = await settleRegistrationPayments(auth.token, selectedRegistration.value.registrationCode)
+    applyLedgerEntry(result)
+    demoMessage.value = 'Zgłoszenie oznaczono jako rozliczone.'
+  } catch (exception) {
+    formError.value = exception.message || 'Nie udało się zapisać rozliczenia.'
   } finally {
     saving.value = false
   }
@@ -271,6 +304,14 @@ function mapPaymentRows(rows) {
     discount: Number(item.discount || 0),
     discountHistory: item.discount > 0 ? [{ actor: item.discountActor, changedAt: formatTimestamp(item.discountChangedAt), description: item.discountDescription }] : [],
     payments: mapPayments(item.payments),
+    settled: Boolean(item.settled),
+    settlementNote: item.settlementNote || null,
+    settlementChangedAt: formatTimestamp(item.settledAt),
+    settlementActor: item.settlementActor || null,
+    settlementHistory: (item.settlementHistory || []).map(entry => ({
+      ...entry,
+      changedAt: formatTimestamp(entry.changedAt),
+    })),
   }))
 }
 function registrationStatusLabel(status) {
@@ -297,6 +338,11 @@ function applyLedgerEntry(entry) {
   registration.discountDescription = entry.discount?.description || null
   registration.discountChangedAt = entry.discount?.changedAt || null
   registration.discountActor = entry.discount?.actorUsername || null
+  registration.settled = Boolean(entry.settlement?.settled)
+  registration.settlementNote = entry.settlement?.note || null
+  registration.settlementChangedAt = formatTimestamp(entry.settlement?.changedAt)
+  registration.settlementActor = entry.settlement?.actorUsername || null
+  registration.settlementHistory = (entry.settlement?.history || []).map(item => ({ ...item, changedAt: formatTimestamp(item.changedAt) }))
 }
 watch(() => auth.token, loadPayments, { immediate: true })
 onBeforeUnmount(() => { requestSequence++ })
@@ -325,6 +371,8 @@ onBeforeUnmount(() => { requestSequence++ })
             <option value="PAID">Opłacone</option>
             <option value="OVERPAID">Nadpłata</option>
             <option value="DISCOUNT_SETTLED">Rozliczono rabatem</option>
+            <option value="SETTLEMENT_PENDING">Do rozliczenia</option>
+            <option value="SETTLED">Rozliczono</option>
           </select>
           <select v-model="registrationTypeFilter" aria-label="Typ zgłoszenia" class="min-w-0 rounded border border-slate-300 px-3 py-2">
             <option value="">Wszystkie typy</option>
@@ -354,7 +402,7 @@ onBeforeUnmount(() => { requestSequence++ })
                 <th scope="col" class="py-2 pr-3">Turnus</th>
                 <th scope="col" class="py-2 pr-3">Imię i nazwisko</th>
                 <th scope="col" class="py-2 pr-3 text-right">Rabat</th>
-                <th scope="col" class="py-2 pr-3 text-right">Wpłacono</th>
+                <th scope="col" class="py-2 pr-3 text-right">Wpłacono netto</th>
                 <th scope="col" class="py-2 pr-3 text-right">Pozostało</th>
                 <th scope="col" class="py-2 pr-3">Status opłaty</th>
                 <th scope="col" class="py-2">Akcje</th>
@@ -368,7 +416,7 @@ onBeforeUnmount(() => { requestSequence++ })
                 <td class="py-2 pr-3">{{ registration.firstName || '–' }} {{ registration.lastName || '' }}</td>
                 <td class="py-2 pr-3 text-right">{{ registration.discount ? `−${formatMoney(registration.discount)}` : '–' }}</td>
                 <td class="py-2 pr-3 text-right">{{ formatMoney(paymentTotal(registration)) }}</td>
-                <td class="py-2 pr-3 text-right">{{ formatMoney(paymentBalance(registration)) }}</td>
+                <td class="py-2 pr-3 text-right">{{ registration.status === 'ACCEPTED' ? formatMoney(paymentBalance(registration)) : '—' }}</td>
                 <td class="py-2 pr-3"><span class="inline-flex whitespace-nowrap rounded-full border px-2.5 py-1 text-xs font-medium" :class="statusClass(registration)">{{ statusLabel(registration) }}</span></td>
                 <td class="py-2"><button type="button" class="rounded bg-slate-600 px-3 py-1 text-white hover:bg-slate-700" @click="openRegistration(registration)">Szczegóły</button></td>
               </tr>
@@ -419,15 +467,29 @@ onBeforeUnmount(() => { requestSequence++ })
                 <span class="inline-flex whitespace-nowrap rounded-full border px-2.5 py-1 text-xs font-medium" :class="statusClass(selectedRegistration)">{{ paymentStatusSummary(selectedRegistration) }}</span>
               </div>
               <p class="mt-1 font-mono text-xs text-slate-500">{{ selectedRegistration.registrationCode }}</p>
-              <p v-if="selectedRegistration.status !== 'ACCEPTED'" class="mt-1 text-xs font-medium text-amber-800">Zgłoszenie: {{ registrationStatusLabel(selectedRegistration.status) }}. Zachowano historię finansową.</p>
+              <p v-if="selectedRegistration.status === 'REJECTED'" class="mt-1 text-xs font-medium text-amber-800">Zgłoszenie odrzucono. Możesz rozliczyć wpłaty zapisane przed zmianą statusu.</p>
+              <p v-if="selectedRegistration.settlementChangedAt" class="mt-1 text-xs text-slate-500">
+                {{ selectedRegistration.settled ? 'Rozliczono' : 'Ostatnia zmiana rozliczenia' }} · {{ selectedRegistration.settlementActor }} · {{ selectedRegistration.settlementChangedAt }}<template v-if="selectedRegistration.settlementNote"> · {{ selectedRegistration.settlementNote }}</template>
+              </p>
+              <details v-if="selectedRegistration.settlementHistory?.length > 1" class="mt-1 text-xs">
+                <summary class="cursor-pointer text-slate-600 underline">Historia rozliczenia ({{ selectedRegistration.settlementHistory.length }})</summary>
+                <ol class="mt-2 space-y-1 rounded border border-slate-200 bg-slate-50 p-2">
+                  <li v-for="(entry, index) in selectedRegistration.settlementHistory" :key="`settlement-${index}`">
+                    {{ entry.settled ? 'Rozliczono' : 'Ponownie otwarto' }} · {{ entry.actorUsername }} · {{ entry.changedAt }}<template v-if="entry.note"> · {{ entry.note }}</template>
+                  </li>
+                </ol>
+              </details>
             </div>
             <button type="button" aria-label="Zamknij" class="rounded-lg px-2 py-1 text-xl leading-none text-slate-500 hover:bg-slate-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-500" @click="closeDialog">×</button>
           </header>
           <div class="space-y-5 px-5 py-5 sm:px-6">
             <section aria-labelledby="payment-history-heading">
               <div class="mb-2 flex flex-wrap items-center justify-between gap-2">
-                <h4 id="payment-history-heading" class="text-sm font-semibold text-slate-900">Zarejestrowane wpłaty</h4>
-                <button v-if="isPaymentEligible(selectedRegistration)" type="button" class="rounded-lg bg-slate-800 px-3 py-2 text-xs font-semibold text-white hover:bg-slate-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-500 focus-visible:ring-offset-2" @click="openPaymentForm()">Dodaj wpłatę</button>
+                <h4 id="payment-history-heading" class="text-sm font-semibold text-slate-900">Historia wpłat i zwrotów</h4>
+                <div class="flex flex-wrap gap-2">
+                  <button v-if="isPaymentEligible(selectedRegistration)" type="button" class="rounded-lg bg-slate-800 px-3 py-2 text-xs font-semibold text-white hover:bg-slate-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-500 focus-visible:ring-offset-2" @click="openPaymentForm()">Dodaj wpłatę</button>
+                  <button v-if="refundableTotal(selectedRegistration) > 0" type="button" class="rounded-lg border border-violet-300 bg-violet-50 px-3 py-2 text-xs font-semibold text-violet-900 hover:bg-violet-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-violet-500" @click="openRefundForm">Dodaj zwrot</button>
+                </div>
               </div>
               <p v-if="!selectedRegistration.payments.length" class="rounded-lg border border-dashed border-slate-300 px-4 py-5 text-center text-sm text-slate-500">Brak zarejestrowanych wpłat.</p>
               <div v-else class="overflow-x-auto rounded-lg border border-slate-200">
@@ -436,9 +498,9 @@ onBeforeUnmount(() => { requestSequence++ })
                   <tbody class="divide-y divide-slate-100">
                     <tr v-for="payment in selectedRegistration.payments" :key="payment.id">
                       <td class="whitespace-nowrap px-3 py-2.5 text-slate-700">{{ formatDate(payment.date) }}</td>
-                      <td class="px-3 py-2.5 text-slate-700">{{ payment.label || payment.note || 'Wpłata' }}</td>
+                      <td class="px-3 py-2.5 text-slate-700">{{ payment.entryType === 'REFUND' ? 'Zwrot · ' : '' }}{{ payment.label || payment.note || (payment.entryType === 'REFUND' ? 'Zwrot' : 'Wpłata') }}</td>
                       <td class="px-3 py-2.5 text-slate-700">{{ payment.method }}</td>
-                      <td class="whitespace-nowrap px-3 py-2.5 text-right font-medium text-slate-900">{{ formatMoney(payment.amount) }}</td>
+                      <td class="whitespace-nowrap px-3 py-2.5 text-right font-medium" :class="payment.entryType === 'REFUND' ? 'text-violet-800' : 'text-slate-900'">{{ payment.entryType === 'REFUND' ? '−' : '' }}{{ formatMoney(payment.amount) }}</td>
                       <td class="px-3 py-2.5 text-right">
                         <button type="button" class="rounded px-2 py-1 text-xs font-medium text-slate-700 underline hover:bg-slate-50 focus-visible:ring-2 focus-visible:ring-slate-500" @click="openPaymentForm(payment)">Edytuj</button>
                         <details v-if="payment.history?.length" class="mt-1 text-left">
@@ -470,13 +532,16 @@ onBeforeUnmount(() => { requestSequence++ })
               </article>
             </section>
             <div class="flex flex-wrap items-center justify-between gap-3 border-t border-slate-100 pt-4">
-              <button v-if="isPaymentEligible(selectedRegistration)" type="button" class="rounded-lg border border-slate-300 px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-500" @click="openDiscountForm">Edytuj rabat</button>
+              <div class="flex flex-wrap gap-2">
+                <button v-if="isPaymentEligible(selectedRegistration)" type="button" class="rounded-lg border border-slate-300 px-3 py-2 text-sm font-medium text-slate-700 hover:bg-slate-50 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-500" @click="openDiscountForm">Edytuj rabat</button>
+                <button v-if="selectedRegistration.status === 'REJECTED' && selectedRegistration.payments.length && !selectedRegistration.settled" type="button" :disabled="saving" class="rounded-lg bg-emerald-700 px-3 py-2 text-sm font-semibold text-white hover:bg-emerald-800 disabled:opacity-60" @click="settleSelectedRegistration">Oznacz jako rozliczone</button>
+              </div>
               <button type="button" class="rounded-lg px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-500" @click="closeDialog">Zamknij</button>
             </div>
 
             <form v-if="formMode" class="space-y-4 rounded-xl border border-slate-200 bg-slate-50 p-4" @submit.prevent="formMode === 'discount' ? saveDiscount() : savePayment()">
               <div class="flex items-center justify-between gap-2">
-                <h4 class="font-semibold text-slate-900">{{ formMode === 'discount' ? 'Rabat dla zgłoszenia' : formMode === 'edit-payment' ? 'Edycja wpłaty' : 'Nowa wpłata' }}</h4>
+                <h4 class="font-semibold text-slate-900">{{ formMode === 'discount' ? 'Rabat dla zgłoszenia' : formMode === 'add-refund' || formMode === 'edit-refund' ? (formMode === 'edit-refund' ? 'Edycja zwrotu' : 'Nowy zwrot') : formMode === 'edit-payment' ? 'Edycja wpłaty' : 'Nowa wpłata' }}</h4>
                 <button type="button" class="rounded px-2 py-1 text-sm text-slate-600 hover:bg-slate-200 focus-visible:ring-2 focus-visible:ring-slate-500" @click="formMode = ''; formError = ''">Anuluj</button>
               </div>
               <div v-if="formMode === 'discount'" class="grid gap-3 sm:grid-cols-2">
@@ -488,19 +553,20 @@ onBeforeUnmount(() => { requestSequence++ })
                 </label>
               </div>
               <div v-else class="grid gap-3 sm:grid-cols-2">
-                <label class="text-sm font-medium text-slate-700">Data wpłaty
+                <label class="text-sm font-medium text-slate-700">Data {{ formMode.includes('refund') ? 'zwrotu' : 'wpłaty' }}
                   <PolishDatePicker v-model="paymentForm.date" required />
                 </label>
                 <label class="text-sm font-medium text-slate-700">Kwota (zł)
                   <input v-model.number="paymentForm.amount" type="number" min="0.01" step="0.01" required class="mt-1 h-10 w-full rounded-lg border border-slate-300 px-3 text-sm focus:ring-2 focus:ring-slate-500" />
+                  <span v-if="formMode === 'add-refund'" class="mt-1 block text-xs font-normal text-slate-500">Maksymalny zwrot: {{ formatMoney(refundableTotal(selectedRegistration)) }}.</span>
                 </label>
                 <label class="text-sm font-medium text-slate-700">Metoda
                   <select v-model="paymentForm.method" class="mt-1 h-10 w-full rounded-lg border border-slate-300 bg-white px-3 text-sm focus:ring-2 focus:ring-slate-500"><option>Przelew</option><option>Gotówka</option></select>
                 </label>
-                <label class="text-sm font-medium text-slate-700">Opis wpłaty
+                <label class="text-sm font-medium text-slate-700">Opis {{ formMode.includes('refund') ? 'zwrotu' : 'wpłaty' }}
                   <select v-model="paymentForm.label" required class="mt-1 h-10 w-full rounded-lg border border-slate-300 bg-white px-3 text-sm focus:ring-2 focus:ring-slate-500">
                     <option value="" disabled>Wybierz opis</option>
-                    <option v-for="label in predefinedPaymentLabels" :key="label" :value="label">{{ label }}</option>
+                    <option v-for="label in (formMode.includes('refund') ? predefinedRefundLabels : predefinedPaymentLabels)" :key="label" :value="label">{{ label }}</option>
                     <option value="CUSTOM">Własny opis</option>
                   </select>
                 </label>
@@ -510,13 +576,13 @@ onBeforeUnmount(() => { requestSequence++ })
                 <label class="text-sm font-medium text-slate-700 sm:col-span-2">Uwagi <span class="font-normal text-slate-500">(opcjonalnie)</span>
                   <input v-model="paymentForm.note" type="text" maxlength="300" class="mt-1 h-10 w-full rounded-lg border border-slate-300 px-3 text-sm focus:ring-2 focus:ring-slate-500" />
                 </label>
-                <label v-if="formMode === 'edit-payment'" class="text-sm font-medium text-slate-700 sm:col-span-2">Powód korekty <span class="text-red-700">*</span>
+                <label v-if="formMode.startsWith('edit-')" class="text-sm font-medium text-slate-700 sm:col-span-2">Powód korekty <span class="text-red-700">*</span>
                   <input v-model="paymentForm.reason" type="text" maxlength="300" required placeholder="Krótki powód korekty" class="mt-1 h-10 w-full rounded-lg border border-slate-300 px-3 text-sm focus:ring-2 focus:ring-slate-500" />
                 </label>
               </div>
               <p v-if="formError" role="alert" class="text-sm text-red-700">{{ formError }}</p>
               <div class="flex justify-end">
-                <button type="submit" :disabled="saving" class="rounded-lg bg-slate-800 px-4 py-2 text-sm font-semibold text-white hover:bg-slate-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-500 focus-visible:ring-offset-2 disabled:cursor-wait disabled:opacity-60">{{ saving ? 'Zapisywanie…' : formMode === 'discount' ? 'Zapisz rabat' : formMode === 'edit-payment' ? 'Zapisz korektę' : 'Dodaj wpłatę' }}</button>
+                <button type="submit" :disabled="saving" class="rounded-lg bg-slate-800 px-4 py-2 text-sm font-semibold text-white hover:bg-slate-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-500 focus-visible:ring-offset-2 disabled:cursor-wait disabled:opacity-60">{{ saving ? 'Zapisywanie…' : formMode === 'discount' ? 'Zapisz rabat' : formMode.startsWith('edit-') ? 'Zapisz korektę' : formMode === 'add-refund' ? 'Dodaj zwrot' : 'Dodaj wpłatę' }}</button>
               </div>
             </form>
             <p v-if="demoMessage" role="status" class="rounded-lg border border-emerald-200 bg-emerald-50 px-3 py-2 text-sm text-emerald-900">{{ demoMessage }}</p>

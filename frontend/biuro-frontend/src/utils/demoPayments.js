@@ -148,12 +148,26 @@ export function isPaymentEligible(registration) {
 }
 
 export function hasPaymentHistory(registration) {
-  return Number(registration.fee) > 0 && (registration.payments?.length > 0 || Number(registration.discount) > 0)
+  return (registration.status || registration.registrationStatus) === 'REJECTED'
+    && Number(registration.fee) > 0
+    && registration.payments?.length > 0
 }
 
 export function paymentTotal(registration) {
-  const totalCents = registration.payments.reduce((total, payment) => total + Math.round(Number(payment.amount || 0) * 100), 0)
+  const totalCents = registration.payments.reduce((total, payment) => total + (payment.entryType === 'REFUND' ? -1 : 1) * Math.round(Number(payment.amount || 0) * 100), 0)
   return totalCents / 100
+}
+
+export function refundableTotal(registration) {
+  const totalCents = registration.payments.reduce((total, payment) => total + (payment.entryType === 'REFUND' ? -1 : 1) * Math.round(Number(payment.amount || 0) * 100), 0)
+  const netPaid = totalCents / 100
+  const status = registration.status || registration.registrationStatus
+  if (status === 'REJECTED') return Math.max(0, netPaid)
+  if (status === 'ACCEPTED') {
+    const amountDue = Math.max(0, Number(registration.fee || 0) - Number(registration.discount || 0))
+    return Math.max(0, netPaid - amountDue)
+  }
+  return 0
 }
 
 export function paymentBalance(registration) {
@@ -164,6 +178,9 @@ export function paymentBalance(registration) {
 }
 
 export function paymentStatus(registration) {
+  const registrationStatus = registration.status || registration.registrationStatus
+  if (registrationStatus === 'REJECTED' && registration.payments?.length > 0)
+    return registration.settled ? 'SETTLED' : 'SETTLEMENT_PENDING'
   const balance = paymentBalance(registration)
   if (balance < 0) return 'OVERPAID'
   if (balance === 0) {
