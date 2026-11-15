@@ -5,5 +5,5 @@ import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 
-public record PaymentRecord(Long id, LocalDate date, BigDecimal amount, String method, String label, String note,
+public record PaymentRecord(Long id, String entryType, LocalDate date, BigDecimal amount, String method, String label, String note,
                             LocalDateTime createdAt, String actorUsername, List<PaymentAuditEntry> history) {}

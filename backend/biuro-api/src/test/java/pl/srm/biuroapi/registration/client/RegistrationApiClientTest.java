@@ -15,6 +15,7 @@ import pl.srm.biuroapi.registration.api.StatusUpdateRequest;
 import pl.srm.biuroapi.registration.api.PaymentChangeRequest;
 
 import java.net.ConnectException;
+import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.List;
 
@@ -146,7 +147,8 @@ class RegistrationApiClientTest {
                 .andExpect(header("Idempotency-Key", "retry-key-1"))
                 .andExpect(content().json("""
                         {"date":"2026-11-01","amount":250.00,"method":"Przelew","label":"Zaliczka",
-                         "note":null,"correctionReason":null,"actorAccountId":"actor-id","actorUsername":"operator"}
+                         "note":null,"correctionReason":null,"actorAccountId":"actor-id","actorUsername":"operator",
+                         "expectedStatus":"ACCEPTED","minimumNetRetained":0.00}
                         """))
                 .andRespond(withSuccess("""
                         {"registrationId":1,"registrationCode":"ABC","payments":[],"discount":null}
@@ -157,6 +159,45 @@ class RegistrationApiClientTest {
                 "retry-key-1", "actor-id", "operator");
 
         assertEquals("ABC", result.registrationCode());
+        server.verify();
+    }
+
+    @Test
+    void refundForwardsExpectedStatusAndCurrentMinimumBalance() {
+        server.expect(requestTo("http://registration-api:8080/api/registrations/ABC/refunds"))
+                .andExpect(org.springframework.test.web.client.match.MockRestRequestMatchers.method(org.springframework.http.HttpMethod.POST))
+                .andExpect(header("Idempotency-Key", "refund-key-1"))
+                .andExpect(content().json("""
+                        {"date":"2026-11-03","amount":300.00,"method":"Przelew","label":"Zwrot wpłaty",
+                         "note":null,"actorAccountId":"actor-id","actorUsername":"operator",
+                         "expectedStatus":"ACCEPTED","minimumNetRetained":700.00}
+                        """))
+                .andRespond(withSuccess("{\"registrationId\":1,\"registrationCode\":\"ABC\",\"payments\":[],\"discount\":null}",
+                        MediaType.APPLICATION_JSON));
+
+        client.addRefund("ABC", new PaymentChangeRequest(LocalDate.of(2026, 11, 3), new BigDecimal("300.00"),
+                        "Przelew", "Zwrot wpłaty", null, null), "refund-key-1", "ACCEPTED",
+                new BigDecimal("700.00"), "actor-id", "operator");
+
+        server.verify();
+    }
+
+    @Test
+    void paymentCorrectionForwardsStatusAndCurrentRefundFloor() {
+        server.expect(requestTo("http://registration-api:8080/api/registrations/ABC/payments/7"))
+                .andExpect(org.springframework.test.web.client.match.MockRestRequestMatchers.method(org.springframework.http.HttpMethod.PUT))
+                .andExpect(content().json("""
+                        {"date":"2026-11-04","amount":500.00,"method":"Przelew","label":"Zwrot wpłaty",
+                         "note":null,"correctionReason":"Korekta","actorAccountId":"actor-id","actorUsername":"operator",
+                         "expectedStatus":"ACCEPTED","minimumNetRetained":700.00}
+                        """))
+                .andRespond(withSuccess("{\"registrationId\":1,\"registrationCode\":\"ABC\",\"payments\":[],\"discount\":null}",
+                        MediaType.APPLICATION_JSON));
+
+        client.editPayment("ABC", 7, new PaymentChangeRequest(LocalDate.of(2026, 11, 4), new BigDecimal("500.00"),
+                        "Przelew", "Zwrot wpłaty", null, "Korekta"), "ACCEPTED",
+                new BigDecimal("700.00"), "actor-id", "operator");
+
         server.verify();
     }
 

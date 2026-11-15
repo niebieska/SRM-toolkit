@@ -85,6 +85,21 @@ public class BiuroRegistrationController {
         return paymentRegisterService.add(code, request, idempotencyKey, actor);
     }
 
+    @PostMapping("/{code}/refunds")
+    public PaymentLedgerEntry addRefund(@PathVariable String code,
+            @Valid @RequestBody PaymentChangeRequest request,
+            @RequestHeader("Idempotency-Key") String idempotencyKey,
+            @AuthenticationPrincipal AccountPrincipal actor) {
+        return paymentRegisterService.refund(code, request, idempotencyKey, actor);
+    }
+
+    @PutMapping("/{code}/payment-settlement")
+    public PaymentLedgerEntry settlePayment(@PathVariable String code,
+            @Valid @RequestBody SettlementChangeRequest request,
+            @AuthenticationPrincipal AccountPrincipal actor) {
+        return paymentRegisterService.settle(code, request.note(), actor);
+    }
+
     @PutMapping("/{code}/payments/{paymentId}")
     public PaymentLedgerEntry editPayment(@PathVariable String code, @PathVariable long paymentId,
             @Valid @RequestBody PaymentChangeRequest request,

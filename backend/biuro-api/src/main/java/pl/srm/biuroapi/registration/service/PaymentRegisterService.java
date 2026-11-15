@@ -42,13 +42,51 @@ public class PaymentRegisterService {
     }
 
     public PaymentLedgerEntry add(String code, PaymentChangeRequest request, String idempotencyKey, AccountPrincipal actor) {
-        requireEligibleFee(code, false);
+        requireEligibleFee(code, true);
         return registrations.addPayment(code, request, idempotencyKey, actor.id(), actor.username());
     }
 
+    public PaymentLedgerEntry refund(String code, PaymentChangeRequest request, String idempotencyKey, AccountPrincipal actor) {
+        RegistrationSummary summary = registrations.fetchRegistrations().stream()
+                .filter(item -> item.registrationCode().equals(code)).findFirst()
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Nie znaleziono zgłoszenia."));
+        if (!"ACCEPTED".equals(summary.status()) && !"REJECTED".equals(summary.status()))
+            throw new ResponseStatusException(HttpStatus.CONFLICT, "Zwrot jest dostępny tylko przy nadpłacie zaakceptowanego zgłoszenia lub rozliczeniu zgłoszenia odrzuconego.");
+        BigDecimal fee = requireEligibleFee(code, false);
+        BigDecimal minimumNetRetained = BigDecimal.ZERO;
+        if ("ACCEPTED".equals(summary.status())) {
+            var ledger = registrations.fetchPaymentLedger().stream()
+                    .filter(item -> item.registrationId().equals(summary.registrationId())).findFirst()
+                    .orElseThrow(() -> new ResponseStatusException(HttpStatus.BAD_GATEWAY, "Nie można odczytać wpłat zgłoszenia."));
+            BigDecimal discount = ledger.discount() == null ? BigDecimal.ZERO : ledger.discount().amount();
+            minimumNetRetained = fee.subtract(discount).max(BigDecimal.ZERO);
+        }
+        return registrations.addRefund(code, request, idempotencyKey, summary.status(), minimumNetRetained,
+                actor.id(), actor.username());
+    }
+
+    public PaymentLedgerEntry settle(String code, String note, AccountPrincipal actor) {
+        return registrations.settlePayment(code, note, actor.id(), actor.username());
+    }
+
     public PaymentLedgerEntry edit(String code, long paymentId, PaymentChangeRequest request, AccountPrincipal actor) {
-        requireEligibleFee(code, false);
-        return registrations.editPayment(code, paymentId, request, actor.id(), actor.username());
+        RegistrationSummary summary = findRegistration(code);
+        if (!"ACCEPTED".equals(summary.status()) && !"REJECTED".equals(summary.status()))
+            throw new ResponseStatusException(HttpStatus.CONFLICT,
+                    "Korekty wpłat są dostępne dla zaakceptowanych lub odrzuconych zgłoszeń.");
+        BigDecimal minimumNetRetained = BigDecimal.ZERO;
+        if ("ACCEPTED".equals(summary.status())) {
+            BigDecimal fee = feeFor(summary);
+            var ledger = registrations.fetchPaymentLedger().stream()
+                    .filter(item -> item.registrationId().equals(summary.registrationId())).findFirst()
+                    .orElseThrow(() -> new ResponseStatusException(HttpStatus.BAD_GATEWAY, "Nie można odczytać wpłat zgłoszenia."));
+            BigDecimal discount = ledger.discount() == null ? BigDecimal.ZERO : ledger.discount().amount();
+            minimumNetRetained = fee.subtract(discount).max(BigDecimal.ZERO);
+        } else {
+            requireEligibleFee(code, false);
+        }
+        return registrations.editPayment(code, paymentId, request, summary.status(), minimumNetRetained,
+                actor.id(), actor.username());
     }
 
     public PaymentLedgerEntry discount(String code, DiscountChangeRequest request, AccountPrincipal actor) {
@@ -61,11 +99,19 @@ public class PaymentRegisterService {
     }
 
     private BigDecimal requireEligibleFee(String code, boolean requireAccepted) {
-        RegistrationSummary summary = registrations.fetchRegistrations().stream()
-                .filter(item -> item.registrationCode().equals(code)).findFirst()
-                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Nie znaleziono zgłoszenia."));
+        RegistrationSummary summary = findRegistration(code);
         if (requireAccepted && !"ACCEPTED".equals(summary.status()))
             throw new ResponseStatusException(HttpStatus.CONFLICT, "Wpłaty są dostępne tylko dla zaakceptowanych zgłoszeń.");
+        return feeFor(summary);
+    }
+
+    private RegistrationSummary findRegistration(String code) {
+        return registrations.fetchRegistrations().stream()
+                .filter(item -> item.registrationCode().equals(code)).findFirst()
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND, "Nie znaleziono zgłoszenia."));
+    }
+
+    private BigDecimal feeFor(RegistrationSummary summary) {
         var turnus = turnuses.get(summary.turnusCode());
         BigDecimal fee;
         if ("PARTICIPANT".equals(summary.registrationType())) {
@@ -90,13 +136,20 @@ public class PaymentRegisterService {
         else if ("STAFF".equals(summary.registrationType())) fee = staffFee(turnus, summary.role(), summary.subrole());
         else return null;
         if (fee == null || fee.signum() <= 0) return null;
-        if (!"ACCEPTED".equals(summary.status()) && ledger.payments().isEmpty() && ledger.discount() == null) return null;
+        boolean accepted = "ACCEPTED".equals(summary.status());
+        boolean rejectedWithPaymentHistory = "REJECTED".equals(summary.status()) && !ledger.payments().isEmpty();
+        if (!accepted && !rejectedWithPaymentHistory) return null;
         var discount = ledger.discount();
         return new PaymentRegisterRow(summary.registrationId(), summary.registrationCode(),
                 summary.registrationType(), summary.status(), summary.turnusCode(), turnus.turnusName(), summary.firstName(), summary.lastName(),
                 summary.role(), summary.subrole(), fee, discount == null ? BigDecimal.ZERO : discount.amount(),
                 discount == null ? null : discount.description(), discount == null ? null : discount.changedAt().toString(),
-                discount == null ? null : discount.actorUsername(), ledger.payments());
+                discount == null ? null : discount.actorUsername(), ledger.payments(),
+                ledger.settlement() != null && ledger.settlement().settled(),
+                ledger.settlement() == null ? null : ledger.settlement().note(),
+                ledger.settlement() == null || ledger.settlement().changedAt() == null ? null : ledger.settlement().changedAt().toString(),
+                ledger.settlement() == null ? null : ledger.settlement().actorUsername(),
+                ledger.settlement() == null ? java.util.List.of() : ledger.settlement().history());
     }
 
     private BigDecimal staffFee(TurnusDefinition turnus, String role, String subrole) {
