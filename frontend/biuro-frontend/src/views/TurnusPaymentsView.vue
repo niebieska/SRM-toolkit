@@ -86,34 +86,34 @@ function formatTimestamp(value) {
 }
 function statusLabel(registration) {
   return ({
-    SETTLEMENT_PENDING: 'Do rozliczenia',
-    SETTLED: 'Rozliczono',
+    SETTLEMENT_PENDING: 'Rozliczenie wymagane',
+    SETTLED: 'Rozliczenie zakończone',
     NO_PAYMENT: 'Brak wpłaty',
     OWED: 'Do dopłaty',
-    PAID: 'Opłacone',
+    PAID: 'Opłacono',
     OVERPAID: 'Nadpłata',
-    DISCOUNT_SETTLED: 'Rozliczono rabatem',
+    DISCOUNT_SETTLED: 'Pokryto rabatem',
   })[paymentStatus(registration)]
 }
 function paymentStatusSummary(registration) {
   const status = paymentStatus(registration)
-  if (status === 'SETTLEMENT_PENDING') return 'Do rozliczenia'
-  if (status === 'SETTLED') return 'Rozliczono'
+  if (status === 'SETTLEMENT_PENDING') return 'Rozliczenie wymagane'
+  if (status === 'SETTLED') return 'Rozliczenie zakończone'
   if (status === 'NO_PAYMENT') return `Brak wpłaty: ${formatMoney(paymentBalance(registration))}`
   if (status === 'OWED') return `Do dopłaty: ${formatMoney(paymentBalance(registration))}`
   if (status === 'OVERPAID') return `Nadpłata: ${formatMoney(Math.abs(paymentBalance(registration)))}`
-  if (status === 'DISCOUNT_SETTLED') return 'Rozliczono rabatem'
+  if (status === 'DISCOUNT_SETTLED') return 'Pokryto rabatem'
   return 'Opłacono'
 }
 function statusClass(registration) {
   return ({
     SETTLEMENT_PENDING: 'border-amber-200 bg-amber-50 text-amber-900',
-    SETTLED: 'border-emerald-200 bg-emerald-50 text-emerald-800',
+    SETTLED: 'border-blue-200 bg-blue-50 text-blue-800',
     NO_PAYMENT: 'border-red-200 bg-red-50 text-red-800',
     OWED: 'border-amber-200 bg-amber-50 text-amber-900',
     PAID: 'border-emerald-200 bg-emerald-50 text-emerald-800',
     OVERPAID: 'border-violet-200 bg-violet-50 text-violet-800',
-    DISCOUNT_SETTLED: 'border-slate-200 bg-slate-100 text-slate-700',
+    DISCOUNT_SETTLED: 'border-green-200 bg-green-50 text-green-800',
   })[paymentStatus(registration)]
 }
 function openRegistration(registration) {
@@ -359,20 +359,16 @@ onBeforeUnmount(() => { requestSequence++ })
         {{ error }} <button type="button" class="ml-2 rounded underline focus-visible:ring-2 focus-visible:ring-red-600" @click="loadPayments">Spróbuj ponownie</button>
       </div>
       <template v-else>
-        <div class="flex justify-end">
-          <button type="button" class="whitespace-nowrap rounded bg-slate-600 px-3 py-1 text-sm text-white hover:bg-slate-700" @click="openRegistrationLookup">Dodaj wpłatę</button>
-        </div>
-
         <section class="grid grid-cols-1 gap-3 rounded-xl bg-white p-4 shadow md:grid-cols-2 lg:grid-cols-[repeat(4,minmax(0,1fr))_auto]">
-          <select v-model="statusFilter" aria-label="Status opłaty" class="min-w-0 rounded border border-slate-300 px-3 py-2">
+          <select v-model="statusFilter" aria-label="Status" class="min-w-0 rounded border border-slate-300 px-3 py-2">
             <option value="">Wszystkie statusy</option>
             <option value="NO_PAYMENT">Brak wpłaty</option>
             <option value="OWED">Do dopłaty</option>
-            <option value="PAID">Opłacone</option>
+            <option value="PAID">Opłacono</option>
             <option value="OVERPAID">Nadpłata</option>
-            <option value="DISCOUNT_SETTLED">Rozliczono rabatem</option>
-            <option value="SETTLEMENT_PENDING">Do rozliczenia</option>
-            <option value="SETTLED">Rozliczono</option>
+            <option value="DISCOUNT_SETTLED">Pokryto rabatem</option>
+            <option value="SETTLEMENT_PENDING">Rozliczenie wymagane</option>
+            <option value="SETTLED">Rozliczenie zakończone</option>
           </select>
           <select v-model="registrationTypeFilter" aria-label="Typ zgłoszenia" class="min-w-0 rounded border border-slate-300 px-3 py-2">
             <option value="">Wszystkie typy</option>
@@ -394,18 +390,23 @@ onBeforeUnmount(() => { requestSequence++ })
 
         <section class="overflow-x-auto rounded-xl bg-white p-4 shadow">
           <div v-if="!visibleRegistrations.length" class="p-8 text-center text-sm text-slate-600">Brak zgłoszeń pasujących do wyszukiwania i filtra.</div>
-          <table v-else class="w-full min-w-[1050px] whitespace-nowrap text-left text-sm">
+          <table v-else class="w-max min-w-[1050px] whitespace-nowrap text-left text-sm">
             <thead>
               <tr class="border-b border-slate-200 text-left">
                 <th scope="col" class="py-2 pr-3">Kod zgłoszenia</th>
                 <th scope="col" class="py-2 pr-3">Typ</th>
                 <th scope="col" class="py-2 pr-3">Turnus</th>
-                <th scope="col" class="py-2 pr-3">Imię i nazwisko</th>
+                <th scope="col" class="w-[180px] max-w-[180px] whitespace-normal py-2 pr-3">Imię i nazwisko</th>
                 <th scope="col" class="py-2 pr-3 text-right">Rabat</th>
-                <th scope="col" class="py-2 pr-3 text-right">Wpłacono netto</th>
+                <th scope="col" class="py-2 pr-3 text-right">Wpłacono</th>
                 <th scope="col" class="py-2 pr-3 text-right">Pozostało</th>
-                <th scope="col" class="py-2 pr-3">Status opłaty</th>
-                <th scope="col" class="py-2">Akcje</th>
+                <th scope="col" class="py-2 pr-3">Status</th>
+                <th scope="col" class="py-2 pr-8">
+                  <div class="flex items-center justify-between gap-3">
+                    <span>Akcje</span>
+                    <button type="button" class="-translate-y-0.5 translate-x-8 whitespace-nowrap rounded-lg bg-slate-800 px-4 py-2 text-sm font-semibold text-white hover:bg-slate-900 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-500 focus-visible:ring-offset-2" @click="openRegistrationLookup">+ Dodaj wpłatę</button>
+                  </div>
+                </th>
               </tr>
             </thead>
             <tbody>
@@ -413,7 +414,7 @@ onBeforeUnmount(() => { requestSequence++ })
                 <td class="py-2 pr-3">{{ registration.registrationCode }}<span v-if="registration.status !== 'ACCEPTED'" class="mt-1 block text-xs text-slate-500">Zgłoszenie: {{ registrationStatusLabel(registration.status) }}</span></td>
                 <td class="py-2 pr-3">{{ registration.registrationType === 'PARTICIPANT' ? 'Uczestnik' : 'Kadra' }}</td>
                 <td class="py-2 pr-3">{{ registration.turnusCode }}</td>
-                <td class="py-2 pr-3">{{ registration.firstName || '–' }} {{ registration.lastName || '' }}</td>
+                <td class="w-[180px] max-w-[180px] whitespace-normal break-words py-2 pr-3">{{ registration.firstName || '–' }} {{ registration.lastName || '' }}</td>
                 <td class="py-2 pr-3 text-right">{{ registration.discount ? `−${formatMoney(registration.discount)}` : '–' }}</td>
                 <td class="py-2 pr-3 text-right">{{ formatMoney(paymentTotal(registration)) }}</td>
                 <td class="py-2 pr-3 text-right">{{ registration.status === 'ACCEPTED' ? formatMoney(paymentBalance(registration)) : '—' }}</td>
@@ -421,8 +422,13 @@ onBeforeUnmount(() => { requestSequence++ })
                 <td class="py-2"><button type="button" class="rounded bg-slate-600 px-3 py-1 text-white hover:bg-slate-700" @click="openRegistration(registration)">Szczegóły</button></td>
               </tr>
             </tbody>
+            <tfoot>
+              <tr>
+                <td colspan="9" class="border-t border-slate-100 px-4 py-3 text-xs text-slate-500">{{ visibleRegistrations.length }} z {{ scopedRegistrations.length }} zgłoszeń z opłatą lub zapisaną historią wpłat</td>
+              </tr>
+            </tfoot>
           </table>
-          <p class="border-t border-slate-100 px-4 py-3 text-xs text-slate-500">{{ visibleRegistrations.length }} z {{ scopedRegistrations.length }} zgłoszeń z opłatą lub zapisaną historią wpłat</p>
+          <p v-if="!visibleRegistrations.length" class="border-t border-slate-100 px-4 py-3 text-xs text-slate-500">{{ visibleRegistrations.length }} z {{ scopedRegistrations.length }} zgłoszeń z opłatą lub zapisaną historią wpłat</p>
         </section>
       </template>
 
@@ -469,13 +475,13 @@ onBeforeUnmount(() => { requestSequence++ })
               <p class="mt-1 font-mono text-xs text-slate-500">{{ selectedRegistration.registrationCode }}</p>
               <p v-if="selectedRegistration.status === 'REJECTED'" class="mt-1 text-xs font-medium text-amber-800">Zgłoszenie odrzucono. Możesz rozliczyć wpłaty zapisane przed zmianą statusu.</p>
               <p v-if="selectedRegistration.settlementChangedAt" class="mt-1 text-xs text-slate-500">
-                {{ selectedRegistration.settled ? 'Rozliczono' : 'Ostatnia zmiana rozliczenia' }} · {{ selectedRegistration.settlementActor }} · {{ selectedRegistration.settlementChangedAt }}<template v-if="selectedRegistration.settlementNote"> · {{ selectedRegistration.settlementNote }}</template>
+                {{ selectedRegistration.settled ? 'Rozliczenie zakończone' : 'Ostatnia zmiana rozliczenia' }} · {{ selectedRegistration.settlementActor }} · {{ selectedRegistration.settlementChangedAt }}<template v-if="selectedRegistration.settlementNote"> · {{ selectedRegistration.settlementNote }}</template>
               </p>
               <details v-if="selectedRegistration.settlementHistory?.length > 1" class="mt-1 text-xs">
                 <summary class="cursor-pointer text-slate-600 underline">Historia rozliczenia ({{ selectedRegistration.settlementHistory.length }})</summary>
                 <ol class="mt-2 space-y-1 rounded border border-slate-200 bg-slate-50 p-2">
                   <li v-for="(entry, index) in selectedRegistration.settlementHistory" :key="`settlement-${index}`">
-                    {{ entry.settled ? 'Rozliczono' : 'Ponownie otwarto' }} · {{ entry.actorUsername }} · {{ entry.changedAt }}<template v-if="entry.note"> · {{ entry.note }}</template>
+                    {{ entry.settled ? 'Rozliczenie zakończone' : 'Rozliczenie ponownie otwarte' }} · {{ entry.actorUsername }} · {{ entry.changedAt }}<template v-if="entry.note"> · {{ entry.note }}</template>
                   </li>
                 </ol>
               </details>
@@ -539,7 +545,7 @@ onBeforeUnmount(() => { requestSequence++ })
               <button type="button" class="rounded-lg px-4 py-2 text-sm font-semibold text-slate-700 hover:bg-slate-100 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-slate-500" @click="closeDialog">Zamknij</button>
             </div>
 
-            <form v-if="formMode" class="space-y-4 rounded-xl border border-slate-200 bg-slate-50 p-4" @submit.prevent="formMode === 'discount' ? saveDiscount() : savePayment()">
+            <form v-if="formMode" novalidate class="space-y-4 rounded-xl border border-slate-200 bg-slate-50 p-4" @submit.prevent="formMode === 'discount' ? saveDiscount() : savePayment()">
               <div class="flex items-center justify-between gap-2">
                 <h4 class="font-semibold text-slate-900">{{ formMode === 'discount' ? 'Rabat dla zgłoszenia' : formMode === 'add-refund' || formMode === 'edit-refund' ? (formMode === 'edit-refund' ? 'Edycja zwrotu' : 'Nowy zwrot') : formMode === 'edit-payment' ? 'Edycja wpłaty' : 'Nowa wpłata' }}</h4>
                 <button type="button" class="rounded px-2 py-1 text-sm text-slate-600 hover:bg-slate-200 focus-visible:ring-2 focus-visible:ring-slate-500" @click="formMode = ''; formError = ''">Anuluj</button>
@@ -557,7 +563,7 @@ onBeforeUnmount(() => { requestSequence++ })
                   <PolishDatePicker v-model="paymentForm.date" required />
                 </label>
                 <label class="text-sm font-medium text-slate-700">Kwota (zł)
-                  <input v-model.number="paymentForm.amount" type="number" min="0.01" step="0.01" required class="mt-1 h-10 w-full rounded-lg border border-slate-300 px-3 text-sm focus:ring-2 focus:ring-slate-500" />
+                  <input v-model.number="paymentForm.amount" type="number" min="0" step="50" required class="mt-1 h-10 w-full rounded-lg border border-slate-300 px-3 text-sm focus:ring-2 focus:ring-slate-500" />
                   <span v-if="formMode === 'add-refund'" class="mt-1 block text-xs font-normal text-slate-500">Maksymalny zwrot: {{ formatMoney(refundableTotal(selectedRegistration)) }}.</span>
                 </label>
                 <label class="text-sm font-medium text-slate-700">Metoda
