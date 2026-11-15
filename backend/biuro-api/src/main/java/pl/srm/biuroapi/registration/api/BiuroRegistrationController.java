@@ -11,6 +11,9 @@ import pl.srm.biuroapi.registration.model.RegistrationDetail;
 import pl.srm.biuroapi.registration.model.RegistrationSummary;
 import pl.srm.biuroapi.registration.model.TurnusRegistrationStats;
 import pl.srm.biuroapi.registration.service.RegistrationStatisticsService;
+import pl.srm.biuroapi.registration.service.PaymentRegisterService;
+import pl.srm.biuroapi.registration.model.PaymentLedgerEntry;
+import pl.srm.biuroapi.registration.model.PaymentRegisterRow;
 import pl.srm.biuroapi.turnus.TurnusCatalogue;
 import pl.srm.biuroapi.turnus.TurnusDefinition;
 import tools.jackson.databind.JsonNode;
@@ -27,15 +30,18 @@ public class BiuroRegistrationController {
     private final RegistrationApiClient registrationApiClient;
     private final RegistrationStatisticsService statisticsService;
     private final TurnusCatalogue turnusCatalogue;
+    private final PaymentRegisterService paymentRegisterService;
     // The current deployment runs one Biuro API instance; serialize every capacity-changing request.
     private final Object capacityWriteLock = new Object();
 
     public BiuroRegistrationController(RegistrationApiClient registrationApiClient,
                                        RegistrationStatisticsService statisticsService,
-                                       TurnusCatalogue turnusCatalogue) {
+                                       TurnusCatalogue turnusCatalogue,
+                                       PaymentRegisterService paymentRegisterService) {
         this.registrationApiClient = registrationApiClient;
         this.statisticsService = statisticsService;
         this.turnusCatalogue = turnusCatalogue;
+        this.paymentRegisterService = paymentRegisterService;
     }
 
     @GetMapping
@@ -66,6 +72,46 @@ public class BiuroRegistrationController {
     @GetMapping("/{code}")
     public RegistrationDetail getRegistration(@PathVariable String code) {
         return registrationApiClient.fetchRegistration(code);
+    }
+
+    @GetMapping("/payments")
+    public List<PaymentRegisterRow> getPayments() { return paymentRegisterService.list(); }
+
+    @PostMapping("/{code}/payments")
+    public PaymentLedgerEntry addPayment(@PathVariable String code,
+            @Valid @RequestBody PaymentChangeRequest request,
+            @RequestHeader("Idempotency-Key") String idempotencyKey,
+            @AuthenticationPrincipal AccountPrincipal actor) {
+        return paymentRegisterService.add(code, request, idempotencyKey, actor);
+    }
+
+    @PostMapping("/{code}/refunds")
+    public PaymentLedgerEntry addRefund(@PathVariable String code,
+            @Valid @RequestBody PaymentChangeRequest request,
+            @RequestHeader("Idempotency-Key") String idempotencyKey,
+            @AuthenticationPrincipal AccountPrincipal actor) {
+        return paymentRegisterService.refund(code, request, idempotencyKey, actor);
+    }
+
+    @PutMapping("/{code}/payment-settlement")
+    public PaymentLedgerEntry settlePayment(@PathVariable String code,
+            @Valid @RequestBody SettlementChangeRequest request,
+            @AuthenticationPrincipal AccountPrincipal actor) {
+        return paymentRegisterService.settle(code, request.note(), actor);
+    }
+
+    @PutMapping("/{code}/payments/{paymentId}")
+    public PaymentLedgerEntry editPayment(@PathVariable String code, @PathVariable long paymentId,
+            @Valid @RequestBody PaymentChangeRequest request,
+            @AuthenticationPrincipal AccountPrincipal actor) {
+        return paymentRegisterService.edit(code, paymentId, request, actor);
+    }
+
+    @PutMapping("/{code}/discount")
+    public PaymentLedgerEntry setDiscount(@PathVariable String code,
+            @Valid @RequestBody DiscountChangeRequest request,
+            @AuthenticationPrincipal AccountPrincipal actor) {
+        return paymentRegisterService.discount(code, request, actor);
     }
 
     @PatchMapping("/{code}/status")

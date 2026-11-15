@@ -7,14 +7,16 @@ import DiscardChangesDialog from '../components/DiscardChangesDialog.vue'
 import { createDiscardConfirmation } from '../utils/discardConfirmation'
 import { validateTurnusForm } from '../utils/turnusFormValidation'
 import { useAuthStore } from '../stores/auth'
-import { createTurnus, fetchTurnus, updateTurnus, fetchStaffingCategories } from '../api/turnusApi'
+import { createTurnus, fetchTurnus, updateTurnus, fetchStaffingCategories, fetchStaffFeeOptions } from '../api/turnusApi'
 import { requirementCount, withRequirement } from '../utils/staffRequirements'
 import { nextTurnusCacheRefreshTime } from '../utils/turnusCacheSchedule'
 import { defaultWinterSeasonYear } from '../utils/turnusDefaults'
+import { hasStaffFee, staffFeeAmount, visibleStaffFeeOptions, withStaffFee, withoutStaffFee } from '../utils/staffFees'
 const { prompt: discardPrompt, confirm: confirmDiscard, decide: decideDiscard } = createDiscardConfirmation()
 const formElement = ref(null), fieldErrors = ref({})
 const categories = ref([]), categoriesLoading = ref(false), categoriesError = ref('')
-let categorySequence = 0
+const feeOptions = ref([]), feeOptionsLoading = ref(false), feeOptionsError = ref('')
+let categorySequence = 0, feeOptionSequence = 0
 const route = useRoute(), router = useRouter(), auth = useAuthStore()
 const isNew = computed(() => route.name === 'turnus-create')
 const form = reactive({})
@@ -24,6 +26,8 @@ const loading = ref(false), loaded = ref(false), saving = ref(false), conflict =
 let loadSequence = 0
 let createdTurnusCode = null
 const dirty = computed(() => loaded.value && JSON.stringify(form) !== original.value)
+const feesReadOnly = computed(() => !isNew.value && form.feesConfigured)
+const visibleFeeOptions = computed(() => visibleStaffFeeOptions(feeOptions.value, form.seasonType, form.staffFees))
 const plannedStaff = computed(() => (form.staffRequirements || []).reduce((total, item) =>
   total + (Number.isInteger(item.requiredCount) && item.requiredCount > 0 ? item.requiredCount : 0), 0))
 const status = computed(() => !form.active ? 'Nieaktywny' : 'Aktywny')
@@ -36,10 +40,14 @@ watch(dirty, hasUnsavedChanges => {
 function defaults() {
   return { turnusCode: '', turnusName: '', turnusDescription: '', turnusLocation: '', seasonType: 'WINTER',
     seasonYear: defaultWinterSeasonYear(), startDate: '', endDate: '', minAge: 14, participantCapacity: 50, staffCapacity: 10,
-    active: false, participantRegistrationOpen: false, staffRegistrationOpen: false, version: null, staffRequirements: [] }
+    active: false, participantRegistrationOpen: false, staffRegistrationOpen: false, version: null, staffRequirements: [], participantFee: '', staffFees: [], feesConfigured: false }
 }
 function apply(value) {
-  Object.assign(form, defaults(), value, { turnusDescription: value.turnusDescription ?? '', staffRequirements: (value.staffRequirements || []).map(item => ({ ...item })) })
+  Object.assign(form, defaults(), value, {
+    turnusDescription: value.turnusDescription ?? '',
+    staffRequirements: (value.staffRequirements || []).map(item => ({ ...item })),
+    staffFees: (value.staffFees || []).map(item => ({ ...item })),
+  })
   fieldErrors.value = {}
   validationError.value = ''
   original.value = JSON.stringify(form)
@@ -69,7 +77,7 @@ function beforeUnload(event) {
   if (dirty.value || saving.value) { event.preventDefault(); event.returnValue = '' }
 }
 onMounted(() => window.addEventListener('beforeunload', beforeUnload))
-onBeforeUnmount(() => { window.removeEventListener('beforeunload', beforeUnload); categorySequence++; loadSequence++; decideDiscard(false) })
+onBeforeUnmount(() => { window.removeEventListener('beforeunload', beforeUnload); categorySequence++; feeOptionSequence++; loadSequence++; decideDiscard(false) })
 onBeforeRouteLeave(canLeave)
 onBeforeRouteUpdate(canLeave)
 watch(() => route.fullPath, () => {
@@ -92,16 +100,46 @@ async function loadCategories() {
   finally { if (sequence === categorySequence) categoriesLoading.value = false }
 }
 watch(() => form.seasonType, loadCategories, { immediate: true })
+async function loadFeeOptions() {
+  if (!form.seasonType) return
+  const sequence = ++feeOptionSequence
+  feeOptionsLoading.value = true
+  feeOptionsError.value = ''
+  feeOptions.value = []
+  try {
+    const value = await fetchStaffFeeOptions(auth.token, form.seasonType)
+    if (!Array.isArray(value)) throw new Error('Nieprawidłowa lista opcji opłat kadry.')
+    if (sequence === feeOptionSequence) feeOptions.value = value
+  } catch (e) { if (sequence === feeOptionSequence) feeOptionsError.value = e.message }
+  finally { if (sequence === feeOptionSequence) feeOptionsLoading.value = false }
+}
+watch(() => form.seasonType, (season, previousSeason) => {
+  if (previousSeason && season !== previousSeason && dirty.value && !form.feesConfigured) form.staffFees = []
+  loadFeeOptions()
+}, { immediate: true })
 function setRequirement(code, value) {
   form.staffRequirements = withRequirement(form.staffRequirements, code, value)
   if (fieldErrors.value.staffRequirements) validateField('staffRequirements')
+}
+function staffFeeLabel(option) {
+  return option.subroleLabel ? `${option.roleLabel} — ${option.subroleLabel}` : option.roleLabel
+}
+function setStaffFeeEnabled(option, enabled) {
+  form.staffFees = enabled
+    ? withStaffFee(form.staffFees, option, '')
+    : withoutStaffFee(form.staffFees, option)
+  validateField('staffFees')
+}
+function updateStaffFee(option, value) {
+  form.staffFees = withStaffFee(form.staffFees, option, value)
+  if (fieldErrors.value.staffFees) validateField('staffFees')
 }
 async function reload() {
   if (saving.value || (dirty.value && !await confirmDiscard('reload'))) return
   await load()
 }
 function validateField(name) {
-  const errors = validateTurnusForm(form, categories.value)
+  const errors = validateTurnusForm(form, categories.value, feeOptions.value)
   if (errors[name]) fieldErrors.value[name] = errors[name]
   else delete fieldErrors.value[name]
   if (!Object.keys(errors).length) validationError.value = ''
@@ -116,9 +154,9 @@ function descriptionId(name, help = false) {
   return fieldErrors.value[name] ? `${name}-error` : help ? `${name}-help` : undefined
 }
 async function save() {
-  if (saving.value || categoriesLoading.value || categoriesError.value) return
+  if (saving.value || categoriesLoading.value || categoriesError.value || feeOptionsLoading.value || feeOptionsError.value) return
   error.value = ''; validationError.value = ''; success.value = ''; nextCacheRefreshAt.value = ''
-  fieldErrors.value = validateTurnusForm(form, categories.value)
+  fieldErrors.value = validateTurnusForm(form, categories.value, feeOptions.value)
   if (Object.keys(fieldErrors.value).length) {
     validationError.value = 'Sprawdź zaznaczone pola przed zapisaniem turnusu.'
     const name = Object.keys(fieldErrors.value)[0]
@@ -127,8 +165,23 @@ async function save() {
   }
   saving.value = true
   try {
-    const payload = { ...form, turnusDescription: form.turnusDescription.trim() || null }
     const created = isNew.value
+    const payload = {
+      ...form,
+      participantFee: Number(form.participantFee),
+      staffFees: form.staffFees.map(item => ({ ...item, amount: Number(item.amount) })),
+      turnusDescription: form.turnusDescription.trim() || null,
+    }
+    if (!created && !form.feesConfigured) {
+      const originalForm = JSON.parse(original.value)
+      const participantFeeChanged = Number(form.participantFee) !== Number(originalForm.participantFee ?? 0)
+      const staffFeesChanged = JSON.stringify(form.staffFees) !== JSON.stringify(originalForm.staffFees || [])
+      if (!participantFeeChanged && !staffFeesChanged) {
+        delete payload.participantFee
+        delete payload.staffFees
+      }
+    }
+    delete payload.feesConfigured
     const value = created ? await createTurnus(auth.token, payload) : await updateTurnus(auth.token, route.params.code, payload)
     apply(value)
     conflict.value = false
@@ -173,6 +226,7 @@ async function save() {
       <nav v-if="!isNew && loaded" aria-label="Sekcje turnusu" class="flex gap-1 border-b border-slate-200 text-sm">
         <RouterLink :to="{ name: 'turnus-detail', params: { code: form.turnusCode } }" aria-current="page" class="border-b-2 border-slate-800 px-4 py-2 font-semibold text-slate-900">Szczegóły</RouterLink>
         <RouterLink :to="{ name: 'turnus-lists', params: { code: form.turnusCode } }" class="rounded-t px-4 py-2 text-slate-600 hover:bg-white focus-visible:ring-2 focus-visible:ring-slate-500">Listy</RouterLink>
+        <RouterLink :to="{ name: 'turnus-payments', params: { code: form.turnusCode } }" class="rounded-t px-4 py-2 text-slate-600 hover:bg-white focus-visible:ring-2 focus-visible:ring-slate-500">Wpłaty</RouterLink>
       </nav>
       <p v-if="loading" role="status" class="turnus-card text-center text-sm text-slate-600">Wczytywanie turnusu…</p>
       <div v-if="error || validationError" role="alert" class="rounded-xl border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-800">
@@ -203,7 +257,7 @@ async function save() {
                     <input id="turnusLocation" name="turnusLocation" v-model="form.turnusLocation" type="text" maxlength="500" placeholder="Miejscowość i ośrodek" class="turnus-control" required :aria-invalid="!!fieldErrors.turnusLocation" :aria-describedby="descriptionId('turnusLocation', false)" />
                   </TurnusFormField>
                   <TurnusFormField id="seasonType" label="Sezon" required :error="fieldErrors.seasonType">
-                    <select id="seasonType" name="seasonType" v-model="form.seasonType" class="turnus-control" required :aria-invalid="!!fieldErrors.seasonType" :aria-describedby="descriptionId('seasonType')"><option value="SUMMER">Lato</option><option value="WINTER">Zima</option></select>
+                    <select id="seasonType" name="seasonType" v-model="form.seasonType" class="turnus-control" required :disabled="feesReadOnly" :aria-invalid="!!fieldErrors.seasonType" :aria-describedby="descriptionId('seasonType', feesReadOnly)"><option value="SUMMER">Lato</option><option value="WINTER">Zima</option></select>
                   </TurnusFormField>
                   <TurnusFormField id="seasonYear" label="Rok sezonu" required :error="fieldErrors.seasonYear">
                     <input id="seasonYear" name="seasonYear" v-model.number="form.seasonYear" type="number" min="2000" max="9999" step="1" class="turnus-control" required :aria-invalid="!!fieldErrors.seasonYear" :aria-describedby="descriptionId('seasonYear', false)" />
@@ -244,6 +298,40 @@ async function save() {
                   </span>
                 </label>
               </div>
+            </section>
+            <section aria-labelledby="turnus-fees-heading" class="turnus-card">
+              <h3 id="turnus-fees-heading" class="text-base font-semibold text-slate-900">Opłaty turnusu</h3>
+              <p class="mt-1 text-xs leading-relaxed text-slate-600">Opłaty ustala się przy tworzeniu turnusu lub przy pierwszym uzupełnieniu. Późniejszą obniżkę rozlicz rabatem dla zgłoszenia.</p>
+              <div class="mt-4 grid grid-cols-1 items-start gap-6 sm:grid-cols-2">
+                <div>
+                  <label for="participantFee" class="block text-sm font-medium text-slate-700">Opłata uczestnika (zł)</label>
+                  <input id="participantFee" name="participantFee" v-model.number="form.participantFee" type="number" min="0" max="99999999.99" step="50" :disabled="feesReadOnly" class="turnus-number mt-1 w-20" required :aria-invalid="!!fieldErrors.participantFee" :aria-describedby="descriptionId('participantFee', true)" />
+                  <p v-if="!fieldErrors.participantFee && !feesReadOnly" id="participantFee-help" class="mt-1 text-xs text-slate-600">Wpisz kwotę lub 0 zł, jeśli uczestnik nie wnosi opłaty. Po utworzeniu turnusu stawki będą zablokowane.</p>
+                  <p v-if="fieldErrors.participantFee" id="participantFee-error" class="mt-1.5 text-sm text-red-700">{{ fieldErrors.participantFee }}</p>
+                </div>
+                <div>
+                  <h4 class="text-sm font-medium text-slate-700">Opłata kadry</h4>
+                  <p v-if="feeOptionsLoading" role="status" class="mt-2 text-sm text-slate-600">Wczytywanie ról i funkcji…</p>
+                  <div v-else-if="feeOptionsError" role="alert" class="mt-2 text-sm text-red-700">{{ feeOptionsError }} <button type="button" class="rounded font-medium underline focus-visible:ring-2 focus-visible:ring-slate-500" @click="loadFeeOptions">Spróbuj ponownie</button></div>
+                  <template v-else>
+                    <div class="mt-2 divide-y divide-slate-100">
+                      <div v-for="option in visibleFeeOptions" :key="`${option.role}:${option.subrole || ''}`" class="flex min-w-0 items-center gap-2 py-2 first:pt-1">
+                        <label class="flex min-w-0 flex-1 cursor-pointer items-center gap-2 text-sm text-slate-700">
+                          <input type="checkbox" class="h-4 w-4 shrink-0 accent-slate-800" :disabled="feesReadOnly" :checked="hasStaffFee(form.staffFees, option)" :aria-label="`Przypisz opłatę: ${staffFeeLabel(option)}`" @change="setStaffFeeEnabled(option, $event.target.checked)" />
+                          <span class="min-w-0">{{ staffFeeLabel(option) }}</span>
+                        </label>
+                        <label v-if="hasStaffFee(form.staffFees, option)" class="flex shrink-0 items-center gap-1.5 text-xs text-slate-600">
+                          <span class="sr-only">Opłata dla {{ staffFeeLabel(option) }}</span>
+                          <input :value="staffFeeAmount(form.staffFees, option)" type="number" min="0" max="99999999.99" step="50" inputmode="decimal" :disabled="feesReadOnly" class="turnus-number w-20" :aria-invalid="!!fieldErrors.staffFees" :aria-describedby="fieldErrors.staffFees ? 'staffFees-error' : undefined" @input="updateStaffFee(option, $event.target.value)" />
+                          <span>zł</span>
+                        </label>
+                      </div>
+                    </div>
+                    <p v-if="fieldErrors.staffFees" id="staffFees-error" class="mt-2 text-sm text-red-700">{{ fieldErrors.staffFees }}</p>
+                  </template>
+                </div>
+              </div>
+              <p v-if="feesReadOnly" role="status" class="mt-3 inline-block w-fit max-w-full rounded-lg border border-slate-200 bg-slate-50 px-2 py-1 text-xs text-slate-700">Opłaty zostały ustalone i nie można ich zmienić.</p>
             </section>
           </div>
           <div class="min-w-0 space-y-4">
@@ -298,7 +386,6 @@ async function save() {
                 <p v-if="fieldErrors.staffRequirements" id="staffRequirements-error" class="mt-2 text-sm text-red-700">{{ fieldErrors.staffRequirements }}</p>
               </template>
             </section>
-
           </div>
         </fieldset>
         <div class="turnus-card flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
@@ -308,7 +395,7 @@ async function save() {
           </p>
           <div class="flex flex-col-reverse gap-2 sm:flex-row sm:gap-3">
             <button type="button" class="turnus-button border border-slate-300 bg-white text-slate-700 hover:bg-slate-50" :disabled="saving" @click="router.push('/turnusy')">{{ isNew ? 'Anuluj' : 'Wróć do listy' }}</button>
-            <button type="submit" class="turnus-button bg-slate-800 text-white hover:bg-slate-900" :disabled="saving || categoriesLoading || !!categoriesError || (!isNew && !dirty)">{{ saving ? 'Zapisywanie…' : isNew ? 'Utwórz turnus' : 'Zapisz zmiany' }}</button>
+            <button type="submit" class="turnus-button bg-slate-800 text-white hover:bg-slate-900" :disabled="saving || categoriesLoading || !!categoriesError || feeOptionsLoading || !!feeOptionsError || (!isNew && !dirty)">{{ saving ? 'Zapisywanie…' : isNew ? 'Utwórz turnus' : 'Zapisz zmiany' }}</button>
           </div>
         </div>
       </form>

@@ -1,12 +1,12 @@
-# Wpłaty — probable MVP requirement
+# Wpłaty — confirmed MVP requirement
 
-Updated 2026-11-02. The initial product scope is agreed, but inclusion in MVP is
-still probable and has not been confirmed as a release gate. A frontend-only UI
-prototype is being developed on [`feature/manual-payments-ui`](https://github.com/niebieska/SRM-toolkit/tree/feature/manual-payments-ui)
-at commit `e7ab68a`; this branch is local and has not been pushed or merged into
-`development`. The prototype uses in-memory demo data and does not persist payment,
-discount, or Turnus fee changes. It is not an implementation of the payment feature.
-Registration status history remains a confirmed MVP requirement.
+Updated 2026-11-11. Wpłaty are an MVP release gate. Implementation is being
+ported to the dedicated `feature/manual-payments-on-development` branch based on
+current `development`; the older remote branch remains untouched. The new branch
+contains fixed Turnus fee configuration, the payment/discount ledger, Biuro API
+endpoints and the connected register UI. Full automated tests, database migration
+checks and operator acceptance remain pending. Registration status history also
+remains a confirmed MVP requirement.
 
 ## Agreed scope
 
@@ -16,6 +16,13 @@ Registration status history remains a confirmed MVP requirement.
 - Add a fixed participant fee and fees for selected seasonal staff roles/subroles
   to the Turnus definition. Use the existing Summer/Winter role catalogue.
   Staff roles without an assigned fee pay 0 PLN. Staff fees depend on role, not age.
+  For new Summer and Winter fee configurations, only **Kandydat na animatora**
+  is configurable as paid; other staff roles are free and omitted from the fee
+  editor. The Summer catalogue represents this candidate as a standalone role
+  for minors and as an Animator function for adults; both variants share one
+  fee. Existing saved fee configurations remain unchanged.
+  A role and its subrole will not have conflicting fee amounts; applicable amounts
+  are not added together.
 - The base fee for a participant or staff role/subrole is fixed in the Turnus
   definition and is not later edited. No per-registration fee snapshot is needed
   under this rule. If the amount due should be reduced later, grant an individual
@@ -33,46 +40,50 @@ Registration status history remains a confirmed MVP requirement.
   fee minus discount minus valid payments; use decimal monetary calculations. The
   register shows discount, total paid, balance and status, without a separate fee
   column or summary tiles. Details show the status amount and individual payments.
-- Payment status is **Brak wpłaty**, **Do dopłaty**, **Opłacone** or **Nadpłata**.
-  Show the due amount for the first two and the excess amount for Nadpłata. Do not
-  add a separate fee column or summary tiles to the main register/detail header.
-  Lists may show payment status later, but do not allow payment edits there.
+- Payment status is **Brak wpłaty**, **Do dopłaty**, **Opłacone**, **Nadpłata** or
+  **Rozliczono rabatem**. Use **Rozliczono rabatem** when a full discount leaves
+  zero due and no payment has been recorded. Show the due amount for the first two
+  and the excess amount for Nadpłata. Do not add a separate fee column or summary
+  tiles to the main register/detail header. Lists may show payment status later,
+  but do not allow payment edits there.
 - In registration details show only the current discount amount, its description,
   the granting operator and date. Do not show a timeline of previous discount
   versions in this view; retain an audit trail of changes for financial traceability.
 - Retain financial records after a registration status changes. Accepted-only
-  eligibility governs adding payments, not deletion of their history.
+  eligibility governs adding payments and discounts. Existing payments remain
+  visible and correctable, with an audit record, after a status change.
+- Make payment creation idempotent so retrying an uncertain request with the
+  same key cannot create a duplicate financial entry.
 - Correct a payment by editing the entry and saving an audit record with previous
   and new values, operator, timestamp and correction reason. Do not silently lose
   prior values.
 
 ## Expected implementation areas
 
-- **Biuro DB/API:** Turnus fee configuration, role/subrole matching, operational
-  permissions and aggregation of fees with registration financial records. The
-  Turnus base fee belongs with the Biuro-owned Turnus definition.
+- **Biuro DB/API:** Turnus fee configuration and role/subrole validation are
+  implemented on `feature/manual-payments-on-development`. The payment register now joins fee definitions to
+  the ledger in batched reads and enforces positive-fee eligibility for writes.
+  Existing Turnus records can be configured once; later fee changes are rejected.
+  The Turnus base fee belongs with the Biuro-owned Turnus definition.
 - **registration-api/DB:** payment/discount records linked to registrations,
-  migrations, protected endpoints and account attribution. Recommended ownership
-  is `registration_db`, linked by registration ID; Biuro API would orchestrate the
-  fee lookup and ledger calls. Confirm this boundary during implementation; no
-  Person register is required.
-- **Frontend:** Turnus fee controls and Wpłaty tab with entry/history/balance views.
+  migrations, protected endpoints and account attribution are implemented in
+  the working tree. The ledger uses `registration_db` and the stable registration
+  ID; Biuro API remains the operator-facing orchestrator. No Person register is
+  required.
+- **Frontend:** Turnus fee controls and the Wpłaty tab are connected to persisted
+  entries, corrections, discounts and balances in the working tree.
 - **Configuration:** predefined payment names and methods.
 - **Tests:** role/subrole matching, monetary arithmetic, discounts/corrections,
-  accepted-only writes, retained history, permissions and duplicate submissions.
+  accepted-only payment/discount creation, corrections after status changes,
+  retained history, permissions and idempotent retries.
 
-## Decisions to confirm during implementation
+## Confirmed implementation boundary
 
-- Confirm fee precedence when both a role and its subrole have fees; one applicable
-  fee per registration is intended and fees are not added together.
-- Confirm how to label a zero balance caused by a full discount when no payment was
-  recorded: **Opłacone** or a separate fully discounted state. **Brak wpłaty: 0 zł**
-  would be misleading.
-- Confirm the recommended data boundary: payment/discount ledger in `registration_db`
-  and Turnus fee configuration in `biuro_db`, with Biuro API orchestrating access.
-
-These three points do not block starting implementation; resolve them with the
-relevant domain and persistence details as they are built.
+Keep the first implementation synchronous and use the existing Biuro API to
+Registration API connection. A separate payments service or synchronized payment
+read model is not needed at the current scale. Batch reads to avoid one network
+request per registration. This can be extended later if usage or performance
+requirements change.
 
 ## Other exclusions and deferred decisions
 - No correction of a staff role after payment is expected in the current workflow.
@@ -81,6 +92,6 @@ relevant domain and persistence details as they are built.
 - Remaining balances in Listy or a dedicated payment export are deferred.
 - Percentage discounts, online payments, payment-provider integration, automatic
   reconciliation and reminders are outside the initial scope.
-- No backend/API/DB implementation, delivery estimate or completed payment-feature
-  acceptance is claimed by this note. The separate UI prototype has had a successful
-  frontend build; its demo changes reset on refresh.
+- Full automated test coverage, database migration verification and operator
+  acceptance are still required before calling the feature complete. Do not use
+  the feature in a deployed environment until those checks pass.

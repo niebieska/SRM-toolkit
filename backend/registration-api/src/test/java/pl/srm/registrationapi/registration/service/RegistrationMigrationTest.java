@@ -5,6 +5,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 
 import java.sql.DriverManager;
+import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.*;
 
@@ -107,7 +108,7 @@ class RegistrationMigrationTest {
             assertThrows(org.flywaydb.core.api.FlywayException.class, () -> flyway(url, null).migrate());
             var adopted = Flyway.configure().dataSource(url, System.getenv("TEST_DB_USER"),
                     System.getenv("TEST_DB_PASSWORD")).baselineOnMigrate(true).baselineVersion("1").load();
-            assertEquals(6, adopted.migrate().migrationsExecuted);
+            assertEquals(10, adopted.migrate().migrationsExecuted);
             try (var connection = connect(url); var sql = connection.createStatement()) {
                 var result = sql.executeQuery("SELECT last_number FROM registration_counter");
                 assertTrue(result.next()); assertEquals(8, result.getLong(1));
@@ -117,16 +118,83 @@ class RegistrationMigrationTest {
                 result = sql.executeQuery("SELECT COUNT(*) FROM information_schema.tables "
                         + "WHERE table_schema = DATABASE() AND table_name = 'registration_status_history'");
                 assertTrue(result.next()); assertEquals(1, result.getInt(1));
+                for (String table : List.of("registration_payment", "registration_payment_audit",
+                        "registration_discount", "registration_discount_audit", "registration_payment_settlement",
+                        "registration_payment_settlement_audit")) {
+                    result = sql.executeQuery("SELECT COUNT(*) FROM information_schema.tables "
+                            + "WHERE table_schema = DATABASE() AND table_name = '" + table + "'");
+                    assertTrue(result.next()); assertEquals(1, result.getInt(1), table);
+                }
                 result = sql.executeQuery("SELECT COUNT(*) FROM information_schema.tables "
                         + "WHERE table_schema = DATABASE() AND table_name = 'registration_edit_history'");
                 assertTrue(result.next()); assertEquals(1, result.getInt(1));
                 result = sql.executeQuery("SELECT COUNT(*) FROM information_schema.columns "
                         + "WHERE table_schema = DATABASE() AND table_name = 'registration' AND column_name = 'version'");
                 assertTrue(result.next()); assertEquals(1, result.getInt(1));
+                result = sql.executeQuery("SELECT COUNT(*) FROM information_schema.columns "
+                        + "WHERE table_schema = DATABASE() AND table_name = 'registration_payment' AND column_name = 'minimum_net_retained'");
+                assertTrue(result.next()); assertEquals(0, result.getInt(1));
                 result = sql.executeQuery("SELECT source FROM registration WHERE registration_code = 'REG-P-A-8'");
                 assertTrue(result.next()); assertEquals("FORMULARZ", result.getString(1));
             }
             assertEquals(0, flyway(url, null).migrate().migrationsExecuted);
+        });
+    }
+
+    @Test
+    void v11DropsHistoricalRefundFloorWithoutDeletingPaymentOrAuditRows() throws Exception {
+        withDatabase(url -> {
+            flyway(url, "10").migrate();
+            long registrationId;
+            long paymentId;
+            try (var connection = connect(url); var sql = connection.createStatement()) {
+                sql.executeUpdate(insert("REG-P-A-10", "PARTICIPANT", "payment-before-v11"));
+                try (var result = sql.executeQuery("SELECT id FROM registration WHERE registration_code = 'REG-P-A-10'")) {
+                    assertTrue(result.next());
+                    registrationId = result.getLong(1);
+                }
+                sql.executeUpdate("""
+                        INSERT INTO registration_payment
+                          (registration_id, entry_type, minimum_net_retained, payment_date, amount, method, label,
+                           idempotency_key, created_at, actor_account_id, actor_username)
+                        VALUES (%d, 'REFUND', 100.00, '2026-11-10', 25.00, 'Przelew', 'Zwrot',
+                                'refund-before-v11', NOW(), 'account-id', 'operator')
+                        """.formatted(registrationId));
+                try (var result = sql.executeQuery("SELECT id FROM registration_payment WHERE idempotency_key = 'refund-before-v11'")) {
+                    assertTrue(result.next());
+                    paymentId = result.getLong(1);
+                }
+                sql.executeUpdate("""
+                        INSERT INTO registration_payment_audit
+                          (payment_id, changed_at, actor_account_id, actor_username, reason,
+                           previous_payment_date, previous_amount, previous_method, previous_label,
+                           new_payment_date, new_amount, new_method, new_label)
+                        VALUES (%d, NOW(), 'account-id', 'operator', 'Korekta testowa',
+                                '2026-11-09', 20.00, 'Przelew', 'Zwrot',
+                                '2026-11-10', 25.00, 'Przelew', 'Zwrot')
+                        """.formatted(paymentId));
+            }
+
+            assertEquals(1, flyway(url, null).migrate().migrationsExecuted);
+
+            try (var connection = connect(url); var sql = connection.createStatement()) {
+                try (var result = sql.executeQuery("SELECT entry_type, amount FROM registration_payment WHERE id = " + paymentId)) {
+                    assertTrue(result.next());
+                    assertEquals("REFUND", result.getString(1));
+                    assertEquals(new java.math.BigDecimal("25.00"), result.getBigDecimal(2));
+                    assertFalse(result.next());
+                }
+                try (var result = sql.executeQuery("SELECT COUNT(*) FROM registration_payment_audit WHERE payment_id = " + paymentId)) {
+                    assertTrue(result.next());
+                    assertEquals(1, result.getInt(1));
+                }
+                try (var result = sql.executeQuery("SELECT COUNT(*) FROM information_schema.columns "
+                        + "WHERE table_schema = DATABASE() AND table_name = 'registration_payment' "
+                        + "AND column_name = 'minimum_net_retained'")) {
+                    assertTrue(result.next());
+                    assertEquals(0, result.getInt(1));
+                }
+            }
         });
     }
 

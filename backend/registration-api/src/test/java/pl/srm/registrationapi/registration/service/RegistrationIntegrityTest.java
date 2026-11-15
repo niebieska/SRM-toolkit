@@ -10,12 +10,16 @@ import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.context.bean.override.mockito.MockitoSpyBean;
 import pl.srm.registrationapi.registration.dto.request.StatusUpdateRequest;
 import pl.srm.registrationapi.registration.dto.request.RegistrationEditRequest;
+import pl.srm.registrationapi.registration.dto.request.PaymentRecordRequest;
+import pl.srm.registrationapi.registration.dto.request.PaymentSettlementRequest;
+import pl.srm.registrationapi.registration.dto.request.RefundRecordRequest;
 import pl.srm.registrationapi.registration.exception.RegistrationException;
 import pl.srm.registrationapi.registration.parser.RegistrationContext;
 import pl.srm.registrationapi.registration.service.submission.RegistrationPersistenceService;
 import pl.srm.registrationapi.registration.model.Registration;
 import pl.srm.registrationapi.registration.service.management.RegistrationManagementService;
 import pl.srm.registrationapi.registration.service.management.RegistrationEditService;
+import pl.srm.registrationapi.registration.service.management.RegistrationPaymentService;
 import pl.srm.registrationapi.registration.service.management.StatusNotificationService;
 
 import java.util.ArrayList;
@@ -50,6 +54,7 @@ class RegistrationIntegrityTest {
     @Autowired JdbcTemplate jdbc;
     @Autowired RegistrationManagementService managementService;
     @Autowired RegistrationEditService editService;
+    @Autowired RegistrationPaymentService paymentService;
     @MockitoBean StatusNotificationService notificationService;
     @MockitoSpyBean pl.srm.registrationapi.registration.repository.RegistrationStatusHistoryRepository historyRepository;
 
@@ -57,6 +62,12 @@ class RegistrationIntegrityTest {
     void clearFixtures() {
         assertEquals("integrity_test", jdbc.queryForObject("SELECT DATABASE()", String.class),
                 "Use only the disposable integrity_test database");
+        jdbc.update("DELETE FROM registration_payment_audit");
+        jdbc.update("DELETE FROM registration_payment_settlement_audit");
+        jdbc.update("DELETE FROM registration_payment_settlement");
+        jdbc.update("DELETE FROM registration_discount_audit");
+        jdbc.update("DELETE FROM registration_payment");
+        jdbc.update("DELETE FROM registration_discount");
         jdbc.update("DELETE FROM registration_edit_history");
         jdbc.update("DELETE FROM registration_status_history");
         jdbc.update("DELETE FROM registration");
@@ -97,6 +108,147 @@ class RegistrationIntegrityTest {
 
         assertEquals("FORMULARZ", managementService.getDetailByCode(participant).source());
         assertEquals("FORMULARZ", managementService.getDetailByCode(staff).source());
+    }
+
+    @Test
+    void repeatedPaymentRequestWithSameKeyCreatesOneRecordAndCorrectionWorksAfterStatusChange() {
+        String code = service.saveParticipant(context("PAYMENT-IDEMPOTENCY", "payment-person"), "{}");
+        jdbc.update("UPDATE registration SET status = 'ACCEPTED' WHERE registration_code = ?", code);
+        var original = new PaymentRecordRequest(java.time.LocalDate.of(2026, 11, 1),
+                new java.math.BigDecimal("250.00"), "Przelew", "Zaliczka", null,
+                "test-account", "operator.test", null);
+
+        var first = paymentService.addPayment(code, "retry-key-1", original);
+        var retry = paymentService.addPayment(code, "retry-key-1", original);
+
+        assertEquals(first.payments().getFirst().id(), retry.payments().getFirst().id());
+        assertEquals(1, jdbc.queryForObject("SELECT COUNT(*) FROM registration_payment", Integer.class));
+        var changedRetry = new PaymentRecordRequest(original.date(), new java.math.BigDecimal("300.00"),
+                original.method(), original.label(), original.note(), original.actorAccountId(),
+                original.actorUsername(), null);
+        var conflict = assertThrows(org.springframework.web.server.ResponseStatusException.class,
+                () -> paymentService.addPayment(code, "retry-key-1", changedRetry));
+        assertEquals(org.springframework.http.HttpStatus.CONFLICT, conflict.getStatusCode());
+
+        jdbc.update("UPDATE registration SET status = 'REJECTED' WHERE registration_code = ?", code);
+        var correction = new PaymentRecordRequest(java.time.LocalDate.of(2026, 11, 2),
+                new java.math.BigDecimal("200.00"), "Przelew", "Zaliczka", "Skorygowana kwota",
+                "test-account", "operator.test", "Kwota zgodna z potwierdzeniem.", "REJECTED", java.math.BigDecimal.ZERO);
+        var updated = paymentService.editPayment(code, first.payments().getFirst().id(), correction);
+
+        assertEquals(new java.math.BigDecimal("200.00"), updated.payments().getFirst().amount());
+        assertEquals(1, updated.payments().getFirst().history().size());
+        assertEquals("operator.test", updated.payments().getFirst().history().getFirst().actorUsername());
+        assertEquals(1, jdbc.queryForObject("SELECT COUNT(*) FROM registration_payment_audit", Integer.class));
+        assertEquals(org.springframework.http.HttpStatus.CONFLICT,
+                assertThrows(org.springframework.web.server.ResponseStatusException.class,
+                        () -> paymentService.addPayment(code, "retry-key-2", original)).getStatusCode());
+    }
+
+    @Test
+    void acceptedRefundsUseCurrentMinimumInsteadOfHistoricalMaximum() {
+        String code = service.saveParticipant(context("PAYMENT-REFUND-CURRENT", "refund-current-person"), "{}");
+        jdbc.update("UPDATE registration SET status = 'ACCEPTED' WHERE registration_code = ?", code);
+        var payment = new PaymentRecordRequest(java.time.LocalDate.of(2026, 11, 1),
+                new java.math.BigDecimal("1200.00"), "Przelew", "Wpłata", null,
+                "test-account", "operator.test", null);
+        paymentService.addPayment(code, "refund-current-payment", payment);
+
+        var firstRefund = new RefundRecordRequest(java.time.LocalDate.of(2026, 11, 2),
+                new java.math.BigDecimal("200.00"), "Przelew", "Zwrot wpłaty", null,
+                "test-account", "operator.test", "ACCEPTED", new java.math.BigDecimal("1000.00"));
+        paymentService.addRefund(code, "refund-current-1", firstRefund);
+        var increasedDiscountRefund = new RefundRecordRequest(java.time.LocalDate.of(2026, 11, 3),
+                new java.math.BigDecimal("300.00"), "Przelew", "Zwrot wpłaty", null,
+                "test-account", "operator.test", "ACCEPTED", new java.math.BigDecimal("1000.00"));
+        jdbc.update("""
+                INSERT INTO registration_discount (registration_id, amount, description, changed_at, actor_account_id, actor_username)
+                SELECT id, 300.00, 'Rabat', CURRENT_TIMESTAMP(6), 'test-account', 'operator.test'
+                FROM registration WHERE registration_code = ?
+                """, code);
+
+        var result = paymentService.addRefund(code, "refund-current-2", increasedDiscountRefund);
+
+        assertEquals(3, result.payments().size());
+        assertEquals(new java.math.BigDecimal("700.00"), jdbc.queryForObject(
+                "SELECT SUM(CASE WHEN entry_type = 'PAYMENT' THEN amount ELSE -amount END) "
+                        + "FROM registration_payment WHERE registration_id = ?",
+                java.math.BigDecimal.class, result.registrationId()));
+        assertEquals(org.springframework.http.HttpStatus.CONFLICT,
+                assertThrows(org.springframework.web.server.ResponseStatusException.class,
+                        () -> paymentService.addRefund(code, "refund-current-3",
+                                new RefundRecordRequest(java.time.LocalDate.of(2026, 11, 4),
+                                        new java.math.BigDecimal("1.00"), "Przelew", "Zwrot wpłaty", null,
+                                        "test-account", "operator.test", "ACCEPTED", new java.math.BigDecimal("1000.00"))))
+                        .getStatusCode());
+    }
+
+    @Test
+    void editingAcceptedRefundUsesCurrentMinimumBalance() {
+        String code = service.saveParticipant(context("PAYMENT-REFUND-EDIT-CURRENT", "refund-edit-person"), "{}");
+        jdbc.update("UPDATE registration SET status = 'ACCEPTED' WHERE registration_code = ?", code);
+        paymentService.addPayment(code, "refund-edit-current-payment", new PaymentRecordRequest(
+                java.time.LocalDate.of(2026, 11, 1), new java.math.BigDecimal("1200.00"),
+                "Przelew", "Wpłata", null, "test-account", "operator.test", null));
+        var refund = paymentService.addRefund(code, "refund-edit-current-original", new RefundRecordRequest(
+                java.time.LocalDate.of(2026, 11, 2), new java.math.BigDecimal("200.00"),
+                "Przelew", "Zwrot wpłaty", null, "test-account", "operator.test",
+                "ACCEPTED", new java.math.BigDecimal("1000.00")));
+        jdbc.update("""
+                INSERT INTO registration_discount (registration_id, amount, description, changed_at, actor_account_id, actor_username)
+                SELECT id, 200.00, 'Rabat', CURRENT_TIMESTAMP(6), 'test-account', 'operator.test'
+                FROM registration WHERE registration_code = ?
+                """, code);
+        long refundId = refund.payments().stream().filter(item -> "REFUND".equals(item.entryType()))
+                .findFirst().orElseThrow().id();
+
+        var corrected = new PaymentRecordRequest(java.time.LocalDate.of(2026, 11, 3),
+                new java.math.BigDecimal("400.00"), "Przelew", "Zwrot wpłaty", null,
+                "test-account", "operator.test", "Kwota zgodna z potwierdzeniem.",
+                "ACCEPTED", new java.math.BigDecimal("1000.00"));
+        var updated = paymentService.editPayment(code, refundId, corrected);
+
+        assertEquals(new java.math.BigDecimal("400.00"), updated.payments().stream()
+                .filter(item -> item.id() == refundId).findFirst().orElseThrow().amount());
+        assertEquals(1, updated.payments().stream().filter(item -> item.id() == refundId)
+                .findFirst().orElseThrow().history().size());
+
+        var overCurrentLimit = new PaymentRecordRequest(java.time.LocalDate.of(2026, 11, 3),
+                new java.math.BigDecimal("401.00"), "Przelew", "Zwrot wpłaty", null,
+                "test-account", "operator.test", "Kolejna korekta.",
+                "ACCEPTED", new java.math.BigDecimal("1000.00"));
+        assertEquals(org.springframework.http.HttpStatus.CONFLICT,
+                assertThrows(org.springframework.web.server.ResponseStatusException.class,
+                        () -> paymentService.editPayment(code, refundId, overCurrentLimit)).getStatusCode());
+    }
+
+    @Test
+    void rejectedSettlementAndReacceptanceDoNotCarryOldRefundFloorIntoNewPayments() {
+        String code = service.saveParticipant(context("PAYMENT-REFUND-REACCEPT", "refund-reaccept-person"), "{}");
+        jdbc.update("UPDATE registration SET status = 'ACCEPTED' WHERE registration_code = ?", code);
+        var payment = new PaymentRecordRequest(java.time.LocalDate.of(2026, 11, 1),
+                new java.math.BigDecimal("1200.00"), "Przelew", "Wpłata", null,
+                "test-account", "operator.test", null);
+        paymentService.addPayment(code, "refund-reaccept-payment", payment);
+        paymentService.addRefund(code, "refund-reaccept-first", new RefundRecordRequest(
+                java.time.LocalDate.of(2026, 11, 2), new java.math.BigDecimal("200.00"), "Przelew",
+                "Zwrot wpłaty", null, "test-account", "operator.test", "ACCEPTED", new java.math.BigDecimal("1000.00")));
+
+        jdbc.update("UPDATE registration SET status = 'REJECTED' WHERE registration_code = ?", code);
+        paymentService.addRefund(code, "refund-reaccept-final", new RefundRecordRequest(
+                java.time.LocalDate.of(2026, 11, 3), new java.math.BigDecimal("1000.00"), "Przelew",
+                "Zwrot wpłaty", null, "test-account", "operator.test", "REJECTED", java.math.BigDecimal.ZERO));
+        paymentService.settle(code, new PaymentSettlementRequest("Zwrot zakończony", "test-account", "operator.test"));
+
+        jdbc.update("UPDATE registration SET status = 'ACCEPTED' WHERE registration_code = ?", code);
+        var partialPayment = new PaymentRecordRequest(java.time.LocalDate.of(2026, 11, 4),
+                new java.math.BigDecimal("500.00"), "Przelew", "Zaliczka", null,
+                "test-account", "operator.test", null);
+        var result = paymentService.addPayment(code, "refund-reaccept-partial", partialPayment);
+
+        assertEquals(2, result.payments().stream().filter(entry -> "PAYMENT".equals(entry.entryType())).count());
+        assertEquals(false, result.settlement().settled());
+        assertEquals(2, result.settlement().history().size());
     }
     @Autowired pl.srm.registrationapi.registration.repository.RegistrationRepository repository;
 

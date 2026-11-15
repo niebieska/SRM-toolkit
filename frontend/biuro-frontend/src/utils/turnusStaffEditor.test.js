@@ -33,10 +33,12 @@ const summerCategories = JSON.parse(await readFile(new URL('../../../../backend/
 const definition = { turnusCode: 'T1', turnusName: 'Winter', turnusDescription: null,
   turnusLocation: 'Gliczarów Górny', seasonYear: 2027, minAge: 14, seasonType: 'WINTER', startDate: '2027-01-17', endDate: '2027-01-24', version: 3,
   participantCapacity: 50, staffCapacity: 10, active: true, participantRegistrationOpen: false,
-  staffRegistrationOpen: true, staffRequirements: [{ categoryCode: 'animator', requiredCount: 6 }] }
+  staffRegistrationOpen: true, staffRequirements: [{ categoryCode: 'animator', requiredCount: 6 }],
+  participantFee: 0, staffFees: [], feesConfigured: false }
 async function mount(t, fetch, isNew = false) {
   const previous = { fetch: globalThis.fetch, window: globalThis.window, shell: globalThis.__turnusEditorTest }
-  globalThis.fetch = fetch
+  globalThis.fetch = (url, ...args) => String(url).includes('/staff-fee-options?')
+    ? Promise.resolve(new Response('[]')) : fetch(url, ...args)
   globalThis.window = { addEventListener() {}, removeEventListener() {}, confirm: () => true }
   globalThis.__turnusEditorTest = { route: reactive({ name: isNew ? 'turnus-create' : 'turnus-detail',
     params: { code: 'T1' }, fullPath: isNew ? '/turnusy/new' : '/turnusy/T1' }), router: { replace() {}, push() {} } }
@@ -86,6 +88,22 @@ test('Winter targets save with version and flags; zero removes the target', asyn
   assert.equal(vm.dirty, true)
   assert.equal(vm.success, '')
   assert.equal(vm.nextCacheRefreshAt, '')
+})
+test('editing a legacy turnus without changing fees does not freeze the default zero fees', async t => {
+  let submitted
+  const vm = await mount(t, async (url, options) => {
+    if (url.includes('staffing-categories')) return new Response(JSON.stringify([{ code: 'animator' }]))
+    if (options.method === 'PATCH') {
+      submitted = JSON.parse(options.body)
+      return new Response(JSON.stringify({ ...definition, ...submitted, feesConfigured: false, version: 4 }))
+    }
+    return new Response(JSON.stringify(definition))
+  })
+  vm.form.turnusLocation = 'Zmienione miejsce'
+  await vm.save()
+  assert.equal(submitted.turnusLocation, 'Zmienione miejsce')
+  assert.equal(Object.hasOwn(submitted, 'participantFee'), false)
+  assert.equal(Object.hasOwn(submitted, 'staffFees'), false)
 })
 test('category failure preserves targets and blocks saving until retry succeeds', async t => {
   let failing = true, writes = 0
@@ -171,7 +189,7 @@ test('creation preserves defaults, all fields and navigation, preventing duplica
     return new Response(JSON.stringify({ ...value, version: 0 }))
   }, true)
   Object.assign(vm.form, definition, { staffRequirements: [], turnusDescription: '', seasonType: 'SUMMER',
-    active: false, participantRegistrationOpen: false, staffRegistrationOpen: false, version: null })
+    active: false, participantRegistrationOpen: false, staffRegistrationOpen: false, version: null, participantFee: 0 })
   await settle()
   const first = vm.save()
   await settle()

@@ -295,7 +295,8 @@ class ManagementSecurityConfigTest {
                 ManualStaffRegistrationService manualStaff,
                 RegistrationManagementService management) {
             return new RegistrationController(participant, staff, manualStaff, management,
-                    mock(pl.srm.registrationapi.registration.service.management.RegistrationEditService.class));
+                    mock(pl.srm.registrationapi.registration.service.management.RegistrationEditService.class),
+                    mock(pl.srm.registrationapi.registration.service.management.RegistrationPaymentService.class));
         }
         @Bean TurnusController turnuses(TurnusProvider provider) { return new TurnusController(provider); }
     }
