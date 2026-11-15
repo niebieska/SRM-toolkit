@@ -17,6 +17,8 @@ import pl.srm.registrationapi.registration.dto.response.RegistrationSummaryRespo
 import pl.srm.registrationapi.registration.dto.request.RegistrationEditRequest;
 import pl.srm.registrationapi.registration.dto.request.StatusUpdateRequest;
 import pl.srm.registrationapi.registration.dto.request.PaymentRecordRequest;
+import pl.srm.registrationapi.registration.dto.request.PaymentSettlementRequest;
+import pl.srm.registrationapi.registration.dto.request.RefundRecordRequest;
 import pl.srm.registrationapi.registration.dto.request.DiscountRecordRequest;
 import pl.srm.registrationapi.registration.dto.response.PaymentLedgerEntryResponse;
 import pl.srm.registrationapi.registration.model.Registration;
@@ -93,6 +95,19 @@ public class RegistrationController {
                                                   @RequestHeader("Idempotency-Key") String idempotencyKey,
                                                   @Valid @RequestBody PaymentRecordRequest request) {
         return paymentService.addPayment(code, idempotencyKey, request);
+    }
+
+    @PostMapping("/{code}/refunds")
+    public PaymentLedgerEntryResponse addRefund(@PathVariable String code,
+                                                 @RequestHeader("Idempotency-Key") String idempotencyKey,
+                                                 @Valid @RequestBody RefundRecordRequest request) {
+        return paymentService.addRefund(code, idempotencyKey, request);
+    }
+
+    @PutMapping("/{code}/payment-settlement")
+    public PaymentLedgerEntryResponse settlePayment(@PathVariable String code,
+                                                     @Valid @RequestBody PaymentSettlementRequest request) {
+        return paymentService.settle(code, request);
     }
 
     @PutMapping("/{code}/payments/{paymentId}")
