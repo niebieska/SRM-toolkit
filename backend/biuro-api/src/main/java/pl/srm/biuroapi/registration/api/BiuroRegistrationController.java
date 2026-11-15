@@ -27,6 +27,8 @@ public class BiuroRegistrationController {
     private final RegistrationApiClient registrationApiClient;
     private final RegistrationStatisticsService statisticsService;
     private final TurnusCatalogue turnusCatalogue;
+    // The current deployment runs one Biuro API instance; serialize every capacity-changing request.
+    private final Object capacityWriteLock = new Object();
 
     public BiuroRegistrationController(RegistrationApiClient registrationApiClient,
                                        RegistrationStatisticsService statisticsService,
@@ -72,15 +74,18 @@ public class BiuroRegistrationController {
                                             @AuthenticationPrincipal AccountPrincipal actor) {
         validateRequest(request);
         if ("ACCEPTED".equalsIgnoreCase(request.status().trim())) {
-            RegistrationDetail registration = registrationApiClient.fetchRegistration(code);
-            TurnusDefinition turnus = turnusCatalogue.get(registration.turnusCode());
-            if (!"ACCEPTED".equalsIgnoreCase(registration.status())) {
-                RegistrationApiClient.AcceptedCounts accepted = registrationApiClient.fetchAcceptedCounts(registration.turnusCode());
-                long current = "STAFF".equalsIgnoreCase(registration.registrationType())
-                        ? accepted.staff() : accepted.participants();
-                int capacity = "STAFF".equalsIgnoreCase(registration.registrationType())
-                        ? turnus.staffCapacity() : turnus.participantCapacity();
-                requireAvailablePlace(registration.registrationType(), current, capacity, true);
+            synchronized (capacityWriteLock) {
+                RegistrationDetail registration = registrationApiClient.fetchRegistration(code);
+                TurnusDefinition turnus = turnusCatalogue.get(registration.turnusCode());
+                if (!"ACCEPTED".equalsIgnoreCase(registration.status())) {
+                    RegistrationApiClient.AcceptedCounts accepted = registrationApiClient.fetchAcceptedCounts(registration.turnusCode());
+                    long current = "STAFF".equalsIgnoreCase(registration.registrationType())
+                            ? accepted.staff() : accepted.participants();
+                    int capacity = "STAFF".equalsIgnoreCase(registration.registrationType())
+                            ? turnus.staffCapacity() : turnus.participantCapacity();
+                    requireAvailablePlace(registration.registrationType(), current, capacity, true);
+                }
+                return registrationApiClient.updateStatus(code, request, actor.id(), actor.username());
             }
         }
         return registrationApiClient.updateStatus(code, request, actor.id(), actor.username());
@@ -98,10 +103,12 @@ public class BiuroRegistrationController {
             @RequestBody JsonNode payload,
             @AuthenticationPrincipal AccountPrincipal actor) {
         String turnusCode = payload.path("turnusCode").asText("");
-        TurnusDefinition turnus = turnusCatalogue.get(turnusCode);
-        RegistrationApiClient.AcceptedCounts accepted = registrationApiClient.fetchAcceptedCounts(turnusCode);
-        requireAvailablePlace("STAFF", accepted.staff(), turnus.staffCapacity(), false);
-        return registrationApiClient.createManualStaffRegistration(payload.toString(), actor.id(), actor.username());
+        synchronized (capacityWriteLock) {
+            TurnusDefinition turnus = turnusCatalogue.get(turnusCode);
+            RegistrationApiClient.AcceptedCounts accepted = registrationApiClient.fetchAcceptedCounts(turnusCode);
+            requireAvailablePlace("STAFF", accepted.staff(), turnus.staffCapacity(), false);
+            return registrationApiClient.createManualStaffRegistration(payload.toString(), actor.id(), actor.username());
+        }
     }
 
 

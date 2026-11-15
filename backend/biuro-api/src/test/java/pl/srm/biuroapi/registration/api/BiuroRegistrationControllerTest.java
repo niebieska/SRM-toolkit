@@ -17,7 +17,12 @@ import pl.srm.biuroapi.turnus.TurnusCatalogue;
 import pl.srm.biuroapi.turnus.TurnusDefinition;
 
 import java.time.LocalDate;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 
+import static org.mockito.ArgumentMatchers.eq;
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.mock;
@@ -121,6 +126,103 @@ class BiuroRegistrationControllerTest {
     @Test
     void shouldAllowStaffAcceptanceWhenStaffPlaceIsAvailable() {
         assertAcceptanceAllowed("STAFF", 50, 9, 50, 10);
+    }
+
+    @Test
+    void concurrentAcceptancesCannotBothUseTheLastPlace() throws Exception {
+        StatusUpdateRequest request = new StatusUpdateRequest("ACCEPTED", null);
+        AtomicInteger accepted = new AtomicInteger();
+        for (String code : List.of("REG-1", "REG-2")) {
+            when(registrationApiClient.fetchRegistration(code)).thenReturn(
+                    new RegistrationDetail(code, "PARTICIPANT", "FORMULARZ", "T1", false,
+                            "NEW", null, null, "Test", "Osoba", 18, Map.of(), List.of(), 1L, List.of()));
+            when(registrationApiClient.updateStatus(eq(code), eq(request), eq("account-id"), eq("operator")))
+                    .thenAnswer(invocation -> {
+                        accepted.incrementAndGet();
+                        return new RegistrationSummary(code, "PARTICIPANT", "T1", false, "ACCEPTED", null,
+                                "2026-11-01T12:00:00", "Test", "Osoba", 18, "female", null, null);
+                    });
+        }
+        when(turnusCatalogue.get("T1")).thenReturn(turnus("T1", true, 1, 10));
+
+        AtomicInteger countCalls = new AtomicInteger();
+        CountDownLatch secondCountCall = new CountDownLatch(1);
+        when(registrationApiClient.fetchAcceptedCounts("T1")).thenAnswer(invocation -> {
+            if (countCalls.getAndIncrement() == 0) {
+                secondCountCall.await(300, TimeUnit.MILLISECONDS);
+            } else {
+                secondCountCall.countDown();
+            }
+            return new RegistrationApiClient.AcceptedCounts((long) accepted.get(), 0L);
+        });
+        var start = new CountDownLatch(1);
+        try (var executor = Executors.newFixedThreadPool(2)) {
+            var first = executor.submit(() -> attemptAcceptance(start, request, "REG-1"));
+            var second = executor.submit(() -> attemptAcceptance(start, request, "REG-2"));
+            start.countDown();
+
+            List<String> outcomes = List.of(first.get(3, TimeUnit.SECONDS), second.get(3, TimeUnit.SECONDS));
+            assertEquals(1, outcomes.stream().filter("accepted"::equals).count());
+            assertEquals(1, outcomes.stream().filter("full"::equals).count());
+            assertEquals(1, accepted.get());
+        }
+    }
+
+    @Test
+    void concurrentManualStaffRequestsCannotBothUseTheLastPlace() throws Exception {
+        var payload = new ObjectMapper().readTree("{\"turnusCode\":\"T1\"}");
+        when(turnusCatalogue.get("T1")).thenReturn(turnus("T1", true, 10, 1));
+        AtomicInteger accepted = new AtomicInteger();
+        AtomicInteger countCalls = new AtomicInteger();
+        CountDownLatch secondCountCall = new CountDownLatch(1);
+        when(registrationApiClient.fetchAcceptedCounts("T1")).thenAnswer(invocation -> {
+            if (countCalls.getAndIncrement() == 0) {
+                secondCountCall.await(300, TimeUnit.MILLISECONDS);
+            } else {
+                secondCountCall.countDown();
+            }
+            return new RegistrationApiClient.AcceptedCounts(0L, (long) accepted.get());
+        });
+        when(registrationApiClient.createManualStaffRegistration(payload.toString(), "account-id", "operator"))
+                .thenAnswer(invocation -> {
+                    int sequence = accepted.incrementAndGet();
+                    return new RegistrationApiClient.RegistrationCreated("REG-S-T1-" + sequence);
+                });
+
+        var start = new CountDownLatch(1);
+        try (var executor = Executors.newFixedThreadPool(2)) {
+            var first = executor.submit(() -> attemptManualStaffRegistration(start, payload));
+            var second = executor.submit(() -> attemptManualStaffRegistration(start, payload));
+            start.countDown();
+
+            List<String> outcomes = List.of(first.get(3, TimeUnit.SECONDS), second.get(3, TimeUnit.SECONDS));
+            assertEquals(1, outcomes.stream().filter("created"::equals).count());
+            assertEquals(1, outcomes.stream().filter("full"::equals).count());
+            assertEquals(1, accepted.get());
+        }
+    }
+
+    private String attemptAcceptance(CountDownLatch start, StatusUpdateRequest request, String code) throws Exception {
+        start.await();
+        try {
+            controller.updateStatus(code, request, actor());
+            return "accepted";
+        } catch (ResponseStatusException exception) {
+            if (exception.getStatusCode() == HttpStatus.UNPROCESSABLE_ENTITY) return "full";
+            throw exception;
+        }
+    }
+
+    private String attemptManualStaffRegistration(CountDownLatch start, tools.jackson.databind.JsonNode payload)
+            throws Exception {
+        start.await();
+        try {
+            controller.createManualStaffRegistration(payload, actor());
+            return "created";
+        } catch (ResponseStatusException exception) {
+            if (exception.getStatusCode() == HttpStatus.UNPROCESSABLE_ENTITY) return "full";
+            throw exception;
+        }
     }
 
     @Test
