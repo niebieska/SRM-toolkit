@@ -36,6 +36,7 @@ services:
       REGISTRATION_SERVICE_USERNAME: ${REGISTRATION_SERVICE_USERNAME:-biuro-service}
       REGISTRATION_SERVICE_PASSWORD: ${REGISTRATION_SERVICE_PASSWORD:?Set REGISTRATION_SERVICE_PASSWORD}
       BIURO_PORT: '8081'
+      BIURO_CORS_ALLOWED_ORIGINS: ${BIURO_CORS_ALLOWED_ORIGINS:-http://localhost:5174}
       BIURO_DB_URL: jdbc:mariadb://mariadb:3306/biuro_db
       BIURO_DB_USER: ${BIURO_DB_USER:-biuro_user}
       BIURO_DB_PASSWORD: ${BIURO_DB_PASSWORD:?Set BIURO_DB_PASSWORD}
@@ -124,6 +125,7 @@ services:
       DB_URL: jdbc:mariadb://mariadb:3306/registration_db
       DB_USER: ${DB_USER:-registration_user}
       DB_PASSWORD: ${DB_PASSWORD:?Set DB_PASSWORD}
+      REGISTRATION_CORS_ALLOWED_ORIGINS: ${REGISTRATION_CORS_ALLOWED_ORIGINS:-http://localhost:5173,http://localhost:4173}
       BIURO_TURNUS_URL: http://biuro-api:8081
       EMAIL_SERVICE_URL: http://email-service:8082
       EMAIL_SERVICE_USERNAME: ${EMAIL_SERVICE_USERNAME:-registration-email-sender}

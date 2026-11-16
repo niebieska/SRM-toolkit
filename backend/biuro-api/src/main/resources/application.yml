@@ -7,6 +7,8 @@ turnus:
     password: ${TURNUS_LOOKUP_PASSWORD}
 
 biuro:
+  cors:
+    allowed-origins: ${BIURO_CORS_ALLOWED_ORIGINS:http://localhost:5174}
   bootstrap:
     enabled: ${BIURO_BOOTSTRAP_ENABLED:false}
     username: ${BIURO_BOOTSTRAP_USERNAME:}
