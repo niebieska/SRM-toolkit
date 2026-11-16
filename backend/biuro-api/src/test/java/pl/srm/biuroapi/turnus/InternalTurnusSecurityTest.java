@@ -34,6 +34,7 @@ class InternalTurnusSecurityTest {
     @BeforeEach void resetCatalogue() {
         OperatorTestTokens.create(jdbc, jwt, "test-operator");
         jdbc.update("DELETE FROM turnus WHERE turnus_code LIKE 'TEST%'");
+        TurnusTestFixtures.resetLegacySummerTurnuses(jdbc);
         jdbc.update("UPDATE turnus SET active = true, participant_registration_open = true");
         jdbc.update("UPDATE turnus SET participant_fee = 1200.00, staff_fees = '[{\"role\":\"kucharka\",\"subrole\":null,\"amount\":300.00}]', fees_configured = true WHERE turnus_code = 'ZAGLE26T1'");
     }

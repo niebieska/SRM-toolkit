@@ -58,8 +58,9 @@ class StaffRequirementsTest {
         assertEquals(List.of(), catalogue.update("STAFFTEST1", request(2L, List.of())).staffRequirements());
     }
     @Test void migrationAndMissingRequirementsLeaveExistingTurnusyUnconfigured() {
-        assertEquals(List.of(), catalogue.get("ZAGLE26T1").staffRequirements());
-        assertEquals(List.of(), catalogue.create(request(null, null)).staffRequirements());
+        var created = catalogue.create(request(null, null));
+        assertEquals(List.of(), created.staffRequirements());
+        assertEquals(List.of(), catalogue.get(created.turnusCode()).staffRequirements());
     }
     @Test void invalidOrStaleEditsCannotAlterDefinitionOrRequirements() {
         catalogue.create(request(null, List.of(new StaffRequirement("animator", 6))));

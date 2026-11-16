@@ -18,13 +18,11 @@ replace the broader release plan.
 
 ## Pending implementation
 
-- [ ] **After deploying the registration-source change, add Flyway baseline
-  migrations for clean production initialization.** Keep the existing V1–V6
-  migration history for already initialized environments. Add one baseline per
-  service/database, representing its complete schema at V6 but excluding the
-  legacy `ZAGLE26T1` / `ZAGLE26T2` Turnus seed rows. Verify that a clean database
-  uses the baseline and that the existing GCP database ignores it and retains
-  its data/history. The project resolves Flyway 11.14.1 through Spring Boot 4.0.6.
+- [x] **Add and verify Flyway clean-install baselines.** Registration API B11
+  plus V12 and Biuro API B7 were compared with their full incremental paths on
+  disposable MariaDB 11.4 schemas. Schemas matched; the Biuro baseline does not
+  seed legacy `ZAGLE26T1` / `ZAGLE26T2` data. Existing versioned migrations
+  remain unchanged. Flyway resolves to 11.14.1 through Spring Boot 4.0.6.
 - [ ] **Show the email submission outcome in registration details.** Record each
   per-recipient notification attempt against its registration and display its
   timestamp, recipient, template/notification type, and SMTP outcome. The agreed

@@ -1,6 +1,7 @@
 package pl.srm.biuroapi.auth.management;
 
 import org.flywaydb.core.Flyway;
+import org.flywaydb.core.api.migration.baseline.BaselineMigrationConfigurationExtension;
 import org.junit.jupiter.api.Test;
 import org.springframework.jdbc.core.JdbcTemplate;
 import com.zaxxer.hikari.HikariDataSource;
@@ -28,7 +29,10 @@ class AccountManagementMigrationTest {
                 source.setUsername(System.getenv("TEST_BIURO_ACCOUNTS_DB_USER"));
                 source.setPassword(System.getenv("TEST_BIURO_ACCOUNTS_DB_PASSWORD"));
             }
-            Flyway.configure().dataSource(source).target("5").load().migrate();
+            var versionedConfiguration = Flyway.configure().dataSource(source);
+            versionedConfiguration.getConfigurationExtension(BaselineMigrationConfigurationExtension.class)
+                    .setBaselineMigrationPrefix("X");
+            versionedConfiguration.target("5").load().migrate();
             var jdbc = new JdbcTemplate(source);
             String account = UUID.randomUUID().toString(), session = UUID.randomUUID().toString();
             String hash = new BCryptPasswordEncoder(4).encode("existing-password-123");
@@ -47,6 +51,8 @@ class AccountManagementMigrationTest {
             assertEquals(account, jdbc.queryForObject("SELECT account_id FROM biuro_session WHERE id = ?", String.class, session));
             assertTrue(jdbc.queryForObject("SELECT completed FROM biuro_account_setup WHERE id = 1", Boolean.class));
             assertEquals(2, jdbc.queryForObject("SELECT COUNT(*) FROM turnus", Integer.class));
+            assertEquals(60, jdbc.queryForObject("SELECT participant_capacity FROM turnus WHERE turnus_code = 'ZAGLE26T1'", Integer.class));
+            assertEquals(true, jdbc.queryForObject("SELECT staff_registration_open FROM turnus WHERE turnus_code = 'ZAGLE26T1'", Boolean.class));
             assertEquals(1, jdbc.queryForObject("SELECT COUNT(*) FROM biuro_account_admin_lock", Integer.class));
             jdbc.update("INSERT INTO biuro_account_turnus (account_id, turnus_code) VALUES (?, 'ZAGLE26T1')", account);
             assertEquals(1, jdbc.queryForObject("SELECT COUNT(*) FROM biuro_account_turnus", Integer.class));
