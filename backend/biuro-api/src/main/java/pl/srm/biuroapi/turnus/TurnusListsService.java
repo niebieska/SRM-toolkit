@@ -1,19 +1,22 @@
 package pl.srm.biuroapi.turnus;
 
 import java.time.Period;
+import java.math.BigDecimal;
 import java.util.List;
+import java.util.Map;
 import org.springframework.stereotype.Service;
 import org.springframework.http.HttpStatus;
 import org.springframework.web.server.ResponseStatusException;
 import pl.srm.biuroapi.registration.client.RegistrationApiClient;
 import pl.srm.biuroapi.registration.model.TurnusListPerson;
+import pl.srm.biuroapi.registration.service.PaymentRegisterService;
 import pl.srm.biuroapi.season.SeasonStaffCatalogue;
 import pl.srm.biuroapi.season.StaffCatalogue;
 
 @Service
 public class TurnusListsService {
     public record ListEntry(TurnusListPerson person, Integer age, String roleLabel, String subroleLabel,
-            List<String> qualificationLabels) {
+            List<String> qualificationLabels, BigDecimal remainingToPay) {
         public ListEntry { qualificationLabels = List.copyOf(qualificationLabels); }
     }
     public record TurnusLists(TurnusDefinition turnus, List<ListEntry> entries) {
@@ -22,22 +25,37 @@ public class TurnusListsService {
     private final TurnusCatalogue turnuses;
     private final RegistrationApiClient registrations;
     private final SeasonStaffCatalogue seasons;
+    private final PaymentRegisterService payments;
 
-    public TurnusListsService(TurnusCatalogue turnuses, RegistrationApiClient registrations, SeasonStaffCatalogue seasons) {
+    public TurnusListsService(TurnusCatalogue turnuses, RegistrationApiClient registrations,
+            SeasonStaffCatalogue seasons, PaymentRegisterService payments) {
         this.turnuses = turnuses;
         this.registrations = registrations;
         this.seasons = seasons;
+        this.payments = payments;
     }
 
     public TurnusLists get(String code) {
+        return load(code, true);
+    }
+
+    public TurnusLists getWithoutPaymentBalance(String code) {
+        return load(code, false);
+    }
+
+    private TurnusLists load(String code, boolean includePaymentBalance) {
         var turnus = turnuses.get(code);
         var catalogue = seasons.get(turnus.seasonType());
+        Map<String, BigDecimal> remainingByCode = includePaymentBalance
+                ? payments.remainingByRegistrationCode(code) : Map.of();
         var entries = registrations.fetchTurnusList(code).stream()
-                .map(person -> entry(person, turnus, catalogue)).toList();
+                .map(person -> entry(person, turnus, catalogue,
+                        person == null ? null : remainingByCode.get(person.registrationCode()))).toList();
         return new TurnusLists(turnus, entries);
     }
 
-    private ListEntry entry(TurnusListPerson person, TurnusDefinition turnus, StaffCatalogue catalogue) {
+    private ListEntry entry(TurnusListPerson person, TurnusDefinition turnus, StaffCatalogue catalogue,
+            BigDecimal remainingToPay) {
         if (person == null) throw new ResponseStatusException(HttpStatus.BAD_GATEWAY, "Biuro otrzymało nieprawidłowe dane listy.");
         if (!"PARTICIPANT".equals(person.registrationType()) && !"STAFF".equals(person.registrationType()))
             throw new ResponseStatusException(HttpStatus.BAD_GATEWAY, "Biuro otrzymało nieprawidłowe dane listy.");
@@ -54,7 +72,7 @@ public class TurnusListsService {
                     .findFirst().orElse(person.subrole());
             else subroleLabel = person.subrole();
         }
-        return new ListEntry(person, age, roleLabel, subroleLabel, qualificationLabels(person, catalogue));
+        return new ListEntry(person, age, roleLabel, subroleLabel, qualificationLabels(person, catalogue), remainingToPay);
     }
 
     private List<String> qualificationLabels(TurnusListPerson person, StaffCatalogue catalogue) {

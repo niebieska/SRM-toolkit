@@ -11,6 +11,7 @@ import pl.srm.biuroapi.registration.client.RegistrationApiClient;
 import pl.srm.biuroapi.registration.model.TurnusListPerson;
 import pl.srm.biuroapi.registration.model.TurnusListPerson.AdditionalData;
 import pl.srm.biuroapi.registration.model.TurnusListPerson.Qualification;
+import pl.srm.biuroapi.registration.service.PaymentRegisterService;
 import pl.srm.biuroapi.season.SeasonStaffCatalogue;
 import pl.srm.biuroapi.season.StaffCatalogueValidator;
 import tools.jackson.databind.ObjectMapper;
@@ -20,12 +21,13 @@ import static org.mockito.Mockito.*;
 class TurnusListsServiceTest {
     final TurnusCatalogue turnuses = mock(TurnusCatalogue.class);
     final RegistrationApiClient registrations = mock(RegistrationApiClient.class);
+    final PaymentRegisterService payments = mock(PaymentRegisterService.class);
 
     TurnusListsService service() {
         try (var validation = Validation.buildDefaultValidatorFactory()) {
             var seasons = new SeasonStaffCatalogue(new ObjectMapper(), new DefaultResourceLoader(),
                     new StaffCatalogueValidator(validation.getValidator()), "classpath:staff-seasons/");
-            return new TurnusListsService(turnuses, registrations, seasons);
+            return new TurnusListsService(turnuses, registrations, seasons, payments);
         }
     }
     TurnusDefinition turnus(TurnusDefinition.SeasonType season) {
@@ -67,6 +69,16 @@ class TurnusListsServiceTest {
         when(turnuses.get("missing")).thenThrow(new ResponseStatusException(HttpStatus.NOT_FOUND));
         assertEquals(HttpStatus.NOT_FOUND, assertThrows(ResponseStatusException.class, () -> service().get("missing")).getStatusCode());
         verifyNoInteractions(registrations);
+    }
+
+    @Test void observerListDoesNotFetchPaymentData() {
+        when(turnuses.get("T1")).thenReturn(turnus(TurnusDefinition.SeasonType.WINTER));
+        when(registrations.fetchTurnusList("T1")).thenReturn(List.of(person(LocalDate.of(2000, 1, 1), "animator", null)));
+
+        var result = service().getWithoutPaymentBalance("T1");
+
+        assertNull(result.entries().getFirst().remainingToPay());
+        verifyNoInteractions(payments);
     }
 
     @Test void upstreamFailureIsNotAnEmptySuccessfulList() {
