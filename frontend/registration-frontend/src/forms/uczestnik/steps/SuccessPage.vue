@@ -14,7 +14,6 @@
       <p class="text-sm text-gray-500 mb-1">Twój numer zgłoszenia</p>
       <p class="text-2xl font-mono font-bold text-gray-800 tracking-widest">{{ registrationCode }}</p>
     </div>
-    <p class="text-sm text-gray-500">Zachowaj ten numer — będzie potrzebny do weryfikacji.</p>
     <button
       @click="emit('reset')"
       class="bg-gray-800 text-white px-8 py-3 rounded-xl font-semibold hover:bg-gray-700 transition"
