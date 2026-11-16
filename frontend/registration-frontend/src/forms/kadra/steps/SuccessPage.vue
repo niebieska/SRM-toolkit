@@ -7,7 +7,9 @@
       </svg>
     </div>
     <h2 class="text-2xl font-bold text-gray-800">Dziękujemy za zgłoszenie!</h2>
-    <p class="text-gray-600">Twoje zgłoszenie do kadry zostało przyjęte.</p>
+    <p class="text-gray-600">
+      Potwierdzenie zgłoszenia zostało wysłane na podany adres e-mail. W przypadku braku wiadomości skontaktuj się z Biurem Rekolekcji, podając numer zgłoszenia.
+    </p>
     <div class="inline-block bg-gray-100 border border-gray-300 rounded-xl px-6 py-4">
       <p class="text-sm text-gray-500 mb-1">Twój numer zgłoszenia</p>
       <p class="text-2xl font-mono font-bold text-gray-800 tracking-widest">{{ registrationCode }}</p>
