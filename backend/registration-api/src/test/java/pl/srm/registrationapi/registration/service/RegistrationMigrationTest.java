@@ -1,6 +1,7 @@
 package pl.srm.registrationapi.registration.service;
 
 import org.flywaydb.core.Flyway;
+import org.flywaydb.core.api.migration.baseline.BaselineMigrationConfigurationExtension;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.condition.EnabledIfEnvironmentVariable;
 
@@ -108,7 +109,7 @@ class RegistrationMigrationTest {
             assertThrows(org.flywaydb.core.api.FlywayException.class, () -> flyway(url, null).migrate());
             var adopted = Flyway.configure().dataSource(url, System.getenv("TEST_DB_USER"),
                     System.getenv("TEST_DB_PASSWORD")).baselineOnMigrate(true).baselineVersion("1").load();
-            assertEquals(10, adopted.migrate().migrationsExecuted);
+            assertEquals(11, adopted.migrate().migrationsExecuted);
             try (var connection = connect(url); var sql = connection.createStatement()) {
                 var result = sql.executeQuery("SELECT last_number FROM registration_counter");
                 assertTrue(result.next()); assertEquals(8, result.getLong(1));
@@ -175,7 +176,7 @@ class RegistrationMigrationTest {
                         """.formatted(paymentId));
             }
 
-            assertEquals(1, flyway(url, null).migrate().migrationsExecuted);
+            assertEquals(2, flyway(url, null).migrate().migrationsExecuted);
 
             try (var connection = connect(url); var sql = connection.createStatement()) {
                 try (var result = sql.executeQuery("SELECT entry_type, amount FROM registration_payment WHERE id = " + paymentId)) {
@@ -205,6 +206,9 @@ class RegistrationMigrationTest {
 
     private Flyway flyway(String url, String target) {
         var config = Flyway.configure().dataSource(url, System.getenv("TEST_DB_USER"), System.getenv("TEST_DB_PASSWORD"));
+        // These tests exercise the historical V1-V11 upgrade path, not clean installs.
+        config.getConfigurationExtension(BaselineMigrationConfigurationExtension.class)
+                .setBaselineMigrationPrefix("X");
         if (target != null) config.target(target);
         return config.load();
     }

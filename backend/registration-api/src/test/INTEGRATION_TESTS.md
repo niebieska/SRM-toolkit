@@ -1,8 +1,11 @@
 Registration integrity tests use a real, disposable MariaDB 11 database. They
 are skipped unless TEST_DB_URL is set; ordinary unit tests need no database.
 Never use application data: the integrity tests delete fixtures before each test.
-The schema must be named integrity_test. Migration tests also create and drop
-an isolated integrity_migration_test schema, so the test user needs that permission.
+The schema must be named integrity_test. Migration tests create and drop isolated
+schemas (`integrity_migration_test`, `integrity_baseline_clean_test`, and
+`integrity_versioned_clean_test`), so the test user needs CREATE/DROP DATABASE
+permissions. The baseline test compares a fresh B11+V12 schema to the V1-V12
+upgrade path and confirms that no registration data is seeded.
 
 Example from the repository root (choose an unused local port):
 
@@ -26,7 +29,9 @@ docker stop srm-registration-integrity-test
 Coverage: first-use concurrency, independent group counters, concurrent duplicates
 across types, rollback, rejection/deletion without number reuse, database-enforced
 uniqueness, old-code migration seeding, migration rerun after reconnect, and
-migration refusal when old person/turnus duplicates exist.
+migration refusal when old person/turnus duplicates exist. `RegistrationBaselineMigrationTest`
+compares the clean-install baseline against the complete incremental path. It
+temporarily changes Flyway's baseline prefix only for that reference migration.
 
 Before applying V2 to an existing environment, inspect duplicates:
 

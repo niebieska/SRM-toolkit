@@ -74,6 +74,12 @@ mvn -pl backend/biuro-api -Dtest=TurnusCatalogueTest test
 
 The tests delete TEST-prefixed fixtures and must never run on application data.
 
+`BiuroBaselineMigrationTest` creates and drops isolated schemas
+(`biuro_baseline_clean_test` and `biuro_versioned_clean_test`) to compare the clean
+B7 baseline with the preserved V1-V7 upgrade path. The test database user needs
+CREATE/DROP DATABASE permissions. The clean baseline excludes the legacy Turnus
+rows from V2; tests that need them insert explicit fixtures.
+
 ## Next stages and decisions
 
 - Registration-api now reads Biuro through an authenticated hourly cache; see

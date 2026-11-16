@@ -19,6 +19,7 @@ import pl.srm.biuroapi.auth.account.AccountRepository;
 import pl.srm.biuroapi.auth.account.AccountRole;
 import pl.srm.biuroapi.registration.client.RegistrationApiClient;
 import pl.srm.biuroapi.registration.model.TurnusListPerson;
+import pl.srm.biuroapi.turnus.TurnusTestFixtures;
 import tools.jackson.databind.ObjectMapper;
 import java.net.URI;
 import java.net.http.HttpClient;
@@ -67,6 +68,7 @@ abstract class AccountManagementHttpSupport {
         jdbc.update("DELETE FROM biuro_session");
         jdbc.update("DELETE FROM biuro_account_role");
         jdbc.update("DELETE FROM biuro_account"); // Assignments cascade; no real environment is used.
+        TurnusTestFixtures.resetLegacySummerTurnuses(jdbc);
         adminId = account("admin", Set.of(AccountRole.SYS_ADMIN), Set.of());
         operatorId = account("operator", Set.of(AccountRole.OPERATOR), Set.of());
         viewerId = account("viewer", Set.of(AccountRole.VIEWER), Set.of("ZAGLE26T1"));

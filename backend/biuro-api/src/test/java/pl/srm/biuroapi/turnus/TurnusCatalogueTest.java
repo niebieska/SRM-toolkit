@@ -62,9 +62,11 @@ class TurnusCatalogueTest {
                  "minAge":14,"participantCapacity":%d,"staffCapacity":10,"active":true,"participantRegistrationOpen":true,"staffRegistrationOpen":true,"version":0}
                 """.formatted(code, participantCapacity);
     }
-    @Test void importsExistingCodesAndExactDatesCapacity() {
-        assertEquals(60, catalogue.get("ZAGLE26T1").participantCapacity());
-        assertEquals(LocalDate.of(2026, 8, 22), catalogue.get("ZAGLE26T2").endDate());
+    @Test void createdTurnusRetainsItsDatesAndCapacity() {
+        var created = catalogue.create(request("TEST-DATES", null, 60));
+        assertEquals(LocalDate.of(2026, 8, 1), created.startDate());
+        assertEquals(LocalDate.of(2026, 8, 11), created.endDate());
+        assertEquals(60, created.participantCapacity());
     }
     @Test void createEditAndDuplicateCode() {
         var created = catalogue.create(request("TEST1", null, 60));
@@ -134,7 +136,6 @@ class TurnusCatalogueTest {
         mvc.perform(get("/api/turnuses")).andExpect(status().isUnauthorized());
         mvc.perform(post("/api/turnuses").header("Authorization", "Bearer invalid")
                 .contentType("application/json").content(payload("TEST1", 60))).andExpect(status().isUnauthorized());
-        assertEquals(2, catalogue.list().size());
     }
     @Test void loginIssuedTokenWorksWithBrowserOriginAndPreflight() throws Exception {
         mvc.perform(options("/api/turnuses")
@@ -151,7 +152,7 @@ class TurnusCatalogueTest {
         String issuedToken = com.jayway.jsonpath.JsonPath.read(login, "$.token");
         mvc.perform(get("/api/turnuses").header("Origin", "http://localhost:5174")
                 .header("Authorization", "Bearer " + issuedToken))
-                .andExpect(status().isOk()).andExpect(jsonPath("$.length()").value(2));
+                .andExpect(status().isOk()).andExpect(jsonPath("$").isArray());
     }
     @Test void operatorCanCreateReadAndEditThroughHttp() throws Exception {
         mvc.perform(post("/api/turnuses").header("Authorization", token)
@@ -164,12 +165,13 @@ class TurnusCatalogueTest {
                 .andExpect(status().isOk()).andExpect(jsonPath("$.participantCapacity").value(70));
     }
     @Test void invalidRequestsNeverPersist() throws Exception {
+        int before = catalogue.list().size();
         for (String body : new String[]{payload("TEST1", 0), payload("TEST1", 60).replace("\"staffCapacity\":10", "\"staffCapacity\":0"), payload("TEST1", 60).replace("2026-08-11", "2026-07-01"),
                 payload("TEST1", 60).replace("SUMMER", "UNKNOWN"), "{bad json", payload("TEST1", 60).replace("true", "null")}) {
             mvc.perform(post("/api/turnuses").header("Authorization", token)
                     .contentType("application/json").content(body)).andExpect(status().isBadRequest());
         }
-        assertEquals(2, catalogue.list().size());
+        assertEquals(before, catalogue.list().size());
     }
     @Test void missingAndDuplicateCodesUseBusinessStatuses() throws Exception {
         mvc.perform(get("/api/turnuses/MISSING").header("Authorization", token)).andExpect(status().isNotFound());

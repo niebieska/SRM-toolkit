@@ -59,11 +59,16 @@ class TurnusCapacityTest {
                 value.seasonType(), value.seasonYear(), value.startDate(), value.endDate(), value.minAge(),
                 participants, staff, value.active(), participantOpen, staffOpen, version, List.of());
     }
-    @Test void migratesLegacyCapacityAndInitialStaffCapacity() {
-        var value = catalogue.get("ZAGLE26T1");
-        assertEquals(60, value.participantCapacity());
+    @Test void cleanBaselineProvidesDefaultStaffCapacityAndClosedStaffRegistration() {
+        jdbc.update("""
+                INSERT INTO turnus (turnus_code, turnus_name, turnus_location, season_type, season_year,
+                  start_date, end_date, min_age, participant_capacity, active, participant_registration_open)
+                VALUES ('TEST-DEFAULTS', 'Turnus testowy', 'Miejsce', 'SUMMER', 2026,
+                  '2026-08-01', '2026-08-10', 14, 60, TRUE, TRUE)
+                """);
+        var value = catalogue.get("TEST-DEFAULTS");
         assertEquals(10, value.staffCapacity());
-        assertEquals(value.participantRegistrationOpen(), value.staffRegistrationOpen());
+        assertFalse(value.staffRegistrationOpen());
     }
     @Test void databaseRejectsZeroForBothCapacities() {
         catalogue.create(request("TEST1", null, 60));

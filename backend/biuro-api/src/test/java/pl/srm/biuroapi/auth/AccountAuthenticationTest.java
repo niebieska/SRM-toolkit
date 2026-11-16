@@ -11,6 +11,7 @@ import org.springframework.security.crypto.password.PasswordEncoder;
 import pl.srm.biuroapi.auth.account.AccountRepository;
 import pl.srm.biuroapi.auth.account.AccountRole;
 import pl.srm.biuroapi.auth.config.JwtConfig;
+import pl.srm.biuroapi.turnus.TurnusTestFixtures;
 
 import java.net.URI;
 import java.net.http.HttpClient;
@@ -54,6 +55,7 @@ class AccountAuthenticationTest {
         jdbc.update("DELETE FROM biuro_session");
         jdbc.update("DELETE FROM biuro_account_role");
         jdbc.update("DELETE FROM biuro_account");
+        TurnusTestFixtures.resetLegacySummerTurnuses(jdbc);
         id = UUID.randomUUID().toString();
         accounts.create(id, "anna.kowalska", "Anna Kowalska", encoder.encode(PASSWORD),
                 Set.of(AccountRole.OPERATOR), Instant.now());
@@ -152,7 +154,7 @@ class AccountAuthenticationTest {
         assertEquals(403, client.send(unknown, HttpResponse.BodyHandlers.ofString()).statusCode());
     }
 
-    @Test void normalizedUsernamesAreUniqueAndMigrationPreservesCatalogue() {
+    @Test void normalizedUsernamesAreUniqueAndAccountOperationsPreserveCatalogue() {
         assertThrows(org.springframework.dao.DuplicateKeyException.class, () -> accounts.create(
                 UUID.randomUUID().toString(), "ANNA.KOWALSKA", "Duplicate", encoder.encode(PASSWORD),
                 Set.of(AccountRole.VIEWER), Instant.now()));

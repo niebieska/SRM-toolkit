@@ -65,7 +65,6 @@ class SummerStaffRequirementsTest {
         assertEquals(all.size(), all.stream().distinct().count());
     }
     @Test void createsEditsAndClearsSummerTargetsWithinCapacity() {
-        assertEquals(List.of(), catalogue.get("ZAGLE26T1").staffRequirements());
         var targets = List.of(new StaffRequirement("sternik", 5), new StaffRequirement("animator", 20),
                 new StaffRequirement("animator_wychowawca", 2));
         var created = catalogue.create(request(null, targets, 27));
