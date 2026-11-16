@@ -1,5 +1,12 @@
 # Work in progress
 
+## 2026-11-16 — Payment balance on Turnus lists
+
+- In progress on `feature/turnus-list-payment-balance`: add a read-only
+  **Dopłata** amount to applicable rows in **Lista na turnus**, using the current
+  fee, discount, payments and refunds. Payment entry and editing remain in
+  **Wpłaty**; observers do not receive the financial data.
+
 ## 2026-11-14 — Current development and release snapshot
 
 - `development` and `origin/development` are at `1f62f65` (PR #64). PR #63 added
