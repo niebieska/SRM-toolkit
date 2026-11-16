@@ -9,7 +9,7 @@ const { descriptor } = parse(await readFile(file, 'utf8'))
 let source = compileScript(descriptor, { id: 'turnus-lists-test' }).content
 source = source.replace(/import .* from 'vue-router'/, 'const useRoute = () => globalThis.__listsTestRoute;')
 source = source.replace(/import BiuroHeader .*\n/, 'const BiuroHeader = {};\n')
-source = source.replace(/import .* from '..\/stores\/auth'/, "const useAuthStore = () => ({ token: 'operator-token', isOperator: true, isAuthenticated: true });")
+source = source.replace(/import .* from '..\/stores\/auth'/, "const useAuthStore = () => globalThis.__listsTestAuth;")
 source = source.replace(/from '([^']+)'/g, (match, path) => {
   if (path === 'vue') return `from '${import.meta.resolve('vue')}'`
   return path.startsWith('.') ? `from '${new URL(path.endsWith('.js') ? path : path + '.js', file).href}'` : match
@@ -26,8 +26,9 @@ const body = code => ({ turnus: { turnusCode: code, turnusName: 'Turnus', startD
   { person: { registrationCode: 'S1', registrationType: 'STAFF', firstName: 'Jan', lastName: 'Kowalski', role: 'animator', minor: false }, age: 22, roleLabel: 'Animator' },
 ] })
 const response = value => ({ ok: true, json: async () => value })
-function mount() {
+function mount(isOperator = true) {
   globalThis.__listsTestRoute = reactive({ params: { code: 'T1' } })
+  globalThis.__listsTestAuth = { token: 'operator-token', isOperator, isAuthenticated: true }
   const app = renderer.createApp(View), view = app.mount({})
   return { app, view, route: globalThis.__listsTestRoute }
 }
@@ -63,6 +64,22 @@ test('loads with operator credentials; separates groups and filters without addi
     view.clearFilters(); view.group = 'PARTICIPANT'; await settle()
     assert.equal(view.groups.length, 1)
     assert.equal(requests, 1)
+  } finally { app.unmount(); globalThis.fetch = previousFetch }
+})
+
+test('observer lists do not show payment balance columns', async () => {
+  const previousFetch = globalThis.fetch
+  globalThis.fetch = async url => {
+    assert.equal(url, 'http://localhost:8081/api/viewer/turnuses/T1/lists')
+    const payload = body('T1')
+    payload.entries[0].remainingToPay = 150
+    return response(payload)
+  }
+  const { app, view } = mount(false)
+  try {
+    await settle()
+    view.selectView('onsite')
+    assert.ok(view.groups.every(group => !group.columns.some(column => column.key === 'remainingToPay')))
   } finally { app.unmount(); globalThis.fetch = previousFetch }
 })
 
@@ -131,7 +148,7 @@ test('presets and custom columns reuse the loaded people and preserve filters', 
     assert.equal(view.groups[0].columns.length, 0)
     assert.equal(view.groups[1].columns.length, 0)
     view.selectView('onsite'); await settle()
-    assert.equal(view.groups[0].columns.length, 6)
+    assert.equal(view.groups[0].columns.length, 7)
     assert.equal(requests, 1)
   } finally { app.unmount(); globalThis.fetch = previousFetch }
 })

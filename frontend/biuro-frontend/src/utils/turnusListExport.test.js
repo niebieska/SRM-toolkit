@@ -45,6 +45,18 @@ test('staff-only selection excludes participants without applicable columns from
   assert.equal(createListExport(source).sections[0].label, 'Kadra')
 })
 
+test('on-site export includes the formatted payment balance for both groups', () => {
+  const source = options('onsite')
+  source.groups[0].rows[0].remainingToPay = 200
+  source.groups[1].rows[0].remainingToPay = 0
+
+  const snapshot = createListExport(source)
+
+  assert.ok(snapshot.sections.every(section => section.columns.some(column => column.key === 'remainingToPay')))
+  assert.equal(snapshot.sections[0].rows[0].at(-1).replace(/\u00a0/g, ' '), '200 zł')
+  assert.equal(snapshot.sections[1].rows[0].at(-1).replace(/\u00a0/g, ' '), '0 zł')
+})
+
 test('selected health and staff details are preserved in CSV, XLSX and PDF data', () => {
   const keys = ['chronicConditionDetails', 'dietaryDetails', 'specialNeedsAndAdditionalInfo',
     'birthYear', 'motherName']

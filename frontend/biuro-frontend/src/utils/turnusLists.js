@@ -10,6 +10,7 @@ export const availableListColumns = [
   { key: 'age', label: 'Wiek' },
   { key: 'personPhone', label: 'Telefon' },
   { key: 'contactPhone', label: 'Telefon rodzica / ICE' },
+  { key: 'remainingToPay', label: 'Dopłata' },
   { key: 'email', label: 'E-mail osoby' },
   { key: 'contactName', label: 'Imię i nazwisko rodzica / ICE' },
   { key: 'guardianEmail', label: 'E-mail opiekuna' },
@@ -49,7 +50,7 @@ export const listColumns = availableListColumns.filter(column => generalColumnKe
 export const listViews = [
   { key: 'general', label: 'Ogólny', columns: listColumns.map(column => column.key), sortKey: 'lastName' },
   { key: 'insurance', label: 'Ubezpieczenie', columns: ['firstName', 'lastName', 'pesel'], sortKey: 'lastName' },
-  { key: 'onsite', label: 'Lista na turnus', columns: ['firstName', 'lastName', 'address', 'age', 'personPhone', 'contactPhone'], sortKey: 'lastName' },
+  { key: 'onsite', label: 'Lista na turnus', columns: ['firstName', 'lastName', 'address', 'age', 'personPhone', 'contactPhone', 'remainingToPay'], sortKey: 'lastName' },
   { key: 'custom', label: 'Własny' },
 ]
 
@@ -90,6 +91,11 @@ export function listValue(entry, key) {
     return null
   }
   if (key === 'age') return entry.age
+  if (key === 'remainingToPay') {
+    if (entry.remainingToPay == null) return null
+    return new Intl.NumberFormat('pl-PL', { style: 'currency', currency: 'PLN', maximumFractionDigits: 0 })
+      .format(Number(entry.remainingToPay))
+  }
   if (key === 'birthDate') {
     const date = entry.person.birthDate
     return date ? date.split('-').reverse().join('.') : null
@@ -115,6 +121,7 @@ function contactRelation(extra) {
 
 function compareValues(a, b, key, left, right) {
   if (key === 'age') return (left ?? 0) - (right ?? 0)
+  if (key === 'remainingToPay') return Number(a.remainingToPay) - Number(b.remainingToPay)
   // ISO dates must sort chronologically, not by the Polish display format.
   if (key === 'birthDate') return collator.compare(a.person.birthDate || '', b.person.birthDate || '')
   return collator.compare(left || '', right || '')
@@ -146,6 +153,7 @@ export function validateTurnusLists(body, code) {
     if (!entry?.person || !['PARTICIPANT', 'STAFF'].includes(entry.person.registrationType)) return false
     if (typeof entry.person.registrationCode !== 'string') return false
     if (typeof entry.person.minor !== 'boolean') return false
+    if (entry.remainingToPay != null && (!Number.isFinite(Number(entry.remainingToPay)) || Number(entry.remainingToPay) < 0)) return false
     return entry.age == null || (Number.isInteger(entry.age) && entry.age >= 0)
   })
 }
