@@ -15,6 +15,7 @@ const staleVersion = ref(false)
 const isStaff = computed(() => props.detail.registrationType === 'STAFF')
 const isManualStaff = computed(() => isStaff.value && props.detail.source === 'BIURO')
 const isMinor = computed(() => props.detail.minor === true)
+const requiresPersonEmail = computed(() => !isManualStaff.value && !(isMinor.value && !isStaff.value))
 const questionEntries = computed(() => Object.entries(draft.value.health || {})
   .filter(([key, value]) => (isStaff.value ? ['q1', 'q2'] : ['q1', 'q2', 'q3']).includes(key) && value && typeof value === 'object')
   .map(([key, value]) => ({
@@ -87,7 +88,7 @@ function readFrom(root, path) {
 }
 
 const requiredPaths = computed(() => [
-  'person.firstName', 'person.lastName', ...(isManualStaff.value ? [] : ['person.contact.email']), 'person.contact.phone',
+  'person.firstName', 'person.lastName', ...(requiresPersonEmail.value ? ['person.contact.email'] : []), 'person.contact.phone',
   'address.street', 'address.houseNumber', 'address.postalCode', 'address.city',
   ...(isStaff.value ? ['person.motherName', 'person.fatherName', 'person.birthSurname'] : []),
   ...(isMinor.value ? ['guardian.firstName', 'guardian.lastName', 'guardian.relation', 'guardian.names', 'guardian.contact.email', 'guardian.contact.phone'] : ['ice.firstName', 'ice.lastName', 'ice.relation', 'ice.phone']),
@@ -128,6 +129,7 @@ function validate() {
 }
 
 function labelFor(path) {
+  if (path === 'person.contact.email' && !requiresPersonEmail.value) return 'E-mail (opcjonalnie)'
   return ({
     'person.firstName': 'Imię', 'person.lastName': 'Nazwisko',
     'person.contact.email': 'E-mail', 'person.contact.phone': 'Telefon',
@@ -173,7 +175,7 @@ async function save() {
 </script>
 
 <template>
-  <form class="space-y-5" @submit.prevent="save">
+  <form class="space-y-5" novalidate @submit.prevent="save">
     <div class="rounded-lg border border-blue-100 bg-blue-50 px-4 py-3 text-sm text-blue-950">
       PESEL, turnus, status, zgody oraz rola i uprawnienia kadry pozostają bez zmian. Zapisane poprawki nie wysyłają e-maila.
     </div>
