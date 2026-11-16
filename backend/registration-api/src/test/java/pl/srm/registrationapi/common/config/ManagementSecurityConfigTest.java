@@ -57,7 +57,8 @@ class ManagementSecurityConfigTest {
         context = new AnnotationConfigWebApplicationContext();
         context.setServletContext(new MockServletContext());
         TestPropertySourceUtils.addInlinedPropertiesToEnvironment(context,
-                "registration.service.username=biuro-service", "registration.service.password=test-password");
+                "registration.service.username=biuro-service", "registration.service.password=test-password",
+                "registration.cors.allowed-origins=http://localhost:5173,http://localhost:4173,https://zapisyreko.scj.pl");
         context.register(ManagementSecurityConfig.class, CorsConfig.class, TestMvcConfig.class);
         context.refresh();
         management = context.getBean(RegistrationManagementService.class);
@@ -214,6 +215,23 @@ class ManagementSecurityConfigTest {
                 .header(HttpHeaders.ACCESS_CONTROL_REQUEST_HEADERS, "Content-Type"))
                 .andExpect(status().isOk())
                 .andExpect(header().string(HttpHeaders.ACCESS_CONTROL_ALLOW_ORIGIN, "http://localhost:5173"));
+    }
+
+    @Test
+    void allowsConfiguredProductionFormOriginAndRejectsUnknownOrigin() throws Exception {
+        mvc.perform(post("/api/registrations/participant")
+                        .header(HttpHeaders.ORIGIN, "https://zapisyreko.scj.pl")
+                        .contentType(MediaType.APPLICATION_JSON).content("{}"))
+                .andExpect(status().isOk())
+                .andExpect(header().string(HttpHeaders.ACCESS_CONTROL_ALLOW_ORIGIN,
+                        "https://zapisyreko.scj.pl"));
+
+        mvc.perform(post("/api/registrations/participant")
+                        .header(HttpHeaders.ORIGIN, "https://attacker.example")
+                        .contentType(MediaType.APPLICATION_JSON).content("{}"))
+                .andExpect(status().isForbidden())
+                .andExpect(content().string(org.hamcrest.Matchers.containsString("Invalid CORS request")))
+                .andExpect(header().doesNotExist(HttpHeaders.ACCESS_CONTROL_ALLOW_ORIGIN));
     }
 
     @Test

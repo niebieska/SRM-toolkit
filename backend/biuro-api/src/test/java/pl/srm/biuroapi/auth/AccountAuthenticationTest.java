@@ -24,6 +24,7 @@ import static org.junit.jupiter.api.Assertions.*;
 
 @SpringBootTest(webEnvironment = SpringBootTest.WebEnvironment.RANDOM_PORT, properties = {
         "registration.api.password=test-service-password", "turnus.lookup.password=test-lookup-password",
+        "biuro.cors.allowed-origins=http://localhost:5174,https://biuroreko.scj.pl",
         "spring.datasource.url=jdbc:h2:mem:account-auth;MODE=MariaDB;DB_CLOSE_DELAY=-1",
         "spring.datasource.driver-class-name=org.h2.Driver",
         "spring.datasource.username=sa", "spring.datasource.password="})
@@ -59,10 +60,14 @@ class AccountAuthenticationTest {
     }
 
     HttpResponse<String> request(String method, String path, String token, String body) throws Exception {
+        return request(method, path, token, body, null);
+    }
+    HttpResponse<String> request(String method, String path, String token, String body, String origin) throws Exception {
         var builder = HttpRequest.newBuilder(URI.create("http://localhost:" + context.getWebServer().getPort() + path))
                 .method(method, body == null ? HttpRequest.BodyPublishers.noBody() : HttpRequest.BodyPublishers.ofString(body))
                 .header("Content-Type", "application/json");
         if (token != null) builder.header("Authorization", "Bearer " + token);
+        if (origin != null) builder.header("Origin", origin);
         return client.send(builder.build(), HttpResponse.BodyHandlers.ofString());
     }
 
@@ -95,6 +100,56 @@ class AccountAuthenticationTest {
         var claims = jwt.parseClaims(token);
         assertEquals(7200, (claims.getExpiration().getTime() - claims.getIssuedAt().getTime()) / 1000);
         assertEquals(1, jdbc.queryForObject("SELECT COUNT(*) FROM biuro_session", Integer.class));
+    }
+
+    @Test void corsAllowsConfiguredLoginOriginAndRejectsUnknownOrigin() throws Exception {
+        var allowed = request("POST", "/api/auth/login", null,
+                "{\"username\":\"anna.kowalska\",\"password\":\"" + PASSWORD + "\"}",
+                "https://biuroreko.scj.pl");
+        assertEquals(200, allowed.statusCode());
+        assertEquals("https://biuroreko.scj.pl",
+                allowed.headers().firstValue("Access-Control-Allow-Origin").orElse(null));
+
+        var local = request("POST", "/api/auth/login", null,
+                "{\"username\":\"unknown\",\"password\":\"wrong-password\"}",
+                "http://localhost:5174");
+        assertEquals(401, local.statusCode());
+        assertEquals("http://localhost:5174",
+                local.headers().firstValue("Access-Control-Allow-Origin").orElse(null));
+
+        var unknown = request("POST", "/api/auth/login", null,
+                "{\"username\":\"anna.kowalska\",\"password\":\"" + PASSWORD + "\"}",
+                "https://attacker.example");
+        assertEquals(403, unknown.statusCode());
+        assertTrue(unknown.body().contains("Invalid CORS request"));
+        assertTrue(unknown.headers().firstValue("Access-Control-Allow-Origin").isEmpty());
+    }
+
+    @Test void corsPreflightAllowsOnlyConfiguredOriginAndRequiredHeaders() throws Exception {
+        var allowed = HttpRequest.newBuilder(URI.create("http://localhost:" + context.getWebServer().getPort()
+                + "/api/auth/login"))
+                .method("OPTIONS", HttpRequest.BodyPublishers.noBody())
+                .header("Origin", "https://biuroreko.scj.pl")
+                .header("Access-Control-Request-Method", "POST")
+                .header("Access-Control-Request-Headers", "authorization,content-type,idempotency-key")
+                .build();
+        var allowedResponse = client.send(allowed, HttpResponse.BodyHandlers.ofString());
+        assertEquals(200, allowedResponse.statusCode());
+        assertEquals("https://biuroreko.scj.pl",
+                allowedResponse.headers().firstValue("Access-Control-Allow-Origin").orElse(null));
+        assertTrue(allowedResponse.headers().firstValue("Access-Control-Allow-Methods").orElse("").contains("POST"));
+        String allowedHeaders = allowedResponse.headers().firstValue("Access-Control-Allow-Headers").orElse("").toLowerCase();
+        assertTrue(allowedHeaders.contains("authorization"));
+        assertTrue(allowedHeaders.contains("content-type"));
+        assertTrue(allowedHeaders.contains("idempotency-key"));
+
+        var unknown = HttpRequest.newBuilder(URI.create("http://localhost:" + context.getWebServer().getPort()
+                + "/api/auth/login"))
+                .method("OPTIONS", HttpRequest.BodyPublishers.noBody())
+                .header("Origin", "https://attacker.example")
+                .header("Access-Control-Request-Method", "POST")
+                .build();
+        assertEquals(403, client.send(unknown, HttpResponse.BodyHandlers.ofString()).statusCode());
     }
 
     @Test void normalizedUsernamesAreUniqueAndMigrationPreservesCatalogue() {
