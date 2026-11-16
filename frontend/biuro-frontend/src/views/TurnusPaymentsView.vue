@@ -432,7 +432,7 @@ onBeforeUnmount(() => { requestSequence++ })
 
       <div v-if="lookupOpen" class="fixed inset-0 z-50 flex items-end justify-center bg-slate-950/40 p-0 sm:items-center sm:p-4" @click.self="lookupOpen = false" @keydown.esc="lookupOpen = false">
         <section role="dialog" aria-modal="true" aria-labelledby="payment-lookup-title" class="w-full rounded-t-2xl bg-white shadow-xl sm:max-w-md sm:rounded-2xl">
-          <form class="space-y-4 p-5 sm:p-6" @submit.prevent="findRegistrationForPayment">
+          <form class="space-y-4 p-5 sm:p-6" novalidate @submit.prevent="findRegistrationForPayment">
             <header class="flex items-start justify-between gap-4">
               <div>
                 <h3 id="payment-lookup-title" class="text-lg font-semibold text-slate-900">Dodaj wpłatę</h3>

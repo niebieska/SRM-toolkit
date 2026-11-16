@@ -9,6 +9,10 @@ let attempt = 0
 onBeforeUnmount(() => { attempt++ })
 async function submit() {
   if (loading.value) return
+  if (!username.value.trim() || !password.value) {
+    error.value = 'Wpisz login i hasło.'
+    return
+  }
   const currentAttempt = ++attempt
   loading.value = true; error.value = ''
   try {
@@ -21,7 +25,7 @@ async function submit() {
 }
 </script>
 <template>
-  <form class="space-y-4" @submit.prevent="submit">
+  <form class="space-y-4" novalidate @submit.prevent="submit">
     <label class="block text-sm">Login<input v-model="username" name="username" autocomplete="username" required autofocus class="mt-1 w-full rounded border border-slate-300 px-3 py-2" /></label>
     <label class="block text-sm">Hasło<input v-model="password" name="password" type="password" autocomplete="current-password" required class="mt-1 w-full rounded border border-slate-300 px-3 py-2" /></label>
     <p v-if="error" role="alert" class="text-sm text-red-700">{{ error }}</p>

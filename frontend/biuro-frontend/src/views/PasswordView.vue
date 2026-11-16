@@ -12,7 +12,8 @@ onBeforeUnmount(() => { active = false })
 onBeforeRouteLeave(() => !busy.value || auth.token !== requestToken)
 async function submit() {
   if (busy.value) return
-  error.value = passwordError(password.value) || (password.value !== confirmation.value ? 'Nowe hasła muszą być takie same.' : '')
+  error.value = !current.value ? 'Wpisz obecne hasło.'
+    : passwordError(password.value) || (password.value !== confirmation.value ? 'Nowe hasła muszą być takie same.' : '')
   if (error.value) return
   busy.value = true
   requestToken = auth.token
@@ -35,7 +36,7 @@ async function submit() {
     <section class="mx-auto max-w-lg space-y-4 rounded-xl border bg-white p-6">
       <h2 class="text-xl font-semibold">Zmiana hasła</h2>
       <p v-if="auth.user?.passwordChangeRequired" class="text-sm text-slate-600">Przed rozpoczęciem pracy ustaw własne hasło.</p>
-      <form class="space-y-4" @submit.prevent="submit">
+      <form class="space-y-4" novalidate @submit.prevent="submit">
         <fieldset :disabled="busy" class="space-y-4">
         <label class="block text-sm">Obecne hasło<input v-model="current" type="password" autocomplete="current-password" required class="mt-1 w-full rounded border px-3 py-2" /></label>
         <label class="block text-sm">Nowe hasło<input v-model="password" type="password" autocomplete="new-password" required aria-describedby="password-help" class="mt-1 w-full rounded border px-3 py-2" /></label>

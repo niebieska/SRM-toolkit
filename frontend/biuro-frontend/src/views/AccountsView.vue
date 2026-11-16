@@ -67,6 +67,12 @@ async function refreshOwnProfile(account) {
 async function save() {
   if (busy.value || loading.value) return
   error.value = ''; success.value = ''
+  if (isNew.value && !/^[A-Za-z0-9][A-Za-z0-9._-]{2,63}$/.test(form.username)) {
+    error.value = 'Login musi mieć od 3 do 64 znaków i zawierać tylko litery, cyfry, kropki, myślniki lub podkreślenia.'; return
+  }
+  if (!form.displayName.trim() || form.displayName.length > 150) {
+    error.value = 'Wpisz nazwę użytkownika (maksymalnie 150 znaków).'; return
+  }
   if (!form.roles.length) { error.value = 'Wybierz co najmniej jedną rolę.'; return }
   if (isNew.value) {
     error.value = passwordError(password.value) || (password.value !== confirmation.value ? 'Hasła muszą być takie same.' : '')
@@ -140,7 +146,7 @@ onBeforeUnmount(() => { historySequence++; decide(false); window.removeEventList
       <div v-if="selected" class="space-y-5">
         <section class="space-y-4 rounded-xl border bg-white p-5">
           <h3 class="text-xl font-semibold">{{ isNew ? 'Nowe konto' : 'Ustawienia konta' }}</h3>
-          <form class="space-y-4" @submit.prevent="save"><fieldset :disabled="busy || loading" class="min-w-0 space-y-4">
+          <form class="space-y-4" novalidate @submit.prevent="save"><fieldset :disabled="busy || loading" class="min-w-0 space-y-4">
             <label class="block text-sm">Login<input v-model="form.username" :disabled="!isNew" autocomplete="off" required minlength="3" maxlength="64" pattern="[A-Za-z0-9][A-Za-z0-9._\-]{2,63}" class="mt-1 w-full rounded border px-3 py-2 disabled:bg-slate-100" /></label>
             <label class="block text-sm">Nazwa użytkownika<input v-model="form.displayName" required maxlength="150" class="mt-1 w-full rounded border px-3 py-2" /></label>
             <label v-if="!isNew" class="flex items-center gap-2 text-sm"><input v-model="form.active" type="checkbox" />Konto aktywne</label>
@@ -164,7 +170,7 @@ onBeforeUnmount(() => { historySequence++; decide(false); window.removeEventList
         </section>
         <section v-if="!isNew" class="space-y-4 rounded-xl border bg-white p-5">
           <button type="button" :disabled="busy || loading" :aria-expanded="resetOpen" class="rounded text-sm font-semibold underline" @click="resetOpen = !resetOpen">Reset hasła</button>
-          <form v-if="resetOpen" class="space-y-3" @submit.prevent="reset">
+          <form v-if="resetOpen" class="space-y-3" novalidate @submit.prevent="reset">
             <p class="text-sm text-slate-600">Reset zakończy wszystkie sesje użytkownika i wymusi zmianę hasła. Reset własnego konta wymaga ponownego logowania.</p>
             <label class="block text-sm">Nowe hasło tymczasowe<input v-model="resetPassword" type="password" autocomplete="new-password" required :disabled="busy" class="mt-1 w-full rounded border px-3 py-2" /></label>
             <label class="block text-sm">Powtórz hasło<input v-model="resetConfirmation" type="password" autocomplete="new-password" required :disabled="busy" class="mt-1 w-full rounded border px-3 py-2" /></label>
