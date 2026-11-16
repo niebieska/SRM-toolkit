@@ -38,7 +38,8 @@ public class TurnusListAccess {
                 "SELECT EXISTS(SELECT 1 FROM biuro_account_turnus WHERE account_id = ? AND turnus_code = ?)",
                 Boolean.class, principal.id(), code));
         if (!assigned) throw denied();
-        var result = lists.get(code);
+
+        var result = lists.getWithoutPaymentBalance(code);
         var t = result.turnus();
         return new ViewerLists(new Summary(t.turnusCode(), t.turnusName(), t.turnusLocation(), t.startDate(), t.endDate()), result.entries());
     }

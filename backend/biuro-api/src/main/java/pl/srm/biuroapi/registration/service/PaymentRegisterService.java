@@ -41,6 +41,20 @@ public class PaymentRegisterService {
                 .toList();
     }
 
+    public Map<String, BigDecimal> remainingByRegistrationCode(String turnusCode) {
+        return list().stream()
+                .filter(row -> turnusCode.equals(row.turnusCode()))
+                .collect(Collectors.toUnmodifiableMap(PaymentRegisterRow::registrationCode, this::remainingToPay));
+    }
+
+    private BigDecimal remainingToPay(PaymentRegisterRow row) {
+        BigDecimal paid = row.payments().stream()
+                .map(payment -> "REFUND".equals(payment.entryType()) ? payment.amount().negate() : payment.amount())
+                .reduce(BigDecimal.ZERO, BigDecimal::add);
+        BigDecimal balance = row.fee().subtract(row.discount()).subtract(paid);
+        return balance.max(BigDecimal.ZERO);
+    }
+
     public PaymentLedgerEntry add(String code, PaymentChangeRequest request, String idempotencyKey, AccountPrincipal actor) {
         BigDecimal fee = requireEligibleFee(code, false);
         return registrations.addPayment(code, request, idempotencyKey, fee, actor.id(), actor.username());

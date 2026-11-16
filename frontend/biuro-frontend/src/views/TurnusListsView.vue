@@ -24,11 +24,13 @@ const groups = computed(() => [
   total: entries.value.filter(e => e.person.registrationType === item.type).length,
   rows: filterAndSortList(entries.value, { type: item.type, search: search.value,
     sortKey: sortKey.value, direction: direction.value }),
-  columns: columnsForList(selectedView.value, customColumns.value, item.type),
+  columns: columnsForList(selectedView.value, customColumns.value, item.type)
+    .filter(column => auth.isOperator || column.key !== 'remainingToPay'),
 })))
-const visibleCustomColumnGroups = computed(() => customColumnGroups.filter(item =>
-  item.key === 'common'
-  || (item.key === 'staff' && group.value !== 'PARTICIPANT')))
+const visibleCustomColumnGroups = computed(() => customColumnGroups
+  .filter(item => item.key === 'common' || (item.key === 'staff' && group.value !== 'PARTICIPANT'))
+  .map(item => ({ ...item, columns: item.columns.filter(column => auth.isOperator || column.key !== 'remainingToPay') }))
+  .filter(item => item.columns.length))
 const incompleteCount = computed(() => entries.value.filter(e => e.person.incompleteData).length)
 const exportCount = computed(() => groups.value.reduce((sum, item) => sum + (item.columns.length ? item.rows.length : 0), 0))
 const filtered = computed(() => Boolean(search.value || group.value))

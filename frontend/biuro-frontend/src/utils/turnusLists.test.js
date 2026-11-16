@@ -57,6 +57,8 @@ test('validates selected Turnus, empty lists, group values and age fields', () =
   assert.equal(validateTurnusLists({ ...body, entries: [null] }, 'T1'), false)
   assert.equal(validateTurnusLists({ ...body, entries: [{ ...rows[0], age: -1 }] }, 'T1'), false)
   assert.equal(validateTurnusLists({ ...body, entries: [{ ...rows[0], person: { ...rows[0].person, minor: undefined } }] }, 'T1'), false)
+  assert.equal(validateTurnusLists({ ...body, entries: [{ ...rows[0], remainingToPay: -1 }] }, 'T1'), false)
+  assert.equal(validateTurnusLists({ ...body, entries: [{ ...rows[0], remainingToPay: 'invalid' }] }, 'T1'), false)
 })
 
 test('contact number uses stored minor status, independently of displayed age', () => {
@@ -86,13 +88,21 @@ test('presets select agreed fields and keep staff role/function in the staff sec
   const keys = (view, type = 'PARTICIPANT') => columnsForList(view, [], type).map(column => column.key)
   assert.deepEqual(keys('insurance'), ['firstName', 'lastName', 'pesel'])
   assert.deepEqual(keys('insurance', 'STAFF'), ['firstName', 'lastName', 'pesel'])
-  assert.deepEqual(keys('onsite'), ['firstName', 'lastName', 'address', 'age', 'personPhone', 'contactPhone'])
-  assert.deepEqual(keys('onsite', 'STAFF'), ['firstName', 'lastName', 'roleLabel', 'personPhone', 'contactPhone'])
+  assert.deepEqual(keys('onsite'), ['firstName', 'lastName', 'address', 'age', 'personPhone', 'contactPhone', 'remainingToPay'])
+  assert.deepEqual(keys('onsite', 'STAFF'), ['firstName', 'lastName', 'roleLabel', 'personPhone', 'contactPhone', 'remainingToPay'])
   assert.ok(!keys('general').includes('gender'))
   for (const view of ['general', 'onsite']) {
     assert.ok(keys(view, 'STAFF').includes('roleLabel'))
     assert.ok(!keys(view).includes('roleLabel'))
   }
+})
+
+test('on-site payment balance is displayed in whole PLN and sorts by numeric value', () => {
+  const values = [1000, 200].map((remainingToPay, index) => ({ ...rows[index], remainingToPay }))
+  assert.equal(listValue(values[1], 'remainingToPay').replace(/\u00a0/g, ' '), '200 zł')
+  assert.equal(listValue({ ...values[0], remainingToPay: null }, 'remainingToPay'), null)
+  assert.deepEqual(filterAndSortList(values, { type: 'PARTICIPANT', sortKey: 'remainingToPay' })
+    .map(entry => entry.remainingToPay), [200, 1000])
 })
 
 test('custom columns use known fields once and empty selection is explicit', () => {
