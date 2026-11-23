@@ -178,7 +178,7 @@ async function addToWaitlist() {
       </div>
 
       <p v-if="!capacityBlocked" class="rounded-lg border border-slate-200 bg-slate-50 px-3 py-2 text-sm text-slate-700">
-        Po zapisaniu zmiany statusu system podejmie próbę wysłania e-maila.
+        Zmiana statusu spowoduje wysłanie powiadomienia e-mail.
       </p>
 
       <p v-if="errorMessage" :role="capacityBlocked ? 'status' : 'alert'"

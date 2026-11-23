@@ -1,0 +1,7 @@
+zapisyreko.scj.pl {
+    reverse_proxy registration-frontend:80
+}
+
+biuroreko.scj.pl {
+    reverse_proxy biuro-frontend:80
+}

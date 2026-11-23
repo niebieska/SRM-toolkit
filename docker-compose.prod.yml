@@ -1,0 +1,57 @@
+# SRM Toolkit - production deployment
+# Use with docker-compose.yml and docker-compose.external-smtp.yml.
+
+services:
+  registration-api:
+    image: srm-registration-api:1.0.0
+    build: !reset null
+
+  biuro-api:
+    image: srm-biuro-api:1.0.0
+    build: !reset null
+
+  email-service:
+    image: srm-email-service:1.0.0
+    build: !reset null
+    depends_on: !override {}
+
+  registration-frontend:
+    image: srm-registration-frontend:1.0.0
+    build: !reset null
+    ports: !override []
+
+  biuro-frontend:
+    image: srm-biuro-frontend:1.0.0
+    build: !reset null
+    ports: !override []
+
+  mariadb:
+    volumes: !override
+      - mariadb-data:/var/lib/mysql
+      - /srv/srm/config/10-biuro-db.sh:/docker-entrypoint-initdb.d/10-biuro-db.sh:ro
+
+  mailhog:
+    profiles:
+      - test-only
+
+  web-proxy:
+    image: caddy:2.11.7-alpine
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./deploy/caddy/Caddyfile.prod:/etc/caddy/Caddyfile:ro
+      - caddy-data:/data
+      - caddy-config:/config
+    depends_on:
+      registration-frontend:
+        condition: service_started
+      biuro-frontend:
+        condition: service_started
+    networks:
+      - srm-net
+    restart: unless-stopped
+
+volumes:
+  caddy-data:
+  caddy-config:
